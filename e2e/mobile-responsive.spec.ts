@@ -40,6 +40,10 @@ test.describe("Mobile Responsiveness", () => {
     const emailInput = page.locator('input[type="email"]')
     const passwordInput = page.locator('input[type="password"]')
 
+    // Wait for form inputs to be visible before measuring
+    await expect(emailInput).toBeVisible({ timeout: 10_000 })
+    await expect(passwordInput).toBeVisible({ timeout: 10_000 })
+
     // Check inputs are large enough to tap
     const emailBox = await emailInput.boundingBox()
     const passwordBox = await passwordInput.boundingBox()
