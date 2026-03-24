@@ -1,0 +1,204 @@
+import { NextResponse } from "next/server"
+import type { NextRequest } from "next/server"
+import { verifySessionEdge } from "@/lib/auth-edge"
+import { validateCsrf, ensureCsrfCookie } from "@/lib/middleware/csrf"
+import { getCookieValue, extractHostname } from "@/proxy"
+
+export default async function middleware(request: NextRequest) {
+  // Legacy backup stub: this file is intentionally non-functional.
+  // The authoritative middleware implementation lives in `middleware.ts`.
+  // This stub simply forwards the request without any additional logic.
+  return NextResponse.next()
+}
+  if (
+    process.env["NODE_ENV"] === "production" &&
+    adminSubdomainEnabled &&
+    !hostname.startsWith("admin.") &&
+    pathname.startsWith("/admin") &&
+    !pathname.startsWith("/admin/sign-in") &&
+    !pathname.startsWith("/admin/signup") &&
+    !pathname.startsWith("/admin/mfa")
+  ) {
+    const adminSubdomain = hostname.replace(/^(www\.)?/, "admin.")
+    const redirectUrl = new URL(pathname.replace("/admin", ""), `https://${adminSubdomain}`)
+    redirectUrl.search = request.nextUrl.search
+    return NextResponse.redirect(redirectUrl)
+  }
+
+  const adminPublicRoutes = [
+    "/admin/sign-in",
+    "/admin/signup",
+    "/admin/mfa/enroll",
+    "/admin/mfa/challenge",
+    "/admin/login",
+  ]
+  const isAdminPublicRoute = adminPublicRoutes.some(
+    (route) => pathname === route || pathname.startsWith(route + "/")
+  )
+
+  const publicRoutes = [
+    "/",
+    "/how-it-works",
+    "/pricing",
+    "/contact",
+    "/dealer-application",
+    "/affiliate",
+    "/refinance",
+    "/auth",
+    "/legal",
+    "/about",
+    "/privacy",
+    "/terms",
+    "/faq",
+    "/contract-shield",
+    "/insurance",
+    "/for-dealers",
+    "/ref",
+  ]
+  const isPublicRoute =
+    publicRoutes.some((route) => pathname === route || pathname.startsWith(route + "/")) ||
+    isAdminPublicRoute
+
+  if (isPublicRoute || pathname.startsWith("/api/") || pathname.startsWith("/_next/")) {
+    const requestHeaders = new Headers(request.headers)
+    requestHeaders.set("x-pathname", pathname)
+
+    if (shouldRewriteAdmin) {
+      const adminUrl = new URL(rewrittenPath, request.url)
+      adminUrl.search = request.nextUrl.search
+      return ensureCsrfCookie(
+        request,
+        NextResponse.rewrite(adminUrl, { request: { headers: requestHeaders } })
+      )
+    }
+
+    return ensureCsrfCookie(request, NextResponse.next({ request: { headers: requestHeaders } }))
+  }
+
+  const token =
+    request.cookies.get("session")?.value ??
+    getCookieValue(request.headers.get("cookie"), "session")
+
+  if (!token) {
+    if (pathname.startsWith("/admin")) {
+      const signInUrl = shouldRewriteAdmin
+        ? new URL("/sign-in", request.url)
+        : new URL("/admin/sign-in", request.url)
+      return NextResponse.redirect(signInUrl)
+    }
+    const signinUrl = new URL("/auth/signin", request.url)
+    signinUrl.searchParams.set("redirect", pathname)
+    return NextResponse.redirect(signinUrl)
+  }
+
+  try {
+    const session = await verifySessionEdge(token)
+
+    const requestHeaders = new Headers(request.headers)
+    requestHeaders.set("x-pathname", pathname)
+
+    if (pathname.startsWith("/test")) {
+      if (session.workspace_mode !== "TEST") {
+        return new NextResponse("Not Found", { status: 404 })
+      }
+      const mockRole = getMockRoleFromPath(pathname.replace(/^\/test/, ""))
+      if (mockRole) {
+        const response = NextResponse.next({ request: { headers: requestHeaders } })
+        response.cookies.set("mock_role", mockRole, { path: "/", sameSite: "strict" })
+        return response
+      }
+      return NextResponse.next({ request: { headers: requestHeaders } })
+    }
+
+    const hasMockRole = request.cookies.get("mock_role")?.value
+    if (hasMockRole) {
+      const response = NextResponse.next({ request: { headers: requestHeaders } })
+      response.cookies.delete("mock_role")
+      return response
+    }
+
+    if (pathname.startsWith("/buyer") && session.role !== "BUYER") {
+      return NextResponse.redirect(new URL(getRoleRedirect(session.role), request.url))
+    }
+
+    if (pathname.startsWith("/dealer") && !["DEALER", "DEALER_USER"].includes(session.role)) {
+      return NextResponse.redirect(new URL(getRoleRedirect(session.role), request.url))
+    }
+
+    if (pathname.startsWith("/admin")) {
+      if (!["ADMIN", "SUPER_ADMIN"].includes(session.role)) {
+        return NextResponse.redirect(new URL("/auth/access-denied", request.url))
+      }
+    }
+
+    if (pathname.startsWith("/affiliate/portal")) {
+      const isAffiliate =
+        session.role === "AFFILIATE" ||
+        session.role === "AFFILIATE_ONLY" ||
+        (session.role === "BUYER" && session.is_affiliate === true)
+
+      if (!isAffiliate) {
+        return NextResponse.redirect(new URL("/affiliate?signin=required", request.url))
+      }
+    }
+
+    if (shouldRewriteAdmin) {
+      const adminUrl = new URL(rewrittenPath, request.url)
+      adminUrl.search = request.nextUrl.search
+      return ensureCsrfCookie(
+        request,
+        NextResponse.rewrite(adminUrl, { request: { headers: requestHeaders } })
+      )
+    }
+
+    return ensureCsrfCookie(request, NextResponse.next({ request: { headers: requestHeaders } }))
+  } catch {
+    if (pathname.startsWith("/admin")) {
+      const signInUrl = shouldRewriteAdmin
+        ? new URL("/sign-in", request.url)
+        : new URL("/admin/sign-in", request.url)
+      const response = NextResponse.redirect(signInUrl)
+      response.cookies.delete("session")
+      response.cookies.delete("admin_session")
+      return response
+    }
+
+    const signinUrl = new URL("/auth/signin", request.url)
+    signinUrl.searchParams.set("redirect", pathname)
+    const response = NextResponse.redirect(signinUrl)
+    response.cookies.delete("session")
+    return response
+  }
+}
+
+function getRoleRedirect(role: string): string {
+  switch (role) {
+    case "BUYER":
+      return "/buyer/dashboard"
+    case "DEALER":
+    case "DEALER_USER":
+      return "/dealer/dashboard"
+    case "ADMIN":
+    case "SUPER_ADMIN":
+      return "/admin/dashboard"
+    case "AFFILIATE":
+    case "AFFILIATE_ONLY":
+      return "/affiliate/portal/dashboard"
+    default:
+      return "/"
+  }
+}
+
+function getMockRoleFromPath(pathname: string): string | null {
+  if (pathname.startsWith("/admin")) return "ADMIN"
+  if (pathname.startsWith("/dealer")) return "DEALER"
+  if (pathname.startsWith("/affiliate")) return "AFFILIATE"
+  if (pathname.startsWith("/buyer")) return "BUYER"
+  return null
+}
+
+export const config = {
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|.*\\..*).*)",
+  ],
+}

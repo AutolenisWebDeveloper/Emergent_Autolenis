@@ -1,0 +1,62 @@
+-- Migration M007: Remove deprecated AffiliatePayment and EmailLog models
+-- Date: 2026-03-12
+--
+-- Context:
+--   AffiliatePayment has been consolidated into the canonical Payout model.
+--   EmailLog has been consolidated into the canonical EmailSendLog model.
+--   All live code paths have been migrated before this migration runs.
+--
+-- Pre-requisites:
+--   - Verify no live code references AffiliatePayment or EmailLog tables.
+--   - Confirm Payout and EmailSendLog tables are the active source of truth.
+--
+-- Rollback:
+--   If rollback is needed, the tables can be restored from backup.
+--   The CREATE TABLE statements below (commented out) can be used to recreate.
+--
+-- ROLLBACK (AffiliatePayment):
+--   CREATE TABLE "AffiliatePayment" (
+--     id TEXT PRIMARY KEY,
+--     "affiliateId" TEXT NOT NULL REFERENCES "Affiliate"(id),
+--     "workspaceId" TEXT REFERENCES "Workspace"(id),
+--     amount DOUBLE PRECISION NOT NULL,
+--     method TEXT NOT NULL DEFAULT 'bank_transfer',
+--     status TEXT NOT NULL DEFAULT 'INITIATED',
+--     notes TEXT,
+--     "periodCovered" TEXT,
+--     "externalTransactionId" TEXT,
+--     "paidAt" TIMESTAMPTZ,
+--     "createdAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+--     "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW()
+--   );
+--   CREATE INDEX idx_affiliate_payment_affiliate_id ON "AffiliatePayment"("affiliateId");
+--   CREATE INDEX idx_affiliate_payment_status ON "AffiliatePayment"(status);
+--   CREATE INDEX idx_affiliate_payment_workspace_id ON "AffiliatePayment"("workspaceId");
+--
+-- ROLLBACK (EmailLog):
+--   CREATE TABLE "EmailLog" (
+--     id TEXT PRIMARY KEY,
+--     "templateKey" TEXT NOT NULL,
+--     "to" TEXT NOT NULL,
+--     "from" TEXT NOT NULL,
+--     subject TEXT NOT NULL,
+--     "userId" TEXT,
+--     "affiliateId" TEXT,
+--     "dealId" TEXT,
+--     "auctionId" TEXT,
+--     "resendMessageId" TEXT,
+--     status TEXT NOT NULL,
+--     "errorMessage" TEXT,
+--     "correlationId" TEXT NOT NULL,
+--     "createdAt" TIMESTAMPTZ NOT NULL DEFAULT NOW()
+--   );
+--   CREATE INDEX idx_email_log_user_id ON "EmailLog"("userId");
+--   CREATE INDEX idx_email_log_correlation_id ON "EmailLog"("correlationId");
+--   CREATE INDEX idx_email_log_template_key ON "EmailLog"("templateKey");
+--   CREATE INDEX idx_email_log_created_at ON "EmailLog"("createdAt");
+
+-- Step 1: Drop AffiliatePayment table and its indexes
+DROP TABLE IF EXISTS "AffiliatePayment" CASCADE;
+
+-- Step 2: Drop EmailLog table and its indexes
+DROP TABLE IF EXISTS "EmailLog" CASCADE;

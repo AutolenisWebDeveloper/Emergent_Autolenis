@@ -1,0 +1,839 @@
+diff -ruN autolenis_patch/orig/VercelAutoLenis-main/app/api/buyer/deal/route.ts autolenis_repo/VercelAutoLenis-main/app/api/buyer/deal/route.ts
+--- autolenis_patch/orig/VercelAutoLenis-main/app/api/buyer/deal/route.ts	2026-02-25 00:15:28.000000000 +0000
++++ autolenis_repo/VercelAutoLenis-main/app/api/buyer/deal/route.ts	2026-02-25 05:21:17.113297092 +0000
+@@ -20,6 +20,7 @@
+         *,
+         auctionOffer:AuctionOffer(
+           *,
++          financingOptions:AuctionOfferFinancingOption(*),
+           auction:Auction(
+             *,
+             shortlist:Shortlist(
+diff -ruN autolenis_patch/orig/VercelAutoLenis-main/app/api/buyer/referrals/activate/route.ts autolenis_repo/VercelAutoLenis-main/app/api/buyer/referrals/activate/route.ts
+--- autolenis_patch/orig/VercelAutoLenis-main/app/api/buyer/referrals/activate/route.ts	1970-01-01 00:00:00.000000000 +0000
++++ autolenis_repo/VercelAutoLenis-main/app/api/buyer/referrals/activate/route.ts	2026-02-25 05:26:48.302952285 +0000
+@@ -0,0 +1,41 @@
++import { NextResponse } from "next/server"
++import { getCurrentUser } from "@/lib/auth-server"
++import { affiliateService } from "@/lib/services/affiliate.service"
++import { emailService } from "@/lib/services/email.service"
++import { buildReferralLink, getReferralCode } from "@/lib/utils/referral-code"
++
++export async function POST() {
++  try {
++    const user = await getCurrentUser()
++    if (!user || user.role !== "BUYER") {
++      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
++    }
++
++    const affiliate = await affiliateService.autoEnrollBuyerAsAffiliate(user.id)
++
++    // Best-effort: affiliate welcome email (non-blocking)
++    if (user.email) {
++      emailService
++        .sendWelcomeEmail(user.email, user.first_name || "there", "Affiliate", user.id)
++        .catch((err: unknown) => console.error("[Referral Activate] Welcome email failed:", err))
++    }
++
++    const refCode = getReferralCode(affiliate as any)
++    const referralLink = buildReferralLink(refCode)
++
++    return NextResponse.json({
++      success: true,
++      data: {
++        affiliateId: (affiliate as any).id,
++        refCode,
++        referralLink,
++      },
++    })
++  } catch (error: any) {
++    console.error("[Referral Activate] Error:", error)
++    return NextResponse.json(
++      { success: false, error: error?.message || "Failed to activate referrals" },
++      { status: 400 },
++    )
++  }
++}
+diff -ruN autolenis_patch/orig/VercelAutoLenis-main/app/buyer/dashboard/page.tsx autolenis_repo/VercelAutoLenis-main/app/buyer/dashboard/page.tsx
+--- autolenis_patch/orig/VercelAutoLenis-main/app/buyer/dashboard/page.tsx	2026-02-25 00:15:28.000000000 +0000
++++ autolenis_repo/VercelAutoLenis-main/app/buyer/dashboard/page.tsx	2026-02-25 05:21:09.957971022 +0000
+@@ -22,7 +22,18 @@
+ 
+ import { useUser } from "@/hooks/use-user"
+ 
+-const fetcher = (url: string) => fetch(url).then((res) => res.json())
++const fetcher = async (url: string) => {
++  const res = await fetch(url)
++  const json = await res.json().catch(() => null)
++  if (!res.ok) {
++    const message = (json && (json.error || json.message)) || `Request failed ()`
++    throw new Error(message)
++  }
++  if (json && json.success === false) {
++    throw new Error(json.error || "Request failed")
++  }
++  return json
++}
+ 
+ export default function BuyerDashboardPage() {
+   const { data, error, isLoading } = useSWR("/api/buyer/dashboard", fetcher, {
+@@ -296,9 +307,9 @@
+               </CardHeader>
+               <CardContent>
+                 <p className="text-sm text-muted-foreground mb-4">
+-                  Earn $100 for every friend who completes a purchase
++                  Share your referral link. Rewards are subject to eligibility and program terms.
+                 </p>
+-                <Link href="/affiliate/portal/dashboard">
++                <Link href="/buyer/referrals">
+                   <Button className="w-full bg-[#0066FF] hover:bg-[#0066FF]/90">
+                     Share Your Link
+                     <ArrowRight className="h-4 w-4 ml-2" />
+diff -ruN autolenis_patch/orig/VercelAutoLenis-main/app/buyer/deal/financing/page.tsx autolenis_repo/VercelAutoLenis-main/app/buyer/deal/financing/page.tsx
+--- autolenis_patch/orig/VercelAutoLenis-main/app/buyer/deal/financing/page.tsx	2026-02-25 00:15:28.000000000 +0000
++++ autolenis_repo/VercelAutoLenis-main/app/buyer/deal/financing/page.tsx	2026-02-25 05:22:37.088438138 +0000
+@@ -27,7 +27,7 @@
+         } else {
+           router.push("/buyer/dashboard")
+         }
+-      } catch (error) {
++      } catch (_error) {
+         toast({
+           variant: "destructive",
+           title: "Error",
+@@ -40,13 +40,18 @@
+     loadDeal()
+   }, [router, toast])
+ 
+-  const handleSelectFinancing = async (financingType: string) => {
++  const handleSelectFinancing = async (input: { paymentType: "CASH" | "DEALER_FINANCING"; financingOptionId?: string }) => {
++    if (!deal?.id) return
++
+     setSelecting(true)
+     try {
+-      const response = await fetch("/api/buyer/deal/financing", {
++      const response = await fetch(`/api/buyer/deals/${deal.id}/financing`, {
+         method: "POST",
+         headers: { "Content-Type": "application/json" },
+-        body: JSON.stringify({ dealId: deal.id, financingType }),
++        body: JSON.stringify({
++          payment_type: input.paymentType,
++          primary_financing_offer_id: input.financingOptionId,
++        }),
+       })
+ 
+       const data = await response.json()
+@@ -138,9 +143,20 @@
+ 
+           {financingOptions.map((option: any, index: number) => (
+             <Card
+-              key={index}
++              key={option?.id || index}
+               className="hover:border-[#0066FF] transition-colors cursor-pointer"
+-              onClick={() => !selecting && !deal.financingType && handleSelectFinancing(`option-${index}`)}
++              onClick={() => {
++                if (selecting || deal.financingType) return
++                if (!option?.id) {
++                  toast({
++                    variant: "destructive",
++                    title: "Unavailable",
++                    description: "This financing option is missing an ID. Please select another option or contact support.",
++                  })
++                  return
++                }
++                handleSelectFinancing({ paymentType: "DEALER_FINANCING", financingOptionId: option.id })
++              }}
+             >
+               <CardContent className="pt-6">
+                 <div className="flex items-start justify-between mb-4">
+@@ -151,9 +167,7 @@
+                       </h3>
+                       {index === 0 && <Badge className="bg-[#7ED321]">Recommended</Badge>}
+                     </div>
+-                    <p className="text-sm text-muted-foreground">
+-                      Down payment: ${option.downPayment?.toLocaleString()}
+-                    </p>
++                    <p className="text-sm text-muted-foreground">Down payment: ${option.downPayment?.toLocaleString()}</p>
+                   </div>
+                   <div className="text-right">
+                     <p className="text-2xl font-bold text-[#0066FF]">${option.monthlyPayment}</p>
+@@ -164,7 +178,16 @@
+                   <Button
+                     onClick={(e) => {
+                       e.stopPropagation()
+-                      handleSelectFinancing(`option-${index}`)
++                      if (!option?.id) {
++                        toast({
++                          variant: "destructive",
++                          title: "Unavailable",
++                          description:
++                            "This financing option is missing an ID. Please select another option or contact support.",
++                        })
++                        return
++                      }
++                      handleSelectFinancing({ paymentType: "DEALER_FINANCING", financingOptionId: option.id })
+                     }}
+                     disabled={selecting}
+                     className="w-full bg-gradient-to-r from-[#7ED321] to-[#00D9FF]"
+@@ -191,7 +214,7 @@
+               </div>
+               {!deal.financingType && (
+                 <Button
+-                  onClick={() => handleSelectFinancing("CASH")}
++                  onClick={() => handleSelectFinancing({ paymentType: "CASH" })}
+                   disabled={selecting}
+                   variant="outline"
+                   className="w-full"
+diff -ruN autolenis_patch/orig/VercelAutoLenis-main/app/buyer/deal/page.tsx autolenis_repo/VercelAutoLenis-main/app/buyer/deal/page.tsx
+--- autolenis_patch/orig/VercelAutoLenis-main/app/buyer/deal/page.tsx	2026-02-25 00:15:28.000000000 +0000
++++ autolenis_repo/VercelAutoLenis-main/app/buyer/deal/page.tsx	2026-02-25 05:23:57.624135505 +0000
+@@ -1,19 +1,17 @@
+ "use client"
+ 
+-import { useState, useEffect, useCallback } from "react"
++import { useState, useEffect, useCallback, useMemo } from "react"
+ import { ProtectedRoute } from "@/components/layout/protected-route"
+ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+ import { Button } from "@/components/ui/button"
+ import { Badge } from "@/components/ui/badge"
+ import { useToast } from "@/hooks/use-toast"
+ import { useRouter } from "next/navigation"
+-import { Car, DollarSign, FileText, CreditCard, AlertCircle, CheckCircle2 } from "lucide-react"
+-import { FeePaymentModal } from "@/components/buyer/fee-payment-modal"
++import { Car, DollarSign, FileText, ArrowRight } from "lucide-react"
+ 
+ export default function BuyerDealPage() {
+   const [deal, setDeal] = useState<any>(null)
+   const [loading, setLoading] = useState(true)
+-  const [showFeeModal, setShowFeeModal] = useState(false)
+   const { toast } = useToast()
+   const router = useRouter()
+ 
+@@ -25,14 +23,13 @@
+       if (data.success) {
+         setDeal(data.data.deal)
+       } else {
+-        // No active deal
+         toast({
+           title: "No active deal",
+           description: "You need to select an offer from an auction first",
+         })
+         router.push("/buyer/dashboard")
+       }
+-    } catch (error) {
++    } catch (_error) {
+       toast({
+         variant: "destructive",
+         title: "Error",
+@@ -47,45 +44,30 @@
+     loadDeal()
+   }, [loadDeal])
+ 
+-  const handleFinancingSelect = async (financingType: string) => {
+-    try {
+-      const response = await fetch("/api/buyer/deal/financing", {
+-        method: "POST",
+-        headers: { "Content-Type": "application/json" },
+-        body: JSON.stringify({ dealId: deal.id, financingType }),
+-      })
+-
+-      const data = await response.json()
+-
+-      if (!data.success) {
+-        throw new Error(data.error)
+-      }
++  const nextStep = useMemo(() => {
++    if (!deal) return { href: "/buyer/dashboard", label: "Return to Dashboard" }
+ 
+-      toast({
+-        title: "Financing selected",
+-        description: "Moving to fee payment",
+-      })
++    const status = String(deal.status || "").toUpperCase()
++    const hasFinancingChoice = !!deal.financingType || !!deal.paymentType
+ 
+-      setDeal(data.data.deal)
+-      setShowFeeModal(true)
+-    } catch (error: any) {
+-      toast({
+-        variant: "destructive",
+-        title: "Error",
+-        description: error.message,
+-      })
++    const needsFinancingOrFee = new Set(["SELECTED", "FINANCING_APPROVED", "FEE_PENDING", "FINANCING_PENDING"])
++    const needsInsurance = new Set(["FEE_PAID", "INSURANCE_PENDING"])
++    const needsContract = new Set(["INSURANCE_COMPLETE", "CONTRACT_PENDING", "CONTRACT_REVIEW"])
++    const needsESign = new Set(["CONTRACT_APPROVED", "SIGNING_PENDING"])
++    const needsPickup = new Set(["SIGNED", "PICKUP_SCHEDULED"])
++
++    if (needsFinancingOrFee.has(status)) {
++      return hasFinancingChoice
++        ? { href: "/buyer/deal/fee", label: "Continue to Concierge Fee" }
++        : { href: "/buyer/deal/financing", label: "Select Financing" }
+     }
+-  }
++    if (needsInsurance.has(status)) return { href: "/buyer/deal/insurance", label: "Continue to Insurance" }
++    if (needsContract.has(status)) return { href: "/buyer/deal/contract", label: "Continue to Contract Shield" }
++    if (needsESign.has(status)) return { href: "/buyer/deal/esign", label: "Continue to E-Sign" }
++    if (needsPickup.has(status)) return { href: "/buyer/deal/pickup", label: "Continue to Pickup & QR" }
+ 
+-  const handleFeePaymentComplete = () => {
+-    setShowFeeModal(false)
+-    loadDeal()
+-    toast({
+-      title: "Payment successful!",
+-      description: "Moving to insurance selection",
+-    })
+-    router.push("/buyer/insurance")
+-  }
++    return { href: "/buyer/deal", label: "View Deal" }
++  }, [deal])
+ 
+   if (loading) {
+     return (
+@@ -111,7 +93,6 @@
+     )
+   }
+ 
+-  // Resolve vehicle and dealer info from either auction or sourced context
+   const auctionVehicle = deal.auctionOffer?.auction?.shortlist?.items?.[0]?.inventoryItem?.vehicle
+   const auctionDealer = deal.auctionOffer?.dealer
+   const sourcedCtx = deal.sourcedDealContext
+@@ -119,6 +100,9 @@
+   const vehicle = auctionVehicle ?? sourcedCtx?.vehicle ?? null
+   const dealer = auctionDealer ?? (sourcedCtx ? { businessName: sourcedCtx.dealerName } : null)
+ 
++  const taxesAndFees = deal.auctionOffer?.taxAmount ?? null
++  const otd = deal.cashOtd ?? deal.otdPrice ?? null
++
+   return (
+     <ProtectedRoute allowedRoles={["BUYER"]}>
+       <div className="space-y-6">
+@@ -127,7 +111,6 @@
+           <Badge className="text-lg px-4 py-2">{deal.status}</Badge>
+         </div>
+ 
+-        {/* Vehicle & Dealer Summary */}
+         <Card className="border-2 border-[#7ED321]">
+           <CardHeader className="bg-gradient-to-r from-primary to-[#0066FF] text-white">
+             <CardTitle className="flex items-center gap-2">
+@@ -173,17 +156,12 @@
+                       {dealer?.city}, {dealer?.state}
+                     </span>
+                   </div>
+-                  <div className="flex justify-between">
+-                    <span className="text-muted-foreground">Distance:</span>
+-                    <span className="font-medium">12 miles away</span>
+-                  </div>
+                 </div>
+               </div>
+             </div>
+           </CardContent>
+         </Card>
+ 
+-        {/* Price Breakdown */}
+         <Card>
+           <CardHeader>
+             <CardTitle className="flex items-center gap-2">
+@@ -195,125 +173,44 @@
+             <div className="space-y-3">
+               <div className="flex justify-between text-lg">
+                 <span className="text-muted-foreground">Vehicle Price</span>
+-                <span className="font-medium">${deal.cashOtd?.toLocaleString()}</span>
++                <span className="font-medium">{otd ? `$${Number(otd).toLocaleString()}` : "—"}</span>
+               </div>
+               <div className="flex justify-between">
+                 <span className="text-muted-foreground">Taxes & Fees</span>
+-                <span className="font-medium">${deal.auctionOffer?.taxAmount?.toLocaleString() || "TBD"}</span>
++                <span className="font-medium">
++                  {typeof taxesAndFees === "number" ? `$${taxesAndFees.toLocaleString()}` : "TBD"}
++                </span>
+               </div>
+               <div className="border-t pt-3 flex justify-between text-xl font-bold">
+                 <span>Total Out-the-Door</span>
+-                <span className="text-[#0066FF]">${deal.cashOtd?.toLocaleString()}</span>
++                <span className="text-[#0066FF]">{otd ? `$${Number(otd).toLocaleString()}` : "—"}</span>
+               </div>
+             </div>
+           </CardContent>
+         </Card>
+ 
+-        {/* Financing Options */}
+-        {deal.status === "SELECTED" && (
+-          <Card>
+-            <CardHeader>
+-              <CardTitle className="flex items-center gap-2">
+-                <CreditCard className="h-5 w-5" />
+-                Select Financing Option
+-              </CardTitle>
+-              <CardDescription>Choose how you'd like to finance this purchase</CardDescription>
+-            </CardHeader>
+-            <CardContent className="space-y-4">
+-              {deal.auctionOffer?.financingOptions?.map((option: any, index: number) => (
+-                <div key={index} className="border rounded-lg p-4 hover:border-[#0066FF] transition-colors">
+-                  <div className="flex items-start justify-between mb-3">
+-                    <div>
+-                      <h4 className="font-semibold text-lg">
+-                        {option.apr}% APR • {option.termMonths} months
+-                      </h4>
+-                      <p className="text-sm text-muted-foreground">
+-                        Down payment: ${option.downPayment?.toLocaleString()}
+-                      </p>
+-                    </div>
+-                    <div className="text-right">
+-                      <div className="text-2xl font-bold text-[#0066FF]">${option.monthlyPayment}</div>
+-                      <div className="text-xs text-muted-foreground">per month</div>
+-                    </div>
+-                  </div>
+-                  <Button
+-                    onClick={() => handleFinancingSelect(option.id || `option-${index}`)}
+-                    className="w-full bg-gradient-to-r from-[#7ED321] to-[#00D9FF]"
+-                  >
+-                    Select This Financing
+-                  </Button>
+-                </div>
+-              ))}
+-
+-              {/* Cash Option */}
+-              <div className="border-2 border-dashed rounded-lg p-4">
+-                <div className="flex items-start justify-between mb-3">
+-                  <div>
+-                    <h4 className="font-semibold text-lg">Pay Cash</h4>
+-                    <p className="text-sm text-muted-foreground">Finance through your bank or pay in full</p>
+-                  </div>
+-                  <div className="text-right">
+-                    <div className="text-2xl font-bold">${deal.cashOtd?.toLocaleString()}</div>
+-                    <div className="text-xs text-muted-foreground">total</div>
+-                  </div>
+-                </div>
+-                <Button onClick={() => handleFinancingSelect("CASH")} variant="outline" className="w-full">
+-                  Pay Cash
+-                </Button>
+-              </div>
+-            </CardContent>
+-          </Card>
+-        )}
+-
+-        {/* Next Steps */}
+-        {deal.status !== "SELECTED" && (
+-          <Card className="bg-blue-50 border-blue-200">
+-            <CardHeader>
+-              <CardTitle className="flex items-center gap-2 text-blue-900">
+-                <FileText className="h-5 w-5" />
+-                Next Steps
+-              </CardTitle>
+-            </CardHeader>
+-            <CardContent>
+-              <div className="space-y-3 text-blue-900">
+-                <div className="flex items-center gap-3">
+-                  <CheckCircle2 className="h-5 w-5 text-blue-600" />
+-                  <span>Financing selected</span>
+-                </div>
+-                <div className="flex items-center gap-3">
+-                  {deal.status === "FEE_PAID" || deal.status === "FEE_PENDING" ? (
+-                    <CheckCircle2 className="h-5 w-5 text-blue-600" />
+-                  ) : (
+-                    <AlertCircle className="h-5 w-5 text-blue-600" />
+-                  )}
+-                  <span>Complete concierge fee payment</span>
+-                </div>
+-                <div className="flex items-center gap-3">
+-                  {deal.status === "INSURANCE_COMPLETE" ? (
+-                    <CheckCircle2 className="h-5 w-5 text-blue-600" />
+-                  ) : (
+-                    <AlertCircle className="h-5 w-5 text-orange-600" />
+-                  )}
+-                  <span className="flex items-center gap-2">
+-                    Add insurance coverage
+-                    {deal.status !== "INSURANCE_COMPLETE" && (
+-                      <span className="text-xs bg-orange-600 text-white px-2 py-0.5 rounded-full">REQUIRED</span>
+-                    )}
+-                  </span>
+-                </div>
+-                <div className="flex items-center gap-3 text-blue-600">
+-                  <div className="h-5 w-5 border-2 border-blue-400 rounded-full" />
+-                  <span>Review and sign contracts</span>
+-                </div>
+-              </div>
+-            </CardContent>
+-          </Card>
+-        )}
++        <Card className="bg-blue-50 border-blue-200">
++          <CardHeader>
++            <CardTitle className="flex items-center gap-2 text-blue-900">
++              <FileText className="h-5 w-5" />
++              Next Step
++            </CardTitle>
++            <CardDescription className="text-blue-800">
++              Continue your deal through the secure AutoLenis flow.
++            </CardDescription>
++          </CardHeader>
++          <CardContent>
++            <Button
++              onClick={() => router.push(nextStep.href)}
++              className="w-full bg-[#0066FF] hover:bg-[#0066FF]/90"
++              size="lg"
++            >
++              {nextStep.label}
++              <ArrowRight className="h-4 w-4 ml-2" />
++            </Button>
++          </CardContent>
++        </Card>
+       </div>
+-
+-      {showFeeModal && (
+-        <FeePaymentModal open={showFeeModal} dealId={deal.id} onClose={() => setShowFeeModal(false)} onComplete={handleFeePaymentComplete} />
+-      )}
+     </ProtectedRoute>
+   )
+ }
+diff -ruN autolenis_patch/orig/VercelAutoLenis-main/app/buyer/insurance/page.tsx autolenis_repo/VercelAutoLenis-main/app/buyer/insurance/page.tsx
+--- autolenis_patch/orig/VercelAutoLenis-main/app/buyer/insurance/page.tsx	2026-02-25 00:15:28.000000000 +0000
++++ autolenis_repo/VercelAutoLenis-main/app/buyer/insurance/page.tsx	2026-02-25 05:25:44.365415038 +0000
+@@ -2,7 +2,7 @@
+ 
+ import type React from "react"
+ 
+-import { useState, useEffect, useCallback } from "react"
++import { useState, useEffect } from "react"
+ import { ProtectedRoute } from "@/components/layout/protected-route"
+ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+ import { Button } from "@/components/ui/button"
+@@ -26,33 +26,39 @@
+   useEffect(() => {
+     const loadData = async () => {
+       try {
+-        // Load current deal
+         const dealRes = await fetch("/api/buyer/deal")
+         const dealData = await dealRes.json()
+ 
+-        if (dealData.success) {
++        // Canonical deal insurance flow lives under /buyer/deal/insurance.
++        // This page remains for legacy links and redirects when an active deal exists.
++        if (dealData?.success && dealData?.data?.deal?.id) {
++          router.replace("/buyer/deal/insurance")
++          return
++        }
++
++        if (dealData?.success && dealData?.data?.deal) {
+           setDeal(dealData.data.deal)
+ 
+-          // Load insurance quotes
+           const quotesRes = await fetch(`/api/insurance/quotes/${dealData.data.deal.id}`)
+           const quotesData = await quotesRes.json()
+ 
+-        if (quotesData.success) {
+-          setQuotes(quotesData.data.quotes)
++          if (quotesData.success) {
++            setQuotes(quotesData.data.quotes)
++          }
+         }
++      } catch (_error) {
++        toast({
++          variant: "destructive",
++          title: "Error",
++          description: "Failed to load insurance information",
++        })
++      } finally {
++        setLoading(false)
+       }
+-    } catch (error) {
+-      toast({
+-        variant: "destructive",
+-        title: "Error",
+-        description: "Failed to load insurance information",
+-      })
+-    } finally {
+-      setLoading(false)
+-    }
+     }
++
+     loadData()
+-  }, [toast])
++  }, [toast, router])
+ 
+   const handleSelectQuote = async () => {
+     if (!selectedQuote) return
+@@ -91,7 +97,7 @@
+ 
+     try {
+       const formData = new FormData(e.currentTarget)
+-      formData.append("dealId", deal.id)
++      if (deal?.id) formData.append("dealId", deal.id)
+ 
+       const response = await fetch("/api/insurance/policy/upload", {
+         method: "POST",
+@@ -147,13 +153,11 @@
+               <CardTitle className="text-orange-900">Required Before Purchase</CardTitle>
+             </div>
+             <CardDescription className="text-orange-700">
+-              You cannot finalize your deal or schedule pickup without valid insurance coverage. This protects both you
+-              and the dealer.
++              You cannot finalize your deal or schedule pickup without valid insurance coverage.
+             </CardDescription>
+           </CardHeader>
+         </Card>
+ 
+-        {/* Option Selection */}
+         <Card>
+           <CardHeader>
+             <CardTitle>How would you like to add insurance?</CardTitle>
+@@ -176,7 +180,6 @@
+           </CardContent>
+         </Card>
+ 
+-        {/* Quotes Option */}
+         {selectedOption === "quotes" && (
+           <div className="space-y-4">
+             {quotes.length === 0 ? (
+@@ -193,9 +196,7 @@
+                 <Card
+                   key={quote.id}
+                   className={`cursor-pointer transition-all ${
+-                    selectedQuote === quote.id
+-                      ? "border-[#0066FF] border-2 bg-blue-50"
+-                      : "hover:border-muted-foreground"
++                    selectedQuote === quote.id ? "border-[#0066FF] border-2 bg-blue-50" : "hover:border-muted-foreground"
+                   }`}
+                   onClick={() => setSelectedQuote(quote.id)}
+                 >
+@@ -217,73 +218,82 @@
+                         {[...Array(5)].map((_, i) => (
+                           <Star
+                             key={i}
+-                            className={`h-4 w-4 ${i < quote.rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`}
++                            className={`h-4 w-4 ${
++                              i < quote.rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"
++                            }`}
+                           />
+                         ))}
+                       </div>
+                       <span className="text-sm text-muted-foreground">{quote.rating}/5 rating</span>
+                     </div>
+-                    <div className="grid grid-cols-2 gap-2 text-sm">
+-                      <div>
++                    <div className="space-y-2 text-sm">
++                      <div className="flex justify-between">
+                         <span className="text-muted-foreground">Deductible:</span>
+-                        <span className="ml-2 font-medium">${quote.deductible}</span>
++                        <span>${quote.deductible}</span>
+                       </div>
+-                      <div>
+-                        <span className="text-muted-foreground">Annual:</span>
+-                        <span className="ml-2 font-medium">${quote.monthlyPremium * 12}</span>
++                      <div className="flex justify-between">
++                        <span className="text-muted-foreground">Coverage Limit:</span>
++                        <span>${quote.coverageLimit?.toLocaleString()}</span>
+                       </div>
+                     </div>
++                    <Button
++                      onClick={(e) => {
++                        e.stopPropagation()
++                        setSelectedQuote(quote.id)
++                        handleSelectQuote()
++                      }}
++                      className="w-full mt-4 bg-gradient-to-r from-[#7ED321] to-[#00D9FF]"
++                      disabled={selectedQuote !== quote.id}
++                    >
++                      Select This Insurance
++                    </Button>
+                   </CardContent>
+                 </Card>
+               ))
+             )}
+-
+-            <Button
+-              size="lg"
+-              className="w-full bg-gradient-to-r from-[#7ED321] to-[#00D9FF]"
+-              disabled={!selectedQuote}
+-              onClick={handleSelectQuote}
+-            >
+-              <CheckCircle2 className="h-5 w-5 mr-2" />
+-              Select This Insurance
+-            </Button>
+           </div>
+         )}
+ 
+-        {/* Upload Option */}
+         {selectedOption === "upload" && (
+           <Card>
+             <CardHeader>
+               <CardTitle className="flex items-center gap-2">
+                 <Upload className="h-5 w-5" />
+-                Upload Proof of Insurance
++                Upload Insurance Proof
+               </CardTitle>
+-              <CardDescription>Upload your existing insurance policy documents</CardDescription>
++              <CardDescription>Upload your insurance declaration page or proof of coverage</CardDescription>
+             </CardHeader>
+             <CardContent>
+               <form onSubmit={handleUploadProof} className="space-y-4">
+                 <div>
+-                  <Label htmlFor="carrier">Insurance Carrier</Label>
+-                  <Input id="carrier" name="carrier" placeholder="e.g., State Farm" required />
+-                </div>
+-                <div>
+                   <Label htmlFor="policyNumber">Policy Number</Label>
+                   <Input id="policyNumber" name="policyNumber" placeholder="Enter policy number" required />
+                 </div>
+                 <div>
+-                  <Label htmlFor="document">Insurance Document (PDF)</Label>
+-                  <Input id="document" name="document" type="file" accept=".pdf" required />
+-                  <p className="text-xs text-muted-foreground mt-1">
+-                    Upload your insurance declaration page or policy document
+-                  </p>
++                  <Label htmlFor="insuranceFile">Upload File</Label>
++                  <Input id="insuranceFile" name="file" type="file" accept=".pdf,.jpg,.jpeg,.png" required />
+                 </div>
+-                <Button type="submit" size="lg" className="w-full" disabled={uploading}>
+-                  {uploading ? "Uploading..." : "Upload & Continue"}
++                <Button type="submit" disabled={uploading} className="w-full">
++                  {uploading ? "Uploading..." : "Upload Proof"}
+                 </Button>
+               </form>
+             </CardContent>
+           </Card>
+         )}
++
++        {deal?.insurancePolicy && (
++          <Card className="border-green-500 bg-green-50">
++            <CardContent className="pt-6">
++              <div className="flex items-center gap-3">
++                <CheckCircle2 className="h-6 w-6 text-green-600" />
++                <div>
++                  <p className="font-semibold text-green-900">Insurance Coverage Confirmed</p>
++                  <p className="text-sm text-green-700">You can proceed to finalize your deal.</p>
++                </div>
++              </div>
++            </CardContent>
++          </Card>
++        )}
+       </div>
+     </ProtectedRoute>
+   )
+diff -ruN autolenis_patch/orig/VercelAutoLenis-main/app/buyer/layout.tsx autolenis_repo/VercelAutoLenis-main/app/buyer/layout.tsx
+--- autolenis_patch/orig/VercelAutoLenis-main/app/buyer/layout.tsx	2026-02-25 00:15:28.000000000 +0000
++++ autolenis_repo/VercelAutoLenis-main/app/buyer/layout.tsx	2026-02-25 05:20:40.455298434 +0000
+@@ -39,7 +39,7 @@
+     },
+     { href: "/buyer/contracts", label: "Contracts", icon: "Shield" },
+     { href: "/buyer/documents", label: "Documents", icon: "FileText" },
+-    { href: "/affiliate/portal/dashboard", label: "Referrals & Earnings", icon: "Users2" },
++    { href: "/buyer/referrals", label: "Referrals & Earnings", icon: "Users2" },
+     { href: "/buyer/settings", label: "Settings", icon: "Settings" },
+   ]
+ 
+diff -ruN autolenis_patch/orig/VercelAutoLenis-main/app/buyer/referrals/page.tsx autolenis_repo/VercelAutoLenis-main/app/buyer/referrals/page.tsx
+--- autolenis_patch/orig/VercelAutoLenis-main/app/buyer/referrals/page.tsx	1970-01-01 00:00:00.000000000 +0000
++++ autolenis_repo/VercelAutoLenis-main/app/buyer/referrals/page.tsx	2026-02-25 05:26:26.944439877 +0000
+@@ -0,0 +1,110 @@
++"use client"
++
++import { useEffect, useState } from "react"
++import Link from "next/link"
++import { useRouter } from "next/navigation"
++import { ProtectedRoute } from "@/components/layout/protected-route"
++import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
++import { Button } from "@/components/ui/button"
++import { useToast } from "@/hooks/use-toast"
++import { useUser } from "@/hooks/use-user"
++import { ArrowRight, Users2, ShieldCheck } from "lucide-react"
++
++export default function BuyerReferralsPage() {
++  const router = useRouter()
++  const { toast } = useToast()
++  const { user, isLoading, mutate } = useUser()
++  const [activating, setActivating] = useState(false)
++
++  useEffect(() => {
++    if (!isLoading && user?.role === "BUYER" && user?.is_affiliate === true) {
++      router.replace("/affiliate/portal/dashboard")
++    }
++  }, [isLoading, router, user])
++
++  const activate = async () => {
++    setActivating(true)
++    try {
++      const res = await fetch("/api/buyer/referrals/activate", { method: "POST" })
++      const json = await res.json().catch(() => null)
++      if (!res.ok || !json?.success) {
++        throw new Error((json && (json.error || json.message)) || "Failed to activate referrals")
++      }
++
++      // Ensure /api/auth/me reflects new affiliate flag
++      await mutate()
++
++      toast({
++        title: "Referral link activated",
++        description: "Redirecting you to your Referrals & Earnings dashboard.",
++      })
++
++      router.replace("/affiliate/portal/dashboard")
++    } catch (err: any) {
++      toast({
++        variant: "destructive",
++        title: "Activation failed",
++        description: err?.message || "Please try again.",
++      })
++    } finally {
++      setActivating(false)
++    }
++  }
++
++  return (
++    <ProtectedRoute allowedRoles={["BUYER"]}>
++      <div className="space-y-6">
++        <div>
++          <h1 className="text-3xl font-bold">Referrals & Earnings</h1>
++          <p className="text-muted-foreground">Share AutoLenis with friends and track your referral activity.</p>
++        </div>
++
++        <Card>
++          <CardHeader>
++            <CardTitle className="flex items-center gap-2">
++              <Users2 className="h-5 w-5 text-[#0066FF]" />
++              Activate your referral link
++            </CardTitle>
++            <CardDescription>
++              To keep the program secure and compliant, you must activate your referral link before you can share it.
++            </CardDescription>
++          </CardHeader>
++          <CardContent className="space-y-4">
++            <div className="flex items-start gap-3 rounded-lg border p-4 bg-muted/20">
++              <ShieldCheck className="h-5 w-5 mt-0.5 text-[#7ED321]" />
++              <div className="text-sm">
++                <p className="font-medium">Program terms apply</p>
++                <p className="text-muted-foreground">
++                  Rewards are subject to eligibility, verification, and program terms. AutoLenis may update the program
++                  at any time.
++                </p>
++              </div>
++            </div>
++
++            <Button
++              onClick={activate}
++              disabled={activating}
++              className="w-full bg-[#0066FF] hover:bg-[#0066FF]/90"
++              size="lg"
++            >
++              {activating ? "Activating…" : "Activate Referral Link"}
++              <ArrowRight className="h-4 w-4 ml-2" />
++            </Button>
++
++            <p className="text-xs text-muted-foreground">
++              By activating, you agree to use your referral link in accordance with AutoLenis policies and applicable
++              laws.
++            </p>
++
++            <div className="text-sm">
++              <span className="text-muted-foreground">Already activated?</span>{" "}
++              <Link className="text-[#0066FF] hover:underline" href="/affiliate/portal/dashboard">
++                Go to Referrals Dashboard
++              </Link>
++            </div>
++          </CardContent>
++        </Card>
++      </div>
++    </ProtectedRoute>
++  )
++}

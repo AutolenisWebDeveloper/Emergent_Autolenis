@@ -1,0 +1,4 @@
+// This file exists solely to satisfy Git history — Next.js 16 requires proxy.ts.
+// All middleware logic lives in proxy.ts. This file must NOT export a middleware
+// function or Next.js will throw a "both middleware and proxy detected" conflict.
+// It is kept as a non-module file (no exports) so the build ignores it.
