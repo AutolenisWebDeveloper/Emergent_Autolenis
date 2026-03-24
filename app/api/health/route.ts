@@ -22,6 +22,8 @@ export async function OPTIONS() {
 }
 
 export async function GET(request: NextRequest) {
+  const startTime = Date.now()
+
   try {
     // Require admin auth or internal API key
     const internalKey = process.env["INTERNAL_API_KEY"]
@@ -35,8 +37,6 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
       }
     }
-
-    const startTime = Date.now()
 
     // Check database connectivity
     const supabase = await createClient()
@@ -65,10 +65,13 @@ export async function GET(request: NextRequest) {
       version: process.env['npm_package_version'] || "unknown",
     })
   } catch (error) {
+    const responseTime = Date.now() - startTime
+
     return NextResponse.json(
       {
         status: "unhealthy",
         error: "Service error",
+        responseTime,
         timestamp: new Date().toISOString(),
       },
       { status: 500 },
