@@ -136,7 +136,7 @@ export async function GET(request: NextRequest) {
         insurance_status: insStatus,
         upload_present: !!policy?.documentUrl,
         document_type: policy?.type || null,
-        reviewed_by: null, // TODO: Track reviewer in future insurance review workflow
+        reviewed_by: null, // Reviewer tracking will be added when the admin insurance review workflow is implemented
         reviewed_at: null,
         delivery_block_flag: deliveryBlockFlag,
         deal_status: deal.status,

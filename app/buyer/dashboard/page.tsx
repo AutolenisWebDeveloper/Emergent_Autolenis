@@ -31,6 +31,7 @@ import {
 } from "lucide-react"
 import useSWR from "swr"
 import { useUser } from "@/hooks/use-user"
+import { INSURANCE_DASHBOARD_CONFIG } from "@/lib/constants/insurance"
 
 // ── Type definitions ─────────────────────────────────────────────────────────
 
@@ -738,18 +739,16 @@ export default function BuyerDashboardPage() {
             {/* Insurance Status */}
             {(() => {
               const insStatus = data?.insuranceStatus || "NOT_STARTED"
-              const config: Record<string, { label: string; ctaLabel: string; ctaHref: string; color: string; bgClass: string }> = {
-                NOT_STARTED: { label: "Not Started", ctaLabel: "Upload Current Insurance", ctaHref: "/buyer/insurance", color: "text-muted-foreground", bgClass: "" },
-                CURRENT_INSURANCE_UPLOADED: { label: "Submitted for Review", ctaLabel: "View Upload", ctaHref: "/buyer/insurance", color: "text-blue-600 dark:text-blue-400", bgClass: "border-blue-200 dark:border-blue-900/40" },
-                INSURANCE_PENDING: { label: "Proof Required Before Delivery", ctaLabel: "Upload Insurance", ctaHref: "/buyer/insurance", color: "text-amber-600 dark:text-amber-400", bgClass: "border-amber-200 dark:border-amber-900/40" },
-                HELP_REQUESTED: { label: "Assistance Requested", ctaLabel: "We'll Contact You", ctaHref: "/buyer/insurance", color: "text-blue-600 dark:text-blue-400", bgClass: "border-blue-200 dark:border-blue-900/40" },
-                UNDER_REVIEW: { label: "Under Review", ctaLabel: "View Status", ctaHref: "/buyer/insurance", color: "text-blue-600 dark:text-blue-400", bgClass: "border-blue-200 dark:border-blue-900/40" },
-                VERIFIED: { label: "Verified", ctaLabel: "View Details", ctaHref: "/buyer/insurance", color: "text-[#7ED321]", bgClass: "border-[#7ED321]/20" },
-                REQUIRED_BEFORE_DELIVERY: { label: "Required Before Delivery", ctaLabel: "Upload Insurance", ctaHref: "/buyer/insurance", color: "text-amber-600 dark:text-amber-400", bgClass: "border-amber-200 dark:border-amber-900/40" },
+              const variantToStyles: Record<string, { color: string; bgClass: string }> = {
+                default: { color: "text-muted-foreground", bgClass: "" },
+                warning: { color: "text-amber-600 dark:text-amber-400", bgClass: "border-amber-200 dark:border-amber-900/40" },
+                success: { color: "text-[#7ED321]", bgClass: "border-[#7ED321]/20" },
+                info: { color: "text-blue-600 dark:text-blue-400", bgClass: "border-blue-200 dark:border-blue-900/40" },
               }
-              const c = config[insStatus] || config.NOT_STARTED
+              const canonical = INSURANCE_DASHBOARD_CONFIG[insStatus as keyof typeof INSURANCE_DASHBOARD_CONFIG] || INSURANCE_DASHBOARD_CONFIG.NOT_STARTED
+              const styles = variantToStyles[canonical.variant] || variantToStyles.default
               return (
-                <Card className={`shadow-sm ${c.bgClass}`}>
+                <Card className={`shadow-sm ${styles.bgClass}`}>
                   <CardHeader className="pb-2">
                     <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                       <ShieldCheck className="h-4 w-4 text-blue-500" aria-hidden="true" />
@@ -757,12 +756,12 @@ export default function BuyerDashboardPage() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className={`text-sm font-semibold ${c.color}`}>
-                      {c.label}
+                    <p className={`text-sm font-semibold ${styles.color}`}>
+                      {canonical.label}
                     </p>
-                    <Link href={c.ctaHref} className="mt-2 inline-block">
+                    <Link href={canonical.ctaHref} className="mt-2 inline-block">
                       <Button size="sm" variant="outline" className="w-full h-8 text-xs">
-                        {c.ctaLabel}
+                        {canonical.ctaLabel}
                       </Button>
                     </Link>
                   </CardContent>
