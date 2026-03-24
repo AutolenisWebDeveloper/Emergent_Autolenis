@@ -138,6 +138,12 @@ vi.mock("@/lib/validators/auth", () => ({
       if (!data.email || !data.password) throw new Error("Validation failed")
       return data
     },
+    safeParse: (data: any) => {
+      if (!data.email || !data.password) {
+        return { success: false, error: { errors: [{ path: ["email"], message: "Required" }] } }
+      }
+      return { success: true, data }
+    },
   },
 }))
 
