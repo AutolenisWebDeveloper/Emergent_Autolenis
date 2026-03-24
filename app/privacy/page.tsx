@@ -36,7 +36,7 @@ export default function PrivacyPage() {
                 <Eye className="w-8 h-8 text-[#d4af37] mb-3" />
                 <h3 className="font-semibold text-[#3d2066] mb-2">Data Use</h3>
                 <p className="text-sm text-gray-600">
-                  Your data is used exclusively to connect you with lenders and dealers. We never sell your personal
+                  Your data is used exclusively to connect you with dealers and facilitate your car buying journey. We never sell your personal
                   information.
                 </p>
               </div>
@@ -87,8 +87,8 @@ export default function PrivacyPage() {
               <div className="space-y-3 text-gray-700">
                 <p>We use your information to:</p>
                 <ul className="list-disc pl-6 space-y-2">
-                  <li>Connect you with appropriate lenders and dealers based on your criteria</li>
-                  <li>Facilitate pre-qualification and financing applications</li>
+                  <li>Connect you with appropriate dealers based on your criteria</li>
+                  <li>Facilitate prequalification and shopping-readiness assessment</li>
                   <li>Provide customer support and platform updates</li>
                   <li>Improve our services and user experience</li>
                   <li>Comply with legal and regulatory requirements</li>
@@ -106,7 +106,7 @@ export default function PrivacyPage() {
                 <p>We may share your information with:</p>
                 <ul className="list-disc pl-6 space-y-2">
                   <li>
-                    <strong>Lenders:</strong> To process your financing applications
+                    <strong>Dealers:</strong> To process your vehicle purchase and match you with available vehicles
                   </li>
                   <li>
                     <strong>Dealers:</strong> To match you with available vehicles

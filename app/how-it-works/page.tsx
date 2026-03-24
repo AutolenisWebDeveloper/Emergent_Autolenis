@@ -161,7 +161,7 @@ export default function HowItWorksPage() {
 
               <FadeIn delay={0.35}>
                 <p className="text-sm text-muted-foreground/80 max-w-xl mx-auto md:mx-0 leading-relaxed">
-                  AutoLenis is not a lender or a dealership. Lenders make all credit decisions. Dealers manage inventory,
+                  AutoLenis is not a lender or a dealership. We assess your shopping readiness and connect you with dealers. Dealers manage inventory,
                   contracts, and delivery.
                 </p>
               </FadeIn>
@@ -302,8 +302,8 @@ export default function HowItWorksPage() {
                 A Digital Concierge for Car Buyers
               </h2>
               <p className="text-lg text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-                AutoLenis helps you navigate pre-qualification, offers, and purchase in one secure flow. We connect you
-                with participating lenders and licensed dealers—AutoLenis is not a lender or a dealership.
+                AutoLenis helps you navigate prequalification, offers, and purchase in one secure flow. We connect you
+                with licensed dealers—AutoLenis is not a lender or a dealership.
               </p>
             </div>
           </FadeIn>
@@ -313,11 +313,11 @@ export default function HowItWorksPage() {
               <div className="flex flex-col gap-6">
                 <h3 className="text-2xl font-bold text-foreground">What We Do</h3>
                 <p className="text-muted-foreground leading-relaxed">
-                  With your consent, we collect the information needed to support pre-qualification and offer
-                  matching—then route it securely to relevant partners.
+                  With your consent, we collect the information needed to support prequalification and offer
+                  matching—then route it securely to relevant dealers.
                 </p>
                 <p className="text-muted-foreground leading-relaxed">
-                  Lenders make all credit decisions. Dealers manage inventory, contracts, and delivery. AutoLenis
+                  Dealers manage inventory, contracts, and delivery. AutoLenis
                   provides the platform, clarity, and guardrails so you can move forward with confidence.
                 </p>
               </div>
@@ -491,8 +491,8 @@ export default function HowItWorksPage() {
               </div>
 
               <p className="text-xs text-muted-foreground leading-relaxed border-t border-border pt-6">
-                Fees are for platform services and concierge support. Financing terms and dealer pricing are set by
-                participating lenders and dealers.
+                Fees are for platform services and concierge support. Dealer pricing and deal terms are set by
+                participating dealers.
               </p>
             </div>
           </FadeIn>
@@ -518,7 +518,7 @@ export default function HowItWorksPage() {
                 icon: AlertCircle,
                 color: "var(--brand-cyan)",
                 title: "AutoLenis is not a lender.",
-                desc: "Participating lenders/credit unions make underwriting decisions and set final terms.",
+                desc: "AutoLenis does not make credit decisions or offer financing. We assess your shopping readiness and connect you with dealers.",
               },
               {
                 icon: Car,

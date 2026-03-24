@@ -236,9 +236,9 @@ export default function InsurancePage() {
                 <div className="w-12 h-12 rounded-xl bg-brand-cyan/10 flex items-center justify-center mb-4">
                   <FileSearch className="w-6 h-6 text-brand-cyan" />
                 </div>
-                <h3 className="text-lg font-bold mb-2">Lender Requirement</h3>
+                <h3 className="text-lg font-bold mb-2">Delivery Requirement</h3>
                 <p className="text-sm text-muted-foreground">
-                  If you're financing, lenders require comprehensive and collision coverage to protect their investment.
+                  Proof of insurance is required before vehicle delivery or pickup. You can upload your current insurance, mark it as pending, or request help.
                 </p>
               </div>
             </div>

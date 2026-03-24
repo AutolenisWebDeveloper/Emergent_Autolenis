@@ -28,10 +28,10 @@ export default function TermsPage() {
                 <div>
                   <h3 className="font-bold text-[#3d2066] mb-2">Important Notice</h3>
                   <p className="text-gray-700 text-sm leading-relaxed">
-                    AutoLenis is a concierge platform that connects consumers with lenders and dealers. We are NOT a
+                    AutoLenis is a concierge platform that connects consumers with dealers. We are NOT a
                     lender, dealer, or financial institution. We do not make credit decisions, offer financing, or sell
-                    vehicles. All financing and purchase decisions are made directly between you and third-party
-                    lenders/dealers.
+                    vehicles. All purchase decisions are made directly between you and third-party
+                    dealers.
                   </p>
                 </div>
               </div>
@@ -65,18 +65,18 @@ export default function TermsPage() {
               <div className="space-y-3 text-gray-700">
                 <p>AutoLenis provides:</p>
                 <ul className="list-disc pl-6 space-y-2">
-                  <li>A platform to connect consumers with automotive lenders and dealers</li>
-                  <li>Pre-qualification assistance and financing application routing</li>
+                  <li>A platform to connect consumers with automotive dealers</li>
+                  <li>Prequalification and shopping-readiness assessment</li>
                   <li>Vehicle search and dealer matching services</li>
                   <li>A referral program for users to earn commissions</li>
                 </ul>
                 <div className="bg-amber-50 p-4 rounded-lg mt-4">
                   <p className="font-semibold text-[#3d2066] mb-2">What We Are NOT:</p>
                   <ul className="list-disc pl-6 space-y-1 text-sm">
-                    <li>A lender or credit provider</li>
+                    <li>A lender, credit provider, or financing broker</li>
                     <li>A car dealer or vehicle seller</li>
                     <li>A credit repair service or financial advisor</li>
-                    <li>A guarantor of loan approval or specific terms</li>
+                    <li>A guarantor of prequalification results or specific terms</li>
                   </ul>
                 </div>
               </div>
@@ -93,7 +93,7 @@ export default function TermsPage() {
                   <li>Use the platform only for lawful purposes</li>
                   <li>Not attempt to circumvent security measures or access unauthorized areas</li>
                   <li>Comply with all applicable laws and regulations</li>
-                  <li>Review and understand terms from lenders and dealers before entering agreements</li>
+                  <li>Review and understand terms from dealers before entering agreements</li>
                 </ul>
               </div>
             </div>
@@ -105,15 +105,15 @@ export default function TermsPage() {
                 <div>
                   <h3 className="font-semibold text-[#3d2066] mb-2">No Guarantees</h3>
                   <p>
-                    AutoLenis does not guarantee loan approval, specific interest rates, vehicle availability, or
-                    pricing. All final decisions are made by third-party lenders and dealers.
+                    AutoLenis does not guarantee prequalification results, specific interest rates, vehicle availability, or
+                    pricing. All final decisions are made by third-party dealers.
                   </p>
                 </div>
                 <div>
                   <h3 className="font-semibold text-[#3d2066] mb-2">Third-Party Relationships</h3>
                   <p>
                     We facilitate connections with third parties but are not responsible for their actions, services, or
-                    compliance. You acknowledge that your agreements are directly with lenders and dealers, not with
+                    compliance. You acknowledge that your agreements are directly with dealers, not with
                     AutoLenis.
                   </p>
                 </div>

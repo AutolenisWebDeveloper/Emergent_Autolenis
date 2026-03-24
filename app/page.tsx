@@ -304,7 +304,7 @@ export default function HomePage() {
                   {[
                     "Submit one vehicle request — dealers come to you",
                     "Verified out-the-door pricing with no hidden costs",
-                    "Real lender terms presented clearly upfront",
+                    "Real deal terms presented clearly upfront",
                     "Side-by-side deal comparisons in your buyer console",
                     "Digital document flow — review at your own pace",
                     "Guided purchase management from start to finish",
@@ -617,12 +617,12 @@ export default function HomePage() {
 
           <StaggerContainer className="flex flex-col gap-5" stagger={0.08}>
             {[
-              { q: "Is AutoLenis a lender or a dealer?", a: "Neither. AutoLenis is an informational concierge platform that connects you with lenders and dealers. They handle financing and sell the vehicle — we provide the tools and guided workflow to help you compare and decide with confidence." },
-              { q: "Does this hurt my credit score?", a: "The initial check is a soft inquiry, which does not affect your score. If you move forward with a specific lender, they may perform a hard pull as part of their standard process." },
+              { q: "Is AutoLenis a lender or a dealer?", a: "Neither. AutoLenis is an informational concierge platform that connects you with dealers. They sell the vehicle — we provide the tools and guided workflow to help you compare and decide with confidence." },
+              { q: "Does this hurt my credit score?", a: "The initial prequalification check is a soft inquiry, which does not affect your score. If you move forward with a deal, the dealer or their financing partner may perform a hard pull as part of their standard process." },
               { q: "How does AutoLenis get paid?", a: "AutoLenis offers a Free plan and a Premium end-to-end concierge plan for a flat $499 fee. Premium includes the full buying process — dedicated specialist, financing guidance, contract review, closing coordination, and free home delivery. A $99 Serious Buyer Deposit is required to start your auction. On the Free plan, the deposit is credited toward your vehicle purchase at closing. On the Premium plan, it's credited toward the $499 fee. We may charge dealers platform access fees — our buyer-paid model keeps our incentives aligned with yours." },
-              { q: "What if my credit score is lower than expected?", a: "We work with lenders across the credit spectrum. You may not qualify for the lowest rates, but we will show you what is actually available — no misleading promises." },
+              { q: "What if my credit score is lower than expected?", a: "Your prequalification determines your estimated shopping range. You may not qualify for the highest range, but we will show you what is actually available — no misleading promises." },
               { q: "How long does the process take?", a: "The application takes about five minutes. Verified offers typically arrive within one to two business days. How quickly you close depends on your timeline and the dealer." },
-              { q: "What makes AutoLenis different from car listing sites?", a: "AutoLenis is not a listing site. We manage a guided transaction journey — from pre-qualification through pickup — with verified pricing, digital document flow, and concierge-level support throughout." },
+              { q: "What makes AutoLenis different from car listing sites?", a: "AutoLenis is not a listing site. We manage a guided transaction journey — from prequalification through pickup — with verified pricing, digital document flow, and concierge-level support throughout." },
             ].map((faq) => (
               <StaggerItem key={faq.q}>
                 <div className="bg-surface-elevated rounded-2xl p-6 border border-border hover:border-brand-purple/12 transition-colors duration-200">

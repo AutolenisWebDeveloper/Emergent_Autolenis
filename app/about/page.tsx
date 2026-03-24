@@ -113,8 +113,8 @@ export default function AboutPage() {
                 </h2>
                 <div className="flex flex-col gap-4 text-muted-foreground leading-relaxed">
                   <p>
-                    You tell us you want to buy a car. We take your info and
-                    share it with a network of lenders and dealers who can help.
+                    You tell us you want to buy a car. We assess your
+                    shopping readiness and connect you with dealers who can help.
                     They send back real offers. You compare them and pick what
                     works.
                   </p>
@@ -123,8 +123,7 @@ export default function AboutPage() {
                     more options without visiting 10 dealerships.
                   </p>
                   <p>
-                    The lenders decide if they{"'"}ll approve you and at what
-                    rate. The dealers have the cars and handle the sale. We just
+                    The dealers have the cars and handle the sale. We just
                     make the connection easier and more transparent.
                   </p>
                 </div>
@@ -140,7 +139,7 @@ export default function AboutPage() {
                   {[
                     {
                       positive: true,
-                      text: "A platform that connects buyers with lenders and dealers",
+                      text: "A platform that connects buyers with dealers",
                     },
                     {
                       positive: true,
@@ -148,7 +147,7 @@ export default function AboutPage() {
                     },
                     {
                       positive: false,
-                      text: "A bank, credit union, or lender of any kind",
+                      text: "A bank, credit union, or financing provider of any kind",
                     },
                     {
                       positive: false,
@@ -273,8 +272,8 @@ export default function AboutPage() {
               }}
             >
               <p className="text-lg leading-relaxed mb-8 text-white/85">
-                We collect your info because lenders need it to give you real
-                offers. We share it with the lenders and dealers you{"'"}re
+                We collect your info because dealers need it to give you real
+                offers. We share it with the dealers you{"'"}re
                 working with -- that{"'"}s the whole point. But we don{"'"}t
                 sell your data to random marketing companies or spam you with
                 unrelated stuff.
@@ -295,7 +294,7 @@ export default function AboutPage() {
                   {
                     icon: Shield,
                     title: "Purpose-Limited",
-                    desc: "Your info goes to lenders and dealers for your car purchase. That's it.",
+                    desc: "Your info goes to dealers for your car purchase. That's it.",
                   },
                   {
                     icon: Users,
@@ -325,7 +324,7 @@ export default function AboutPage() {
               <div className="flex flex-col gap-4">
                 {[
                   "We're aware of regulations like FCRA and GLBA that govern how financial data should be handled. We take compliance seriously.",
-                  "We work with lenders and dealers who meet our standards for treating customers fairly.",
+                  "We work with dealers who meet our standards for treating customers fairly.",
                   "We don't make promises we can't keep -- like guaranteed approval or guaranteed savings.",
                 ].map((text) => (
                   <div key={text} className="flex items-start gap-3">
@@ -365,13 +364,13 @@ export default function AboutPage() {
                 icon: Users,
                 color: "var(--brand-green)",
                 title: "You",
-                desc: "You fill out an application and tell us what you're looking for. We show you real options from real lenders and dealers.",
+                desc: "You complete your prequalification and tell us what you're looking for. We show you real options from real dealers.",
               },
               {
                 icon: Building2,
                 color: "var(--brand-cyan)",
-                title: "Lenders",
-                desc: "Banks and credit unions review your info and decide if they want to offer you financing. They set the rates and terms.",
+                title: "AutoLenis",
+                desc: "We assess your shopping readiness and connect you with verified dealers. We manage the guided workflow from prequalification to pickup.",
               },
               {
                 icon: Car,
