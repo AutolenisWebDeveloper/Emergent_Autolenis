@@ -145,6 +145,28 @@ export const LenderDisbursementStatus = {
 } as const
 export type LenderDisbursementStatus = (typeof LenderDisbursementStatus)[keyof typeof LenderDisbursementStatus]
 
+// ─── Insurance Readiness (re-export from canonical source) ──────────────────
+
+export {
+  InsuranceReadinessStatus,
+  INSURANCE_VALID_TRANSITIONS,
+  InsuranceDocumentTag,
+  INSURANCE_ACCEPTED_FILE_TYPES,
+  INSURANCE_DELIVERY_RELEASE_STATUSES,
+  isInsuranceVerifiedForDelivery,
+  INSURANCE_DASHBOARD_CONFIG,
+} from "@/lib/constants/insurance"
+
+// ─── Buyer Eligibility (re-export from canonical source) ────────────────────
+
+export {
+  resolveBuyerEligibility,
+} from "@/lib/constants/buyer-eligibility"
+export type {
+  BuyerEligibility,
+  PrequalStatus,
+} from "@/lib/constants/buyer-eligibility"
+
 // ─── Sourcing (re-export from canonical source) ─────────────────────────────
 
 export {

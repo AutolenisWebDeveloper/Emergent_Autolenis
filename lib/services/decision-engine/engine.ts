@@ -8,6 +8,8 @@
  * implementing fragmented decision checks in routes or pages.
  */
 
+import { isInsuranceVerifiedForDelivery } from "@/lib/constants/insurance"
+
 import type {
   BuyerReadinessState,
   BuyerMessagingEligibilityState,
@@ -225,6 +227,11 @@ export function resolveESignReadiness(deal: DealSignals): ESignReadinessState {
 
 export function resolvePickupReadiness(deal: DealSignals): PickupReadinessState {
   if (deal.dealStatus !== "SIGNED" && deal.dealStatus !== "PICKUP_SCHEDULED") return "NOT_READY"
+
+  // Insurance must be verified before pickup/delivery release
+  if (!isInsuranceVerifiedForDelivery(deal.insuranceReadinessStatus)) {
+    return "INSURANCE_REQUIRED"
+  }
 
   const pickup = deal.pickupStatus
   if (!pickup) return "READY"

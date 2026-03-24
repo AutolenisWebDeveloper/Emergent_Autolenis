@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db"
 import crypto from "node:crypto"
 import { writeEventAsync } from "@/lib/services/event-ledger"
 import { PlatformEventType, EntityType, ActorType } from "@/lib/services/event-ledger"
+import { isInsuranceVerifiedForDelivery } from "@/lib/constants/insurance"
 
 /** QR code validity window in minutes (FIX 8) */
 const QR_EXPIRY_MINUTES = 60
@@ -38,6 +39,14 @@ export class PickupService {
     const dealStatus = deal.status
     if (dealStatus !== "SIGNED") {
       throw new Error(`You must complete e-sign before scheduling pickup. Current status: ${dealStatus}`)
+    }
+
+    // Insurance must be verified before pickup/delivery release
+    const insuranceReadiness = (deal as Record<string, unknown>).insurance_readiness_status as string | null | undefined
+    if (!isInsuranceVerifiedForDelivery(insuranceReadiness)) {
+      throw new Error(
+        "Insurance verification is required before scheduling pickup. Please upload your current insurance proof or contact support for assistance."
+      )
     }
 
     // Validate scheduled_at is in the future
