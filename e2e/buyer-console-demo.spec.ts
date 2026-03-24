@@ -35,8 +35,8 @@ async function scrollToHeading(page: import("@playwright/test").Page) {
   await heading.first().waitFor({ state: "attached", timeout: 10_000 })
   // Scroll via JS — bypasses Playwright's visibility requirement
   await heading.first().evaluate((el) => el.scrollIntoView({ block: "center" }))
-  // Give the IntersectionObserver callback and animation time to fire
-  await page.waitForTimeout(1_500)
+  // Wait for IntersectionObserver to fire and animation to complete
+  await heading.first().waitFor({ state: "visible", timeout: 10_000 })
 }
 
 test.describe("Buyer Console Demo", () => {
