@@ -14,12 +14,39 @@ import { test, expect } from "@playwright/test"
 
 const BASE = process.env.SMOKE_BASE_URL ?? "http://localhost:3000"
 
+/**
+ * Helper: scroll to the buyer-console heading via JS evaluation.
+ *
+ * The heading lives inside a Framer Motion `SlideIn` wrapper that starts at
+ * `opacity: 0` with a `whileInView` trigger.  Playwright's built-in
+ * `scrollIntoViewIfNeeded()` refuses to act on an element it considers "not
+ * visible", creating a deadlock: the element can't become visible until it
+ * enters the viewport, but Playwright won't scroll to it until it's visible.
+ *
+ * Using `evaluate` bypasses the visibility gate and lets the browser's native
+ * `scrollIntoView` bring the element into the viewport, which fires the
+ * IntersectionObserver and triggers the entrance animation.
+ */
+async function scrollToHeading(page: import("@playwright/test").Page) {
+  const heading = page.locator(
+    "text=Your Buyer Console — Every Offer, One Dashboard"
+  )
+  // Wait for the element to be attached to the DOM (even if opacity: 0)
+  await heading.first().waitFor({ state: "attached", timeout: 10_000 })
+  // Scroll via JS — bypasses Playwright's visibility requirement
+  await heading.first().evaluate((el) => el.scrollIntoView({ block: "center" }))
+  // Give the IntersectionObserver callback and animation time to fire
+  await page.waitForTimeout(1_500)
+}
+
 test.describe("Buyer Console Demo", () => {
   test.use({ viewport: { width: 1280, height: 900 } })
   test.setTimeout(30_000)
 
   test("section heading renders on homepage", async ({ page }) => {
     await page.goto(BASE, { waitUntil: "domcontentloaded" })
+
+    await scrollToHeading(page)
 
     const heading = page.locator(
       "text=Your Buyer Console — Every Offer, One Dashboard"
@@ -30,11 +57,7 @@ test.describe("Buyer Console Demo", () => {
   test("buyer console renders with dealer cards", async ({ page }) => {
     await page.goto(BASE, { waitUntil: "domcontentloaded" })
 
-    // Scroll to the section to ensure it's in view
-    const heading = page.locator(
-      "text=Your Buyer Console — Every Offer, One Dashboard"
-    )
-    await heading.first().scrollIntoViewIfNeeded()
+    await scrollToHeading(page)
 
     // All three dealer cards should be present
     await expect(page.locator("text=Dealer A").first()).toBeVisible()
@@ -44,10 +67,7 @@ test.describe("Buyer Console Demo", () => {
   test("manual click on dealer card changes selection", async ({ page }) => {
     await page.goto(BASE, { waitUntil: "domcontentloaded" })
 
-    const heading = page.locator(
-      "text=Your Buyer Console — Every Offer, One Dashboard"
-    )
-    await heading.first().scrollIntoViewIfNeeded()
+    await scrollToHeading(page)
 
     // Wait for cards to appear
     const dealerA = page.locator('[data-dealer-id="a"] [role="button"]')
@@ -84,10 +104,7 @@ test.describe("Buyer Console Demo", () => {
     expect(response?.status()).toBeLessThan(500)
 
     // Scroll through the console section to trigger any lazy rendering
-    const heading = page.locator(
-      "text=Your Buyer Console — Every Offer, One Dashboard"
-    )
-    await heading.first().scrollIntoViewIfNeeded()
+    await scrollToHeading(page)
 
     // Wait for network to settle after scrolling
     await page.waitForLoadState("networkidle")
