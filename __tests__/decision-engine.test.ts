@@ -81,6 +81,7 @@ function makeDealSignals(overrides?: Partial<DealSignals>): DealSignals {
     feePaid: false,
     insuranceStatus: null,
     insuranceComplete: false,
+    insuranceReadinessStatus: null,
     contractUploaded: false,
     contractScanStatus: null,
     contractScanPassed: false,
@@ -509,25 +510,32 @@ describe("Unified Decision Engine", () => {
       expect(resolvePickupReadiness(deal)).toBe("NOT_READY")
     })
 
-    it("returns READY when deal signed and no pickup scheduled", () => {
-      const deal = makeDealSignals({ dealStatus: "SIGNED" })
+    it("returns READY when deal signed, insurance verified, and no pickup scheduled", () => {
+      const deal = makeDealSignals({ dealStatus: "SIGNED", insuranceReadinessStatus: "VERIFIED" })
       expect(resolvePickupReadiness(deal)).toBe("READY")
     })
 
-    it("returns SCHEDULED when pickup is scheduled", () => {
+    it("returns SCHEDULED when pickup is scheduled and insurance verified", () => {
       const deal = makeDealSignals({
         dealStatus: "PICKUP_SCHEDULED",
         pickupStatus: "SCHEDULED",
+        insuranceReadinessStatus: "VERIFIED",
       })
       expect(resolvePickupReadiness(deal)).toBe("SCHEDULED")
     })
 
-    it("returns COMPLETED when pickup completed", () => {
+    it("returns COMPLETED when pickup completed and insurance verified", () => {
       const deal = makeDealSignals({
         dealStatus: "PICKUP_SCHEDULED",
         pickupStatus: "COMPLETED",
+        insuranceReadinessStatus: "VERIFIED",
       })
       expect(resolvePickupReadiness(deal)).toBe("COMPLETED")
+    })
+
+    it("returns INSURANCE_REQUIRED when deal signed but insurance not verified", () => {
+      const deal = makeDealSignals({ dealStatus: "SIGNED", insuranceReadinessStatus: null })
+      expect(resolvePickupReadiness(deal)).toBe("INSURANCE_REQUIRED")
     })
   })
 
@@ -773,6 +781,7 @@ describe("Unified Decision Engine", () => {
           financingApproved: true,
           feePaid: true,
           insuranceComplete: true,
+          insuranceReadinessStatus: "VERIFIED",
           contractUploaded: true,
           contractScanPassed: true,
           cmaApproved: true,
