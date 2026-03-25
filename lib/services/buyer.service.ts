@@ -107,7 +107,7 @@ export const buyerService = {
 
           supabase
             .from("SelectedDeal")
-            .select("id, buyerId, status, total_otd_amount_cents, createdAt, updatedAt")
+            .select("id, buyerId, status, total_otd_amount_cents, insurance_readiness_status, delivery_block_flag, createdAt, updatedAt")
             .eq("buyerId", buyerId)
             .order("createdAt", { ascending: false }),
 
@@ -181,6 +181,12 @@ export const buyerService = {
       // Get recent activity
       const recentActivity = await getRecentActivity(userId, buyerId)
 
+      // Determine insurance readiness status from the most recent active deal
+      const activeDeal = deals.find(
+        (d: any) => d.status !== "COMPLETED" && d.status !== "CANCELLED",
+      )
+      const insuranceStatus = (activeDeal as any)?.insurance_readiness_status || "NOT_STARTED"
+
       return {
         profile: flattenedProfile,
         preQual: preQual
@@ -192,6 +198,7 @@ export const buyerService = {
                 : null,
             }
           : null,
+        insuranceStatus,
         stats: {
           shortlistCount: totalShortlistItems,
           activeAuctions,

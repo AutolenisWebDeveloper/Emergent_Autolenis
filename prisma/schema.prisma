@@ -82,6 +82,7 @@ model Workspace {
   preQualProviderEvents          PreQualProviderEvent[]
   forwardingAuthorizations       ForwardingAuthorization[]
   contractManualReviews          ContractManualReview[]
+  insuranceUploads               InsuranceUpload[]
 
   @@index([mode])
 }
@@ -1073,6 +1074,10 @@ model SelectedDeal {
   insurance_status String?
   user_id          String?
 
+  // Insurance readiness workflow (flexible proof-of-insurance system)
+  insurance_readiness_status String  @default("NOT_STARTED") @map("insurance_readiness_status")
+  delivery_block_flag        Boolean @default(false) @map("delivery_block_flag")
+
   deletedAt DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1081,6 +1086,7 @@ model SelectedDeal {
   financingOffer    FinancingOffer?
   serviceFeePayment ServiceFeePayment?
   insurancePolicy   InsurancePolicy?
+  insuranceUploads  InsuranceUpload[]
   contracts         ContractDocument[]
   scan              ContractShieldScan?
   manualReviews     ContractManualReview[]
@@ -1094,6 +1100,7 @@ model SelectedDeal {
   @@index([workspaceId])
   @@index([sourcingCaseId])
   @@index([sourcedOfferId])
+  @@index([insurance_readiness_status])
 }
 
 model FinancingOffer {
@@ -1293,6 +1300,35 @@ model InsurancePolicy {
   @@index([dealId])
   @@index([workspaceId])
   @@map("InsurancePolicy")
+}
+
+// Insurance document upload tracking for the flexible insurance readiness workflow
+model InsuranceUpload {
+  id     String       @id @default(cuid())
+  dealId String
+  deal   SelectedDeal @relation(fields: [dealId], references: [id], onDelete: Cascade)
+
+  buyerId String
+
+  // Workspace / tenant isolation
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  fileUrl      String
+  fileType     String   // PDF, PNG, JPG, JPEG, HEIC
+  documentTag  String   // insurance_card, insurance_declarations, insurance_binder, insurance_other
+  status       String   @default("UPLOADED") // UPLOADED, UNDER_REVIEW, APPROVED, REJECTED
+
+  reviewedBy String?
+  reviewedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([dealId])
+  @@index([buyerId])
+  @@index([workspaceId])
+  @@map("InsuranceUpload")
 }
 
 // ============================================

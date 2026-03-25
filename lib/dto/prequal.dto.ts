@@ -5,6 +5,12 @@
  * This eliminates mixed snake_case/camelCase fallback logic and
  * ensures all role surfaces (buyer, dealer, admin) consume the
  * same contract.
+ *
+ * NOTE: Prequalification is a buyer-readiness / shopping-power assessment.
+ * It is NOT a lender approval, financing approval, or lender-routing mechanism.
+ * AutoLenis has no formal lender partners inside the platform. The fields below
+ * (creditTier, maxOtd, etc.) represent estimated shopping range and buyer
+ * seriousness verification — not lender-driven outcomes.
  */
 
 import type {

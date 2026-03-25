@@ -42,9 +42,7 @@ export class PickupService {
     }
 
     // Insurance must be verified before pickup/delivery release
-    // insurance_readiness_status is a flexible field on the deal record
-    const insuranceReadiness = (deal as { insurance_readiness_status?: string | null }).insurance_readiness_status ?? null
-    if (!isInsuranceVerifiedForDelivery(insuranceReadiness)) {
+    if (!isInsuranceVerifiedForDelivery(deal.insurance_readiness_status)) {
       throw new Error(
         "Insurance verification is required before scheduling pickup. Please upload your current insurance proof or contact support for assistance."
       )

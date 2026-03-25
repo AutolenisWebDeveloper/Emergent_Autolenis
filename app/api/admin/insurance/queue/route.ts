@@ -78,7 +78,7 @@ export async function GET(request: NextRequest) {
     // Query deals with insurance readiness statuses
     const deals = await prisma.selectedDeal.findMany({
       where: {
-        insurance_status: { in: statusFilter },
+        insurance_readiness_status: { in: statusFilter },
         status: { not: "CANCELLED" },
       },
       include: {
@@ -93,6 +93,17 @@ export async function GET(request: NextRequest) {
             createdAt: true,
           },
         },
+        insuranceUploads: {
+          orderBy: { createdAt: "desc" },
+          take: 1,
+          select: {
+            id: true,
+            documentTag: true,
+            status: true,
+            reviewedBy: true,
+            reviewedAt: true,
+          },
+        },
       },
       orderBy: { createdAt: "desc" },
       take: limit,
@@ -101,7 +112,7 @@ export async function GET(request: NextRequest) {
 
     const total = await prisma.selectedDeal.count({
       where: {
-        insurance_status: { in: statusFilter },
+        insurance_readiness_status: { in: statusFilter },
         status: { not: "CANCELLED" },
       },
     })
@@ -118,14 +129,9 @@ export async function GET(request: NextRequest) {
 
     const items: InsuranceQueueItem[] = deals.map((deal) => {
       const buyer = buyerMap.get(deal.buyerId || "")
+      const latestUpload = deal.insuranceUploads?.[0]
       const policy = deal.insurancePolicy
-      const insStatus = (deal.insurance_status || "NOT_STARTED") as string
-
-      // Determine if delivery is blocked
-      const deliveryBlockStatuses = ["SIGNED", "PICKUP_SCHEDULED"]
-      const isDeliveryStage = deliveryBlockStatuses.includes(deal.status)
-      const isInsuranceBlocking = insStatus !== "VERIFIED"
-      const deliveryBlockFlag = isDeliveryStage && isInsuranceBlocking
+      const insStatus = deal.insurance_readiness_status || "NOT_STARTED"
 
       return {
         deal_id: deal.id,
@@ -134,11 +140,11 @@ export async function GET(request: NextRequest) {
           ? `${buyer.firstName || ""} ${buyer.lastName || ""}`.trim() || "Unknown"
           : "Unknown",
         insurance_status: insStatus,
-        upload_present: !!policy?.documentUrl,
-        document_type: policy?.type || null,
-        reviewed_by: null, // Reviewer tracking will be added when the admin insurance review workflow is implemented
-        reviewed_at: null,
-        delivery_block_flag: deliveryBlockFlag,
+        upload_present: !!(latestUpload || policy?.documentUrl),
+        document_type: latestUpload?.documentTag || policy?.type || null,
+        reviewed_by: latestUpload?.reviewedBy || null,
+        reviewed_at: latestUpload?.reviewedAt?.toISOString() || null,
+        delivery_block_flag: deal.delivery_block_flag,
         deal_status: deal.status,
         created_at: deal.createdAt.toISOString(),
       }

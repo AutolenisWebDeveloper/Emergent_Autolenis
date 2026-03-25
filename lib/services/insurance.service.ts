@@ -4,6 +4,12 @@ import { writeEventAsync } from "@/lib/services/event-ledger"
 import { PlatformEventType, EntityType, ActorType } from "@/lib/services/event-ledger"
 import { createDocumentTrustRecordAsync, verifyDocument } from "@/lib/services/trust-infrastructure"
 import { TrustDocumentType, OwnerEntityType, AccessScope, DocumentTrustStatus } from "@/lib/services/trust-infrastructure"
+import {
+  InsuranceReadinessStatus,
+  INSURANCE_VALID_TRANSITIONS,
+  isInsuranceVerifiedForDelivery,
+  type InsuranceDocumentTag,
+} from "@/lib/constants/insurance"
 
 // Insurance provider interface for abstraction
 interface InsuranceProviderAdapter {
@@ -798,6 +804,230 @@ export class InsuranceService {
 
   static async selectPolicy(userId: string, dealId: string, quoteId: string) {
     return InsuranceService.selectQuote(userId, dealId, quoteId)
+  }
+
+  // ─── Insurance Readiness State Machine ─────────────────────────────────
+
+  /**
+   * Validate and persist an insurance readiness status transition.
+   * Enforces the INSURANCE_VALID_TRANSITIONS map.
+   */
+  static async transitionInsuranceStatus(
+    dealId: string,
+    toStatus: InsuranceReadinessStatus,
+  ): Promise<{ dealId: string; previousStatus: string; newStatus: string }> {
+    const deal = await prisma.selectedDeal.findUnique({
+      where: { id: dealId },
+      select: { id: true, insurance_readiness_status: true, status: true },
+    })
+    if (!deal) throw new Error("Deal not found")
+
+    const currentStatus = deal.insurance_readiness_status as InsuranceReadinessStatus
+    const validTargets = INSURANCE_VALID_TRANSITIONS[currentStatus]
+    if (!validTargets || !validTargets.includes(toStatus)) {
+      throw new Error(
+        `Invalid insurance status transition from ${currentStatus} to ${toStatus}`,
+      )
+    }
+
+    // Compute delivery_block_flag: if deal is at a delivery stage and insurance is not verified
+    const deliveryStageStatuses = ["SIGNED", "PICKUP_SCHEDULED"]
+    const deliveryBlockFlag =
+      deliveryStageStatuses.includes(deal.status) && !isInsuranceVerifiedForDelivery(toStatus)
+
+    await prisma.selectedDeal.update({
+      where: { id: dealId },
+      data: {
+        insurance_readiness_status: toStatus,
+        delivery_block_flag: deliveryBlockFlag,
+      },
+    })
+
+    return {
+      dealId,
+      previousStatus: currentStatus,
+      newStatus: toStatus,
+    }
+  }
+
+  /**
+   * Upload an insurance document and transition status to CURRENT_INSURANCE_UPLOADED.
+   */
+  static async uploadInsuranceDocument(
+    dealId: string,
+    buyerId: string,
+    fileUrl: string,
+    fileType: string,
+    documentTag: InsuranceDocumentTag,
+  ) {
+    const deal = await prisma.selectedDeal.findFirst({
+      where: {
+        id: dealId,
+        OR: [{ user_id: buyerId }, { buyerId }],
+      },
+      select: { id: true, workspaceId: true, insurance_readiness_status: true },
+    })
+    if (!deal) throw new Error("Deal not found or unauthorized")
+
+    // Store the upload record
+    const upload = await prisma.insuranceUpload.create({
+      data: {
+        dealId,
+        buyerId,
+        workspaceId: deal.workspaceId,
+        fileUrl,
+        fileType,
+        documentTag,
+        status: "UPLOADED",
+      },
+    })
+
+    // Transition status (from any valid source state)
+    const currentStatus = deal.insurance_readiness_status as InsuranceReadinessStatus
+    const target: InsuranceReadinessStatus = "CURRENT_INSURANCE_UPLOADED"
+    const validTargets = INSURANCE_VALID_TRANSITIONS[currentStatus]
+    if (validTargets && validTargets.includes(target)) {
+      await prisma.selectedDeal.update({
+        where: { id: dealId },
+        data: { insurance_readiness_status: target },
+      })
+    }
+
+    // Emit event (non-blocking)
+    writeEventAsync({
+      eventType: PlatformEventType.INSURANCE_COMPLETED,
+      entityType: EntityType.INSURANCE,
+      entityId: upload.id,
+      parentEntityId: dealId,
+      actorId: buyerId,
+      actorType: ActorType.BUYER,
+      sourceModule: "insurance.service",
+      correlationId: crypto.randomUUID(),
+      idempotencyKey: `insurance-upload-${upload.id}`,
+      payload: { documentTag, fileType, uploadId: upload.id },
+    }).catch(() => {})
+
+    return {
+      uploadId: upload.id,
+      status: target,
+      documentTag,
+    }
+  }
+
+  /**
+   * Mark insurance as pending — buyer acknowledges it will be provided before delivery.
+   */
+  static async markInsurancePending(dealId: string, buyerId: string) {
+    const deal = await prisma.selectedDeal.findFirst({
+      where: {
+        id: dealId,
+        OR: [{ user_id: buyerId }, { buyerId }],
+      },
+      select: { id: true },
+    })
+    if (!deal) throw new Error("Deal not found or unauthorized")
+
+    return InsuranceService.transitionInsuranceStatus(dealId, "INSURANCE_PENDING")
+  }
+
+  /**
+   * Request help with insurance.
+   */
+  static async requestInsuranceHelp(dealId: string, buyerId: string) {
+    const deal = await prisma.selectedDeal.findFirst({
+      where: {
+        id: dealId,
+        OR: [{ user_id: buyerId }, { buyerId }],
+      },
+      select: { id: true },
+    })
+    if (!deal) throw new Error("Deal not found or unauthorized")
+
+    return InsuranceService.transitionInsuranceStatus(dealId, "HELP_REQUESTED")
+  }
+
+  /**
+   * Admin: Verify insurance and transition to VERIFIED.
+   */
+  static async verifyInsuranceReadiness(dealId: string, reviewerId: string) {
+    const deal = await prisma.selectedDeal.findUnique({
+      where: { id: dealId },
+      select: { id: true, insurance_readiness_status: true },
+    })
+    if (!deal) throw new Error("Deal not found")
+
+    // Move to UNDER_REVIEW first if needed, then VERIFIED
+    const current = deal.insurance_readiness_status as InsuranceReadinessStatus
+    if (current !== "UNDER_REVIEW" && current !== "CURRENT_INSURANCE_UPLOADED") {
+      throw new Error(
+        `Cannot verify insurance from status ${current}. Must be CURRENT_INSURANCE_UPLOADED or UNDER_REVIEW.`,
+      )
+    }
+
+    await prisma.selectedDeal.update({
+      where: { id: dealId },
+      data: {
+        insurance_readiness_status: InsuranceReadinessStatus.VERIFIED,
+        delivery_block_flag: false,
+      },
+    })
+
+    // Mark all uploads as APPROVED
+    await prisma.insuranceUpload.updateMany({
+      where: { dealId, status: { in: ["UPLOADED", "UNDER_REVIEW"] } },
+      data: { reviewedBy: reviewerId, reviewedAt: new Date(), status: "APPROVED" },
+    })
+
+    writeEventAsync({
+      eventType: PlatformEventType.INSURANCE_COMPLETED,
+      entityType: EntityType.INSURANCE,
+      entityId: dealId,
+      parentEntityId: dealId,
+      actorId: reviewerId,
+      actorType: ActorType.ADMIN,
+      sourceModule: "insurance.service",
+      correlationId: crypto.randomUUID(),
+      idempotencyKey: `insurance-verify-readiness-${dealId}`,
+      payload: { reviewerId, previousStatus: current, newStatus: "VERIFIED" },
+    }).catch(() => {})
+
+    return { dealId, status: "VERIFIED" }
+  }
+
+  /**
+   * Get the current insurance readiness status and upload history for a deal.
+   */
+  static async getInsuranceReadinessStatus(dealId: string, buyerId: string) {
+    const deal = await prisma.selectedDeal.findFirst({
+      where: {
+        id: dealId,
+        OR: [{ user_id: buyerId }, { buyerId }],
+      },
+      select: {
+        id: true,
+        insurance_readiness_status: true,
+        delivery_block_flag: true,
+        insuranceUploads: {
+          orderBy: { createdAt: "desc" },
+          select: {
+            id: true,
+            fileUrl: true,
+            fileType: true,
+            documentTag: true,
+            status: true,
+            createdAt: true,
+          },
+        },
+      },
+    })
+    if (!deal) throw new Error("Deal not found or unauthorized")
+
+    return {
+      dealId: deal.id,
+      insuranceReadinessStatus: deal.insurance_readiness_status,
+      deliveryBlockFlag: deal.delivery_block_flag,
+      uploads: deal.insuranceUploads,
+    }
   }
 }
 
