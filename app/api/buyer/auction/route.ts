@@ -3,6 +3,15 @@ import { getSessionUser } from "@/lib/auth-server"
 import { supabase } from "@/lib/db"
 import { AuctionService } from "@/lib/services/auction.service"
 
+// ─── Guard Policy ────────────────────────────────────────────────────────
+// Auction creation is gated by: PrequalStatus (active + non-expired),
+// non-empty shortlist, and deposit payment — enforced in
+// AuctionService.validateAuctionPrerequisites().
+// Insurance status MUST NOT appear in auction gate logic.
+// Lender status MUST NOT appear in auction gate logic.
+// See lib/constants/buyer-eligibility.ts for the canonical eligibility rules.
+// ─────────────────────────────────────────────────────────────────────────
+
 export async function POST(request: Request) {
   try {
     const session = await getSessionUser()

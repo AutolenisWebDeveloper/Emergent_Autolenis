@@ -3,6 +3,15 @@ import { AUCTION_DURATION_HOURS } from "@/lib/constants"
 import { InventoryStatus } from "@/lib/constants/statuses"
 
 export class AuctionService {
+  /**
+   * Validate auction prerequisites.
+   *
+   * Guard policy: Auctions are gated by PrequalStatus (active + non-expired),
+   * non-empty shortlist, and deposit payment ONLY.
+   * Insurance status MUST NOT block auction creation.
+   * Lender status MUST NOT block auction creation.
+   * See lib/constants/buyer-eligibility.ts for canonical eligibility rules.
+   */
   static async validateAuctionPrerequisites(buyerId: string) {
     const buyer = await prisma.buyerProfile.findUnique({
       where: { id: buyerId },

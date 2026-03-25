@@ -41,8 +41,10 @@ export class PickupService {
       throw new Error(`You must complete e-sign before scheduling pickup. Current status: ${dealStatus}`)
     }
 
-    // Insurance must be verified before pickup/delivery release
-    if (!isInsuranceVerifiedForDelivery(deal.insurance_readiness_status)) {
+    // Insurance must be verified before pickup/delivery release.
+    // delivery_block_flag is the canonical gate (set during insurance state transitions).
+    // isInsuranceVerifiedForDelivery() provides defense-in-depth against stale flags.
+    if (deal.delivery_block_flag || !isInsuranceVerifiedForDelivery(deal.insurance_readiness_status)) {
       throw new Error(
         "Insurance verification is required before scheduling pickup. Please upload your current insurance proof or contact support for assistance."
       )

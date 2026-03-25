@@ -8,6 +8,14 @@ export const dynamic = "force-dynamic"
 
 const MAX_SHORTLIST_ITEMS = 10
 
+// ─── Guard Policy ────────────────────────────────────────────────────────
+// Shortlist access is gated by BUYER role only.
+// PrequalStatus is fetched for budget display (maxOtd), NOT for access control.
+// Insurance status MUST NOT appear in shortlist gate logic.
+// Lender status MUST NOT appear in shortlist gate logic.
+// See lib/constants/buyer-eligibility.ts for the canonical eligibility rules.
+// ─────────────────────────────────────────────────────────────────────────
+
 export async function GET() {
   try {
     const user = await getSessionUser()

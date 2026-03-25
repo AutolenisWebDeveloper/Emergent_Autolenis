@@ -88,41 +88,24 @@ export default function BuyerInsurancePage() {
       const file = formData.get("file") as File | null
       if (!file) throw new Error("Please select a file")
 
-      // Upload the file to the existing policy upload endpoint to get a URL,
-      // then register it with the insurance readiness system.
+      // Upload the file directly to the insurance upload endpoint.
+      // This handles file storage and insurance readiness transition in one call.
       const csrfToken = getCsrfToken()
       const uploadFormData = new FormData()
       uploadFormData.append("file", file)
-      if (statusData.dealId) uploadFormData.append("dealId", statusData.dealId)
+      uploadFormData.append("dealId", statusData.dealId)
+      uploadFormData.append("documentTag", selectedTag)
 
       const uploadHeaders: HeadersInit = csrfToken ? { "x-csrf-token": csrfToken } : {}
-      const uploadRes = await fetch("/api/insurance/policy/upload", {
+      const res = await fetch("/api/buyer/insurance/upload", {
         method: "POST",
         headers: uploadHeaders,
         body: uploadFormData,
       })
-      const uploadData = await uploadRes.json()
-
-      if (!uploadData.success) {
-        throw new Error(extractApiError(uploadData.error, "File upload failed"))
-      }
-
-      // Register the upload with the insurance readiness system
-      const res = await fetch("/api/buyer/insurance/status", {
-        method: "POST",
-        headers: csrfHeaders(),
-        body: JSON.stringify({
-          action: "upload",
-          dealId: statusData.dealId,
-          fileUrl: uploadData.data?.documentUrl || uploadData.data?.url || "uploaded",
-          fileType: file.type,
-          documentTag: selectedTag,
-        }),
-      })
       const data = await res.json()
 
       if (!data.success) {
-        throw new Error(extractApiError(data.error, "Insurance operation failed"))
+        throw new Error(extractApiError(data.error, "File upload failed"))
       }
 
       toast({ title: "Insurance uploaded!", description: "Your proof has been submitted for review." })

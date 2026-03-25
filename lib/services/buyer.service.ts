@@ -7,6 +7,7 @@ import {
   BuyerCaseStatus,
   CLOSED_CASE_STATUSES,
 } from "@/lib/constants/statuses"
+import { resolveBuyerEligibility, type PrequalStatus } from "@/lib/constants/buyer-eligibility"
 
 export const buyerService = {
   async getDashboardData(userId: string) {
@@ -187,6 +188,36 @@ export const buyerService = {
       ) as { insurance_readiness_status?: string } | undefined
       const insuranceStatus = activeDeal?.insurance_readiness_status || "NOT_STARTED"
 
+      // Compute buyer eligibility from prequal status
+      const prequalActive = preQual?.status === "ACTIVE"
+      const prequalExpired = preQual?.expiresAt ? new Date(preQual.expiresAt) < new Date() : true
+      let derivedPrequalStatus: PrequalStatus = "NOT_STARTED"
+      if (preQual) {
+        if (prequalActive && !prequalExpired) {
+          derivedPrequalStatus = "PREQUALIFIED"
+        } else if (prequalExpired) {
+          derivedPrequalStatus = "EXPIRED"
+        } else if (preQual.status === "PENDING") {
+          derivedPrequalStatus = "PENDING"
+        } else {
+          derivedPrequalStatus = "NOT_PREQUALIFIED"
+        }
+      }
+
+      const maxOtdCents = preQual?.maxOtdAmountCents || (preQual?.maxOtd ? Math.floor(preQual.maxOtd * 100) : null)
+
+      const buyerEligibility = resolveBuyerEligibility({
+        buyerId,
+        prequalStatus: derivedPrequalStatus,
+        shoppingRangeLow: null,
+        shoppingRangeHigh: maxOtdCents ? maxOtdCents / 100 : null,
+        shoppingPassIssuedAt: preQual?.createdAt || null,
+        shoppingPassExpiresAt: preQual?.expiresAt || null,
+        incomeVerified: false,
+        manualReviewRequired: false,
+        vehicleBudgetCap: maxOtdCents ? maxOtdCents / 100 : null,
+      })
+
       return {
         profile: flattenedProfile,
         preQual: preQual
@@ -199,6 +230,7 @@ export const buyerService = {
             }
           : null,
         insuranceStatus,
+        buyerEligibility,
         stats: {
           shortlistCount: totalShortlistItems,
           activeAuctions,
@@ -317,6 +349,18 @@ function getDefaultDashboardData() {
   return {
     profile: null,
     preQual: null,
+    insuranceStatus: "NOT_STARTED",
+    buyerEligibility: resolveBuyerEligibility({
+      buyerId: "",
+      prequalStatus: "NOT_STARTED",
+      shoppingRangeLow: null,
+      shoppingRangeHigh: null,
+      shoppingPassIssuedAt: null,
+      shoppingPassExpiresAt: null,
+      incomeVerified: false,
+      manualReviewRequired: false,
+      vehicleBudgetCap: null,
+    }),
     stats: {
       shortlistCount: 0,
       activeAuctions: 0,

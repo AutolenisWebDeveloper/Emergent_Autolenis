@@ -228,8 +228,10 @@ export function resolveESignReadiness(deal: DealSignals): ESignReadinessState {
 export function resolvePickupReadiness(deal: DealSignals): PickupReadinessState {
   if (deal.dealStatus !== "SIGNED" && deal.dealStatus !== "PICKUP_SCHEDULED") return "NOT_READY"
 
-  // Insurance must be verified before pickup/delivery release
-  if (!isInsuranceVerifiedForDelivery(deal.insuranceReadinessStatus)) {
+  // Insurance must be verified before pickup/delivery release.
+  // delivery_block_flag is the canonical gate (set during insurance state transitions).
+  // isInsuranceVerifiedForDelivery() provides defense-in-depth against stale flags.
+  if (deal.deliveryBlockFlag || !isInsuranceVerifiedForDelivery(deal.insuranceReadinessStatus)) {
     return "INSURANCE_REQUIRED"
   }
 

@@ -1,6 +1,14 @@
 import { prisma } from "@/lib/db"
 import { InventoryStatus } from "@/lib/constants/statuses"
 
+// ─── Lender References Note ──────────────────────────────────────────────
+// "lender_name" / "lenderName" in this service refers to the financing
+// partner name provided by the DEALER as part of their auction offer
+// (e.g., "Chase Auto", "Capital One"). This is dealer-sourced data — not
+// AutoLenis-to-lender routing. AutoLenis does not route buyer data to
+// lenders or manage lender integrations.
+// ─────────────────────────────────────────────────────────────────────────
+
 // Validation error codes
 export type OfferValidationErrorCode =
   | "OTD_MISMATCH"
