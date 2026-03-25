@@ -93,7 +93,7 @@ export default function BuyerInsurancePage() {
       const csrfToken = getCsrfToken()
       const uploadFormData = new FormData()
       uploadFormData.append("file", file)
-      uploadFormData.append("dealId", statusData.dealId)
+      if (statusData.dealId) uploadFormData.append("dealId", statusData.dealId)
       uploadFormData.append("documentTag", selectedTag)
 
       const uploadHeaders: HeadersInit = csrfToken ? { "x-csrf-token": csrfToken } : {}

@@ -212,6 +212,9 @@ function getNextAction(data: DashboardData | undefined): NextActionResult {
       icon: CheckCircle2,
     }
   }
+  // TODO: Wire buyerEligibility flags (allowed_to_shop, allowed_to_shortlist,
+  // allowed_to_trigger_auction) from dashboard API response into conditional
+  // rendering — disable shortlist/auction CTAs when flags are false.
   if ((stats.shortlistCount ?? 0) === 0) {
     return {
       title: "Search for a Vehicle",

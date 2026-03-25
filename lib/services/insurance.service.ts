@@ -833,7 +833,14 @@ export class InsuranceService {
       )
     }
 
-    // Compute delivery_block_flag: if deal is at a delivery stage and insurance is not verified
+    // Compute delivery_block_flag: if deal is at a delivery stage and insurance is not verified.
+    // NOTE: delivery_block_flag is only recomputed during insurance state transitions,
+    // NOT during deal status transitions. If a deal moves to a delivery stage
+    // (SIGNED, PICKUP_SCHEDULED) while insurance is NOT_STARTED, this flag will
+    // remain false. The pickup service and decision engine use
+    // isInsuranceVerifiedForDelivery() as defense-in-depth to catch this case.
+    // A future enhancement could add a hook in the deal status transition service
+    // to recompute this flag when a deal enters a delivery stage.
     const deliveryBlockFlag =
       InsuranceService.DELIVERY_STAGE_STATUSES.includes(deal.status) && !isInsuranceVerifiedForDelivery(toStatus)
 
