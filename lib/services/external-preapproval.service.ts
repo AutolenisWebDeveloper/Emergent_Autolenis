@@ -8,6 +8,13 @@ import { PlatformEventType, EntityType, ActorType } from "@/lib/services/event-l
 // ---------------------------------------------------------------------------
 // External Pre-Approval Service
 //
+// NOTE (buyer-readiness refactor): "lender_name" in this service refers to
+// the external bank/credit union the buyer obtained pre-approval from OUTSIDE
+// AutoLenis. This is NOT AutoLenis-to-lender routing — AutoLenis has no formal
+// lender partners. The buyer simply uploads their own bank pre-approval letter
+// (with lender name, amount, etc.) and it is converted into a PreQualification
+// record for budget gating purposes.
+//
 // Uses the approved Prompt 4 canonical Supabase backend objects:
 //   Tables:    public.external_preapproval_submissions
 //              public.external_preapproval_status_history

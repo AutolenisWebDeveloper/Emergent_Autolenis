@@ -824,7 +824,7 @@ export default function RefinancePage() {
 
                 <FadeIn delay={0.3}>
                   <p className="text-lg sm:text-xl text-muted-foreground max-w-xl mx-auto lg:mx-0 leading-relaxed text-balance mb-10">
-                    Already own a vehicle? Evaluate refinance opportunities to improve loan structure. AutoLenis does not lend money. Financing and refinance options are subject to lender approval.
+                    Already own a vehicle? Evaluate refinance opportunities to improve your loan structure. AutoLenis does not lend money. Financing and refinance options are subject to third-party approval.
                   </p>
                 </FadeIn>
 
@@ -1011,7 +1011,7 @@ export default function RefinancePage() {
               {[
                 { num: "1", title: "Quick Check", desc: "Answer a few questions about your vehicle and current loan. No SSN needed.", bgClass: "bg-brand-green/8", textClass: "text-brand-green" },
                 { num: "2", title: "See Results", desc: "Find out instantly if you meet basic eligibility criteria for refinancing.", bgClass: "bg-brand-cyan/8", textClass: "text-brand-cyan" },
-                { num: "3", title: "Connect & Save", desc: "If eligible, connect with a trusted lender to complete your application.", bgClass: "bg-brand-purple/8", textClass: "text-brand-purple" },
+                { num: "3", title: "Connect & Save", desc: "If eligible, connect with a financing partner to complete your application.", bgClass: "bg-brand-purple/8", textClass: "text-brand-purple" },
               ].map((step) => (
                 <StaggerItem key={step.num}>
                   <div className="relative text-center">
@@ -1471,7 +1471,7 @@ export default function RefinancePage() {
                 <div className="flex flex-wrap justify-center gap-6">
                   {[
                     "256-bit SSL Encryption",
-                    "Trusted Lender Partners",
+                    "Trusted Financing Partners",
                     "No Hidden Fees",
                   ].map((item) => (
                     <div key={item} className="flex items-center gap-2">

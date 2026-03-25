@@ -27,9 +27,20 @@ import {
   Crown,
   Star,
   Loader2,
+  ShieldCheck,
 } from "lucide-react"
 import useSWR from "swr"
 import { useUser } from "@/hooks/use-user"
+import { INSURANCE_DASHBOARD_CONFIG } from "@/lib/constants/insurance"
+
+// ── Insurance variant style mapping (module-level for performance) ───────────
+
+const INSURANCE_VARIANT_STYLES: Record<string, { color: string; bgClass: string }> = {
+  default: { color: "text-muted-foreground", bgClass: "" },
+  warning: { color: "text-amber-600 dark:text-amber-400", bgClass: "border-amber-200 dark:border-amber-900/40" },
+  success: { color: "text-[#7ED321]", bgClass: "border-[#7ED321]/20" },
+  info: { color: "text-blue-600 dark:text-blue-400", bgClass: "border-blue-200 dark:border-blue-900/40" },
+}
 
 // ── Type definitions ─────────────────────────────────────────────────────────
 
@@ -80,6 +91,7 @@ interface DashboardData {
   preQual?: PreQualData | null
   stats?: DashboardStats
   recentActivity?: ActivityItem[]
+  insuranceStatus?: string | null
   billing?: {
     deposit_status?: string
     deposit_amount_cents?: number
@@ -113,7 +125,7 @@ function getGreeting(): string {
   return "Good evening"
 }
 
-/** Format max buying power from preQual cents to dollars string */
+/** Format max shopping range from preQual cents to dollars string */
 function formatBuyingPower(preQual: PreQualData | null | undefined): string {
   if (!preQual || preQual.isExpired) return "—"
   const cents = preQual.maxOtdAmountCents ?? 0
@@ -139,8 +151,8 @@ function buildJourneySteps(data: DashboardData | undefined): JourneyStep[] {
   return [
     {
       key: "qualify",
-      label: "Get Qualified",
-      description: "Pre-qualification or external preapproval",
+      label: "Get Prequalified",
+      description: "Shopping-readiness assessment",
       completed: qualified,
       active: !qualified,
       href: "/buyer/prequal",
@@ -148,7 +160,7 @@ function buildJourneySteps(data: DashboardData | undefined): JourneyStep[] {
     {
       key: "search",
       label: "Find a Vehicle",
-      description: "Search or request your ideal car",
+      description: "Browse and shortlist vehicles",
       completed: (stats.shortlistCount ?? 0) > 0,
       active: qualified && (stats.shortlistCount ?? 0) === 0,
       href: "/buyer/search",
@@ -164,7 +176,7 @@ function buildJourneySteps(data: DashboardData | undefined): JourneyStep[] {
     {
       key: "deal",
       label: "Start Your Deal",
-      description: "Review financing, insurance, and sign",
+      description: "Review terms, insurance, and sign",
       completed: (stats.completedDeals ?? 0) > 0,
       active: (stats.totalOffers ?? 0) > 0 && (stats.pendingDeals ?? 0) > 0,
       href: "/buyer/deal",
@@ -194,12 +206,15 @@ function getNextAction(data: DashboardData | undefined): NextActionResult {
 
   if (!qualified) {
     return {
-      title: "Get Pre-Qualified",
-      description: "Complete a soft credit check or upload your bank pre-approval to unlock your buying journey.",
+      title: "Get Prequalified to Shop",
+      description: "Complete a quick assessment to unlock your estimated shopping range and start browsing vehicles.",
       href: "/buyer/prequal",
       icon: CheckCircle2,
     }
   }
+  // TODO: Wire buyerEligibility flags (allowed_to_shop, allowed_to_shortlist,
+  // allowed_to_trigger_auction) from dashboard API response into conditional
+  // rendering — disable shortlist/auction CTAs when flags are false.
   if ((stats.shortlistCount ?? 0) === 0) {
     return {
       title: "Search for a Vehicle",
@@ -219,7 +234,7 @@ function getNextAction(data: DashboardData | undefined): NextActionResult {
   if ((stats.pendingDeals ?? 0) > 0) {
     return {
       title: "Review Your Deal",
-      description: "You have an active deal in progress. Continue your financing and signing workflow.",
+      description: "You have an active deal in progress. Continue your deal workflow.",
       href: "/buyer/deal",
       icon: FileText,
     }
@@ -351,17 +366,17 @@ export default function BuyerDashboardPage() {
                 </div>
                 <div>
                   <p className="font-semibold text-sm text-amber-900 dark:text-amber-200">
-                    Qualification required to proceed
+                    Prequalification required to continue
                   </p>
                   <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
-                    Complete a pre-qualification or upload a bank pre-approval to unlock the full buyer journey.
+                    Complete your shopping-readiness assessment or upload a bank pre-approval to unlock your buyer journey.
                   </p>
                 </div>
               </div>
               <div className="flex gap-2 flex-shrink-0">
                 <Link href="/buyer/prequal">
                   <Button size="sm" className="text-xs h-8">
-                    Pre-Qualify
+                    Get Prequalified
                   </Button>
                 </Link>
                 <Link href="/buyer/prequal/manual-preapproval">
@@ -449,7 +464,7 @@ export default function BuyerDashboardPage() {
               </div>
               {qualified && (
                 <Badge className="bg-[#7ED321]/20 text-[#7ED321] border border-[#7ED321]/30 text-xs font-medium w-fit">
-                  Qualified — Buying Enabled
+                  Prequalified — Shopping Enabled
                 </Badge>
               )}
             </div>
@@ -502,11 +517,11 @@ export default function BuyerDashboardPage() {
           {[
             {
               key: "buying-power",
-              label: "Buying Power",
+              label: "Shopping Range",
               value: formatBuyingPower(preQual),
               sub: preQual && !preQual.isExpired
                 ? `${preQual.daysUntilExpiry ?? "?"} days remaining`
-                : "Not qualified yet",
+                : "Not prequalified yet",
               icon: DollarSign,
               accent: "#7ED321",
             },
@@ -610,10 +625,10 @@ export default function BuyerDashboardPage() {
                     href: "/buyer/prequal",
                     icon: CheckCircle2,
                     accent: "#7ED321",
-                    title: qualified ? "View Pre-Qualification" : "Get Pre-Qualified",
+                    title: qualified ? "View Prequalification" : "Get Prequalified",
                     description: qualified
-                      ? `Buying power: ${formatBuyingPower(preQual)}`
-                      : "Soft check — no impact on your score",
+                      ? `Shopping range: ${formatBuyingPower(preQual)}`
+                      : "Quick assessment — no impact on your score",
                     badge: qualified ? "Active" : undefined,
                     badgeVariant: "default" as const,
                   },
@@ -699,7 +714,7 @@ export default function BuyerDashboardPage() {
               <CardHeader className="pb-2">
                 <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                   <DollarSign className="h-4 w-4 text-[#7ED321]" aria-hidden="true" />
-                  Buying Power
+                  Estimated Shopping Range
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -709,7 +724,7 @@ export default function BuyerDashboardPage() {
                       {formatBuyingPower(preQual)}
                     </p>
                     <p className="text-xs text-muted-foreground mt-1.5">
-                      Max out-the-door budget
+                      Max estimated budget
                     </p>
                     {preQual && preQual.daysUntilExpiry != null && preQual.daysUntilExpiry <= 7 && (
                       <p className="text-xs text-amber-600 mt-1.5 font-medium flex items-center gap-1.5">
@@ -721,17 +736,44 @@ export default function BuyerDashboardPage() {
                 ) : (
                   <div className="space-y-2.5">
                     <p className="text-sm text-muted-foreground">
-                      Complete qualification to see your buying power.
+                      Complete prequalification to see your estimated shopping range.
                     </p>
                     <Link href="/buyer/prequal">
                       <Button size="sm" variant="outline" className="w-full h-8 text-xs">
-                        Start Pre-Qualification
+                        Start Prequalification
                       </Button>
                     </Link>
                   </div>
                 )}
               </CardContent>
             </Card>
+
+            {/* Insurance Status */}
+            {(() => {
+              const insStatus = data?.insuranceStatus || "NOT_STARTED"
+              const canonical = INSURANCE_DASHBOARD_CONFIG[insStatus as keyof typeof INSURANCE_DASHBOARD_CONFIG] || INSURANCE_DASHBOARD_CONFIG.NOT_STARTED
+              const styles = INSURANCE_VARIANT_STYLES[canonical.variant] || INSURANCE_VARIANT_STYLES.default
+              return (
+                <Card className={`shadow-sm ${styles.bgClass}`}>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                      <ShieldCheck className="h-4 w-4 text-blue-500" aria-hidden="true" />
+                      Insurance Status
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className={`text-sm font-semibold ${styles.color}`}>
+                      {canonical.label}
+                    </p>
+                    <Link href={canonical.ctaHref} className="mt-2 inline-block">
+                      <Button size="sm" variant="outline" className="w-full h-8 text-xs">
+                        {canonical.ctaLabel}
+                      </Button>
+                    </Link>
+                  </CardContent>
+                </Card>
+              )
+            })()}
 
             {/* Savings */}
             <Card className="shadow-sm">

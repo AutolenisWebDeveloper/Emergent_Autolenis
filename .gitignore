@@ -45,3 +45,4 @@ next-env.d.ts
 # supabase local development
 .supabase/
 supabase/.temp/
+node_modules/

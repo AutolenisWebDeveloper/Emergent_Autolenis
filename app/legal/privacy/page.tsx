@@ -138,10 +138,10 @@ export default function PrivacyPage() {
                 </p>
               </div>
               <div>
-                <h3 className="text-lg font-semibold mb-2">4.3 With Lenders</h3>
+                <h3 className="text-lg font-semibold mb-2">4.3 With Dealers</h3>
                 <p className="text-muted-foreground leading-relaxed">
-                  If you choose to finance your vehicle through our partner lenders, we share necessary information to
-                  process your loan application.
+                  When you proceed with a vehicle purchase, we share necessary information with the dealer to
+                  facilitate your transaction.
                 </p>
               </div>
               <div>
@@ -164,8 +164,8 @@ export default function PrivacyPage() {
           <section>
             <h2 className="text-2xl font-bold mb-4">5. Credit Reporting</h2>
             <p className="text-muted-foreground leading-relaxed">
-              We use soft credit inquiries for pre-qualification, which do not affect your credit score. If you proceed
-              with financing, the lender will perform a hard credit inquiry, which may impact your credit score.
+              We use soft credit inquiries for prequalification, which do not affect your credit score. If you proceed
+              with a deal that involves financing, the dealer or their financing partner may perform a hard credit inquiry, which may impact your credit score.
             </p>
           </section>
 

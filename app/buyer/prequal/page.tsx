@@ -159,12 +159,12 @@ export default function BuyerPreQualPage() {
 
   const getCreditTierInfo = (tier: string | undefined) => {
     const tiers: Record<string, { label: string; color: string; description: string }> = {
-      EXCELLENT: { label: "Excellent", color: "bg-green-500", description: "Best rates available" },
-      PRIME: { label: "Prime", color: "bg-blue-500", description: "Great rates available" },
-      NEAR_PRIME: { label: "Near Prime", color: "bg-yellow-500", description: "Good rates available" },
-      SUBPRIME: { label: "Subprime", color: "bg-orange-500", description: "Standard rates" },
-      GOOD: { label: "Good", color: "bg-blue-500", description: "Great rates available" },
-      FAIR: { label: "Fair", color: "bg-yellow-500", description: "Good rates available" },
+      EXCELLENT: { label: "Excellent", color: "bg-green-500", description: "Best shopping range" },
+      PRIME: { label: "Prime", color: "bg-blue-500", description: "Great shopping range" },
+      NEAR_PRIME: { label: "Near Prime", color: "bg-yellow-500", description: "Good shopping range" },
+      SUBPRIME: { label: "Subprime", color: "bg-orange-500", description: "Standard shopping range" },
+      GOOD: { label: "Good", color: "bg-blue-500", description: "Great shopping range" },
+      FAIR: { label: "Fair", color: "bg-yellow-500", description: "Good shopping range" },
     }
     return tiers[tier || ""] || { label: tier || "Unknown", color: "bg-gray-500", description: "" }
   }
@@ -203,8 +203,8 @@ export default function BuyerPreQualPage() {
       <ProtectedRoute allowedRoles={["BUYER"]}>
         <div className="space-y-6">
           <div>
-            <h1 className="text-3xl font-bold">Pre-Qualification</h1>
-            <p className="text-muted-foreground">Get approved to start shopping for vehicles</p>
+            <h1 className="text-3xl font-bold">Prequalification</h1>
+            <p className="text-muted-foreground">Get prequalified to start shopping for vehicles</p>
           </div>
 
           <Card className="border-primary/20">
@@ -212,9 +212,9 @@ export default function BuyerPreQualPage() {
               <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
                 <Shield className="h-8 w-8 text-primary" />
               </div>
-              <CardTitle className="text-2xl">Get Pre-Qualified Today</CardTitle>
+              <CardTitle className="text-2xl">Get Prequalified to Shop</CardTitle>
               <CardDescription className="text-base max-w-md mx-auto">
-                Complete a quick soft credit check to see your buying power. It won't affect your credit score.
+                Complete a quick assessment to see your estimated shopping range. It won{"'"}t affect your credit score.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -222,7 +222,7 @@ export default function BuyerPreQualPage() {
                 <div className="p-4 rounded-lg bg-muted/50">
                   <Clock className="h-6 w-6 mx-auto mb-2 text-muted-foreground" />
                   <div className="font-medium">2 Minutes</div>
-                  <div className="text-sm text-muted-foreground">Quick application</div>
+                  <div className="text-sm text-muted-foreground">Quick assessment</div>
                 </div>
                 <div className="p-4 rounded-lg bg-muted/50">
                   <Shield className="h-6 w-6 mx-auto mb-2 text-muted-foreground" />
@@ -232,12 +232,12 @@ export default function BuyerPreQualPage() {
                 <div className="p-4 rounded-lg bg-muted/50">
                   <CheckCircle2 className="h-6 w-6 mx-auto mb-2 text-muted-foreground" />
                   <div className="font-medium">30 Days</div>
-                  <div className="text-sm text-muted-foreground">Approval valid</div>
+                  <div className="text-sm text-muted-foreground">Shopping pass valid</div>
                 </div>
               </div>
 
               <Button asChild size="lg" className="w-full">
-                <Link href="/buyer/onboarding">Start Pre-Qualification</Link>
+                <Link href="/buyer/onboarding">Start Prequalification</Link>
               </Button>
 
               <div className="relative">
@@ -272,7 +272,7 @@ export default function BuyerPreQualPage() {
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Lender</span>
+                  <span className="text-sm text-muted-foreground">Institution</span>
                   <span className="font-medium">{externalSubmission.lenderName}</span>
                 </div>
                 <div className="flex items-center justify-between">
@@ -347,8 +347,8 @@ export default function BuyerPreQualPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold">Pre-Qualification Status</h1>
-            <p className="text-muted-foreground">Your current approval and financing information</p>
+            <h1 className="text-3xl font-bold">Prequalification Status</h1>
+            <p className="text-muted-foreground">Your shopping readiness and estimated budget information</p>
           </div>
           <Button
             onClick={handleRefresh}
@@ -366,9 +366,9 @@ export default function BuyerPreQualPage() {
             <CardContent className="flex items-center gap-4 py-4">
               <AlertTriangle className="h-8 w-8 text-destructive flex-shrink-0" />
               <div className="flex-1">
-                <h3 className="font-semibold text-destructive">Pre-Qualification Expired</h3>
+                <h3 className="font-semibold text-destructive">Prequalification Expired</h3>
                 <p className="text-sm text-muted-foreground">
-                  Your pre-qualification has expired. Please refresh to get updated approval.
+                  Your prequalification has expired. Please refresh to get an updated assessment.
                 </p>
               </div>
               <Button onClick={handleRefresh} disabled={refreshing}>
@@ -385,8 +385,8 @@ export default function BuyerPreQualPage() {
               <div className="flex-1">
                 <h3 className="font-semibold text-yellow-800 dark:text-yellow-200">Expiring Soon</h3>
                 <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                  Your pre-qualification expires in {daysUntilExpiry} day{daysUntilExpiry !== 1 ? "s" : ""}. Consider
-                  refreshing to extend your approval.
+                  Your prequalification expires in {daysUntilExpiry} day{daysUntilExpiry !== 1 ? "s" : ""}. Consider
+                  refreshing to extend your shopping pass.
                 </p>
               </div>
             </CardContent>
@@ -401,7 +401,7 @@ export default function BuyerPreQualPage() {
               <div className="flex-1">
                 <h3 className="font-semibold text-blue-800 dark:text-blue-200">External Bank Pre-Approval</h3>
                 <p className="text-sm text-blue-700 dark:text-blue-300">
-                  This pre-qualification is based on your verified bank pre-approval from {extractLenderName(preQual.providerName)}.
+                  This prequalification is based on your verified bank pre-approval from {extractLenderName(preQual.providerName)}.
                 </p>
               </div>
             </CardContent>
@@ -412,7 +412,7 @@ export default function BuyerPreQualPage() {
         <div className="grid md:grid-cols-3 gap-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Approval Status</CardTitle>
+              <CardTitle className="text-sm font-medium">Prequalification Status</CardTitle>
               {expired ? (
                 <AlertCircle className="h-4 w-4 text-destructive" />
               ) : (
@@ -430,12 +430,12 @@ export default function BuyerPreQualPage() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Maximum Purchase Price</CardTitle>
+              <CardTitle className="text-sm font-medium">Estimated Shopping Range</CardTitle>
               <DollarSign className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{formatCurrency(preQual.maxOtdAmountCents)}</div>
-              <p className="text-xs text-muted-foreground mt-1">Out-the-door price</p>
+              <p className="text-xs text-muted-foreground mt-1">Estimated max budget</p>
             </CardContent>
           </Card>
 
@@ -456,8 +456,8 @@ export default function BuyerPreQualPage() {
         {/* Financing Details Card */}
         <Card>
           <CardHeader>
-            <CardTitle>Financing Details</CardTitle>
-            <CardDescription>Based on your credit profile and income verification</CardDescription>
+            <CardTitle>Shopping Readiness Details</CardTitle>
+            <CardDescription>Based on your profile and income verification</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid md:grid-cols-2 gap-6">
@@ -476,14 +476,14 @@ export default function BuyerPreQualPage() {
                       ? "Good - within acceptable range"
                       : preQual.source === "EXTERNAL_MANUAL"
                         ? "Not applicable for external pre-approvals"
-                        : "Moderate - may affect loan options"}
+                        : "Moderate - may affect shopping options"}
                 </p>
               </div>
 
               <div>
                 <div className="flex items-center gap-2 mb-2">
                   <Clock className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">Approval Valid Until</span>
+                  <span className="text-sm font-medium">Shopping Pass Valid Until</span>
                 </div>
                 <p className="text-2xl font-bold">
                   {preQual.expiresAt
@@ -503,11 +503,11 @@ export default function BuyerPreQualPage() {
             </div>
 
             <div className="pt-4 border-t">
-              <h4 className="font-semibold mb-3">What's Next?</h4>
+              <h4 className="font-semibold mb-3">What{"'"}s Next?</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li className="flex items-start gap-2">
                   <CheckCircle2 className="h-4 w-4 mt-0.5 text-green-600 flex-shrink-0" />
-                  <span>Shop for vehicles up to your maximum approved amount</span>
+                  <span>Browse vehicles within your estimated shopping range</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle2 className="h-4 w-4 mt-0.5 text-green-600 flex-shrink-0" />
@@ -515,7 +515,7 @@ export default function BuyerPreQualPage() {
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle2 className="h-4 w-4 mt-0.5 text-green-600 flex-shrink-0" />
-                  <span>Final approval subject to full credit check and income verification</span>
+                  <span>Insurance verification required before delivery — not before shopping</span>
                 </li>
               </ul>
             </div>

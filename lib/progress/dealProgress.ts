@@ -36,7 +36,7 @@ export const STATUS_LABELS: Record<string, string> = {
   CONTRACT_SHIELD_COMPLETE: "Contract Shield Complete",
   ESIGN_SENT: "eSign Sent",
   ESIGN_COMPLETED: "eSign Completed",
-  FUNDING_STARTED: "Funding Started",
+  FUNDING_STARTED: "Payment Processing Started",
   PAYMENT_REQUESTED: "Payment Requested",
   BUYER_PAYMENT_RECEIVED: "Buyer Payment Received",
   DELIVERY_SCHEDULED: "Delivery Scheduled",

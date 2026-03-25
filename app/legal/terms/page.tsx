@@ -114,11 +114,11 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-bold mb-4">5. Pre-Qualification and Credit Checks</h2>
+            <h2 className="text-2xl font-bold mb-4">5. Prequalification and Credit Checks</h2>
             <p className="text-muted-foreground leading-relaxed">
-              By consenting to pre-qualification, you authorize AutoLenis to perform a soft credit inquiry. Soft
-              inquiries do not affect your credit score. Final financing will require a hard credit inquiry from the
-              lender.
+              By consenting to prequalification, you authorize AutoLenis to perform a soft credit inquiry. Soft
+              inquiries do not affect your credit score. If you proceed with a deal involving financing, the dealer or
+              their financing partner may perform a hard credit inquiry.
             </p>
           </section>
 

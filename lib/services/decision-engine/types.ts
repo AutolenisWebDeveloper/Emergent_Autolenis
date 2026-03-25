@@ -75,6 +75,7 @@ export type PickupReadinessState =
   | "CONFIRMED"
   | "ARRIVED"
   | "COMPLETED"
+  | "INSURANCE_REQUIRED"
 
 export type PayoutReleaseState =
   | "NOT_APPLICABLE"
@@ -156,6 +157,10 @@ export interface DealSignals {
   feePaid: boolean
   insuranceStatus: string | null
   insuranceComplete: boolean
+  /** Insurance readiness status from the flexible insurance workflow */
+  insuranceReadinessStatus: string | null
+  /** Canonical delivery-block flag — true when insurance is not verified and deal is at delivery stage */
+  deliveryBlockFlag: boolean
   contractUploaded: boolean
   contractScanStatus: string | null
   contractScanPassed: boolean

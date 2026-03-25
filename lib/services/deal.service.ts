@@ -3,6 +3,14 @@ import { PaymentService } from "@/lib/services/payment.service"
 import { dealContextService } from "@/lib/services/deal-context.service"
 import type { DealInsuranceReadiness } from "@/lib/types"
 import { InventoryStatus } from "@/lib/constants/statuses"
+
+// ─── Lender References Note ──────────────────────────────────────────────
+// "lender_name" / "lenderName" in deal creation and financing logic refers
+// to the financing partner name submitted by the DEALER in their offer.
+// AutoLenis does not have formal lender partners or route buyer data to
+// lenders. The "lender_name" is dealer-sourced label data only.
+// ─────────────────────────────────────────────────────────────────────────
+
 // Canonical DealStatus values matching the Prisma schema enum.
 // Defined here to avoid pnpm module-resolution issues with @prisma/client enum re-exports.
 export const DealStatus = {
