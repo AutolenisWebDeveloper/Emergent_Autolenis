@@ -884,7 +884,7 @@ export class InsuranceService {
 
     // Transition status (from any valid source state)
     const currentStatus = deal.insurance_readiness_status as InsuranceReadinessStatus
-    const target: InsuranceReadinessStatus = "CURRENT_INSURANCE_UPLOADED"
+    const target = InsuranceReadinessStatus.CURRENT_INSURANCE_UPLOADED
     const validTargets = INSURANCE_VALID_TRANSITIONS[currentStatus]
     if (validTargets && validTargets.includes(target)) {
       await prisma.selectedDeal.update({

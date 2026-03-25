@@ -184,8 +184,8 @@ export const buyerService = {
       // Determine insurance readiness status from the most recent active deal
       const activeDeal = deals.find(
         (d: any) => d.status !== "COMPLETED" && d.status !== "CANCELLED",
-      )
-      const insuranceStatus = (activeDeal as any)?.insurance_readiness_status || "NOT_STARTED"
+      ) as { insurance_readiness_status?: string } | undefined
+      const insuranceStatus = activeDeal?.insurance_readiness_status || "NOT_STARTED"
 
       return {
         profile: flattenedProfile,

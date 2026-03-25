@@ -33,6 +33,15 @@ import useSWR from "swr"
 import { useUser } from "@/hooks/use-user"
 import { INSURANCE_DASHBOARD_CONFIG } from "@/lib/constants/insurance"
 
+// ── Insurance variant style mapping (module-level for performance) ───────────
+
+const INSURANCE_VARIANT_STYLES: Record<string, { color: string; bgClass: string }> = {
+  default: { color: "text-muted-foreground", bgClass: "" },
+  warning: { color: "text-amber-600 dark:text-amber-400", bgClass: "border-amber-200 dark:border-amber-900/40" },
+  success: { color: "text-[#7ED321]", bgClass: "border-[#7ED321]/20" },
+  info: { color: "text-blue-600 dark:text-blue-400", bgClass: "border-blue-200 dark:border-blue-900/40" },
+}
+
 // ── Type definitions ─────────────────────────────────────────────────────────
 
 interface PreQualData {
@@ -739,14 +748,8 @@ export default function BuyerDashboardPage() {
             {/* Insurance Status */}
             {(() => {
               const insStatus = data?.insuranceStatus || "NOT_STARTED"
-              const variantToStyles: Record<string, { color: string; bgClass: string }> = {
-                default: { color: "text-muted-foreground", bgClass: "" },
-                warning: { color: "text-amber-600 dark:text-amber-400", bgClass: "border-amber-200 dark:border-amber-900/40" },
-                success: { color: "text-[#7ED321]", bgClass: "border-[#7ED321]/20" },
-                info: { color: "text-blue-600 dark:text-blue-400", bgClass: "border-blue-200 dark:border-blue-900/40" },
-              }
               const canonical = INSURANCE_DASHBOARD_CONFIG[insStatus as keyof typeof INSURANCE_DASHBOARD_CONFIG] || INSURANCE_DASHBOARD_CONFIG.NOT_STARTED
-              const styles = variantToStyles[canonical.variant] || variantToStyles.default
+              const styles = INSURANCE_VARIANT_STYLES[canonical.variant] || INSURANCE_VARIANT_STYLES.default
               return (
                 <Card className={`shadow-sm ${styles.bgClass}`}>
                   <CardHeader className="pb-2">

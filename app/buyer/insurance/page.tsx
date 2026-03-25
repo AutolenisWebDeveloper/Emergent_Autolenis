@@ -211,7 +211,7 @@ export default function BuyerInsurancePage() {
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight mb-1">Insurance</h1>
           <p className="text-muted-foreground text-sm sm:text-base">
             Proof of insurance is required before vehicle delivery. You can continue shopping
-            and browsing without insurance — it&apos;s only needed before pickup or delivery.
+            and browsing without insurance — it{"'"}s only needed before pickup or delivery.
           </p>
         </div>
 
