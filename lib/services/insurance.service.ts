@@ -808,6 +808,9 @@ export class InsuranceService {
 
   // ─── Insurance Readiness State Machine ─────────────────────────────────
 
+  /** Deal statuses that represent the delivery stage (insurance must be verified) */
+  private static readonly DELIVERY_STAGE_STATUSES = ["SIGNED", "PICKUP_SCHEDULED"]
+
   /**
    * Validate and persist an insurance readiness status transition.
    * Enforces the INSURANCE_VALID_TRANSITIONS map.
@@ -831,9 +834,8 @@ export class InsuranceService {
     }
 
     // Compute delivery_block_flag: if deal is at a delivery stage and insurance is not verified
-    const deliveryStageStatuses = ["SIGNED", "PICKUP_SCHEDULED"]
     const deliveryBlockFlag =
-      deliveryStageStatuses.includes(deal.status) && !isInsuranceVerifiedForDelivery(toStatus)
+      InsuranceService.DELIVERY_STAGE_STATUSES.includes(deal.status) && !isInsuranceVerifiedForDelivery(toStatus)
 
     await prisma.selectedDeal.update({
       where: { id: dealId },

@@ -105,8 +105,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Deal not found or unauthorized" }, { status: 404 })
     }
 
-    // Sanitize file name to prevent path traversal
-    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_")
+    // Sanitize file name to prevent path traversal and hidden file creation
+    const safeName = file.name.replace(/^\.+/, "").replace(/[^a-zA-Z0-9._-]/g, "_") || "upload"
 
     // Upload file to Supabase Storage
     const bucket = process.env["SUPABASE_DOCUMENTS_BUCKET"] || "buyer-documents"
@@ -124,10 +124,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Failed to upload file to storage", correlationId }, { status: 500 })
     }
 
-    // Private bucket — generate a signed URL (7 days).
+    // Private bucket — generate a signed URL.
+    const SIGNED_URL_EXPIRY_SECONDS = 60 * 60 * 24 * 7 // 7 days
     const { data: signedData, error: signedErr } = await supabase.storage
       .from(bucket)
-      .createSignedUrl(storagePath, 60 * 60 * 24 * 7)
+      .createSignedUrl(storagePath, SIGNED_URL_EXPIRY_SECONDS)
 
     if (signedErr || !signedData?.signedUrl) {
       const correlationId = randomUUID()
