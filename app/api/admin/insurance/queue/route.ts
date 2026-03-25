@@ -118,16 +118,16 @@ export async function GET(request: NextRequest) {
     })
 
     // Get buyer profiles for the deals
-    const buyerIds = [...new Set(deals.map((d) => d.buyerId).filter(Boolean))]
+    const buyerIds = [...new Set(deals.map((d: any) => d.buyerId).filter(Boolean))]
     const buyerProfiles = buyerIds.length > 0
       ? await prisma.buyerProfile.findMany({
           where: { userId: { in: buyerIds as string[] } },
           select: { userId: true, firstName: true, lastName: true },
         })
       : []
-    const buyerMap = new Map(buyerProfiles.map((b) => [b.userId, b]))
+    const buyerMap: Map<string, any> = new Map(buyerProfiles.map((b: any) => [b.userId, b]))
 
-    const items: InsuranceQueueItem[] = deals.map((deal) => {
+    const items: InsuranceQueueItem[] = deals.map((deal: any) => {
       const buyer = buyerMap.get(deal.buyerId || "")
       const latestUpload = deal.insuranceUploads?.[0]
       const policy = deal.insurancePolicy

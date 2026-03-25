@@ -64,7 +64,7 @@ export const buyerService = {
         await Promise.all([
           supabase
             .from("PreQualification")
-            .select("id, buyerId, maxMonthlyPaymentCents, maxOtdAmountCents, expiresAt, status, createdAt, updatedAt")
+            .select("id, buyerId, maxMonthlyPaymentCents, maxOtdAmountCents, maxOtd, expiresAt, status, createdAt, updatedAt")
             .eq("buyerId", buyerId)
             .order("createdAt", { ascending: false })
             .limit(1)
