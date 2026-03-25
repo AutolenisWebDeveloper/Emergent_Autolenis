@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { randomUUID } from "crypto"
 import { getSessionUser } from "@/lib/auth-server"
-import { supabase } from "@/lib/db"
+import { createClient } from "@/lib/supabase/server"
 import { InsuranceService } from "@/lib/services/insurance.service"
 import { INSURANCE_ACCEPTED_FILE_TYPES } from "@/lib/constants/insurance"
 import type { InsuranceDocumentTag } from "@/lib/constants/insurance"
@@ -82,6 +82,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get buyer profile to resolve workspace
+    const supabase = await createClient()
     const { data: buyer } = await supabase
       .from("BuyerProfile")
       .select("id, userId")

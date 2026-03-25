@@ -23,6 +23,7 @@ describe("resolvePickupReadiness — Insurance Gating", () => {
     insuranceStatus: "BOUND",
     insuranceComplete: true,
     insuranceReadinessStatus: "VERIFIED",
+    deliveryBlockFlag: false,
     contractUploaded: true,
     contractScanStatus: "PASSED",
     contractScanPassed: true,
@@ -200,5 +201,56 @@ describe("resolveBuyerReadiness — Insurance Independence", () => {
       },
     })
     expect(result).toBe("CASH_DECLARED")
+  })
+})
+
+// ─── delivery_block_flag as canonical gate ──────────────────────────────────
+
+describe("resolvePickupReadiness — delivery_block_flag", () => {
+  const baseDealSignals: DealSignals = {
+    dealId: "deal-1",
+    dealStatus: "SIGNED",
+    paymentType: "CASH",
+    financingApproved: true,
+    feeStatus: "PAID",
+    feePaid: true,
+    insuranceStatus: "BOUND",
+    insuranceComplete: true,
+    insuranceReadinessStatus: "VERIFIED",
+    deliveryBlockFlag: false,
+    contractUploaded: true,
+    contractScanStatus: "PASSED",
+    contractScanPassed: true,
+    cmaStatus: null,
+    cmaApproved: false,
+    esignStatus: "COMPLETED",
+    esignCompleted: true,
+    pickupStatus: null,
+    payoutStatus: null,
+    refundStatus: null,
+    complianceFlags: [],
+    manualHold: false,
+  }
+
+  it("should return READY when deliveryBlockFlag is false and insurance is VERIFIED", () => {
+    const result = resolvePickupReadiness(baseDealSignals)
+    expect(result).toBe("READY")
+  })
+
+  it("should return INSURANCE_REQUIRED when deliveryBlockFlag is true even if insurance status is VERIFIED", () => {
+    const result = resolvePickupReadiness({
+      ...baseDealSignals,
+      deliveryBlockFlag: true,
+    })
+    expect(result).toBe("INSURANCE_REQUIRED")
+  })
+
+  it("should return INSURANCE_REQUIRED when deliveryBlockFlag is true and insurance is NOT_STARTED", () => {
+    const result = resolvePickupReadiness({
+      ...baseDealSignals,
+      deliveryBlockFlag: true,
+      insuranceReadinessStatus: "NOT_STARTED",
+    })
+    expect(result).toBe("INSURANCE_REQUIRED")
   })
 })
