@@ -62,16 +62,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         ssn: ssnPlain,
         firstName: application.firstName,
         lastName: application.lastName,
-        dateOfBirth: application.dateOfBirth.toISOString().split("T")[0],
-        address: {
-          street1: application.addressLine1,
-          street2: application.addressLine2 ?? undefined,
-          city: application.city,
-          state: application.state,
-          zip: application.zipCode,
-        },
+        dob: application.dateOfBirth.toISOString().split("T")[0],
+        address1: application.addressLine1,
+        city: application.city,
+        state: application.state,
+        zip: application.zipCode,
         phone: application.phone,
-        email: application.email,
+        employerName: application.employerName ?? undefined,
+        grossMonthlyIncome: application.grossMonthlyIncome / 100, // Convert from cents (DB) to dollars (API)
+        applicationId: application.id,
       })
 
       const parsed = mapIpredictResponse(rawResponse)

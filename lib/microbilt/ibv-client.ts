@@ -24,11 +24,8 @@ async function getAccessToken(): Promise<string> {
     throw new MicroBiltAuthError("MICROBILT_CLIENT_ID and MICROBILT_CLIENT_SECRET are required")
   }
 
-  const params = new URLSearchParams({
-    grant_type: "client_credentials",
-    client_id: clientId,
-    client_secret: clientSecret,
-  })
+  // MicroBilt uses Basic auth for the token endpoint
+  const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString("base64")
 
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
@@ -36,8 +33,11 @@ async function getAccessToken(): Promise<string> {
   try {
     const response = await fetch(TOKEN_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: params.toString(),
+      headers: {
+        "Authorization": `Basic ${credentials}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "grant_type=client_credentials",
       signal: controller.signal,
     })
 
@@ -46,7 +46,7 @@ async function getAccessToken(): Promise<string> {
     }
 
     const data = await response.json()
-    _tokenCache = { accessToken: data.access_token, expiresAt: now + data.expires_in * 1000 }
+    _tokenCache = { accessToken: data.access_token, expiresAt: now + (data.expires_in || 3600) * 1000 }
     return data.access_token
   } catch (error: unknown) {
     if (error instanceof Error && error.name === "AbortError") throw new MicroBiltTimeoutError()
