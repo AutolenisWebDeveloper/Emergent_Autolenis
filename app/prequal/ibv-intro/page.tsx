@@ -1,10 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useState, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { IBVInterstitial } from "@/components/prequal/IBVInterstitial"
 
-export default function IBVIntroPage() {
+function IBVIntroPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const applicationId = searchParams.get("id")
@@ -46,5 +46,13 @@ export default function IBVIntroPage() {
       onSkip={handleSkip}
       isLoading={isLoading}
     />
+  )
+}
+
+export default function IBVIntroPage() {
+  return (
+    <Suspense fallback={null}>
+      <IBVIntroPageContent />
+    </Suspense>
   )
 }

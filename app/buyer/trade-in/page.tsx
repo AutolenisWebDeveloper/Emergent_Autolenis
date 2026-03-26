@@ -1,7 +1,7 @@
 "use client"
 
 import { csrfHeaders } from "@/lib/csrf-client"
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { ProtectedRoute } from "@/components/layout/protected-route"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -15,7 +15,7 @@ import { Car, AlertTriangle, ArrowRight, ArrowLeft, CheckCircle2 } from "lucide-
 
 type Condition = "excellent" | "good" | "fair" | "poor"
 
-export default function BuyerTradeInPage() {
+function BuyerTradeInPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const shortlistId = searchParams.get("shortlistId")
@@ -331,5 +331,13 @@ export default function BuyerTradeInPage() {
         </Card>
       </div>
     </ProtectedRoute>
+  )
+}
+
+export default function BuyerTradeInPage() {
+  return (
+    <Suspense fallback={null}>
+      <BuyerTradeInPageContent />
+    </Suspense>
   )
 }

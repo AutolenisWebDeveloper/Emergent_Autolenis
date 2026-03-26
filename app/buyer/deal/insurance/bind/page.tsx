@@ -1,7 +1,7 @@
 "use client"
 
 import { csrfHeaders } from "@/lib/csrf-client"
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import { ProtectedRoute } from "@/components/layout/protected-route"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -13,7 +13,7 @@ import { extractApiError } from "@/lib/utils/error-message"
 import { useRouter } from "next/navigation"
 import { Shield, ArrowLeft, CheckCircle2 } from "lucide-react"
 
-export default function InsuranceBindPage() {
+function InsuranceBindPageContent() {
   const searchParams = useSearchParams()
   const quoteId = searchParams.get("quoteId")
   const [deal, setDeal] = useState<any>(null)
@@ -166,5 +166,13 @@ export default function InsuranceBindPage() {
         </Button>
       </div>
     </ProtectedRoute>
+  )
+}
+
+export default function InsuranceBindPage() {
+  return (
+    <Suspense fallback={null}>
+      <InsuranceBindPageContent />
+    </Suspense>
   )
 }

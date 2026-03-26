@@ -1,10 +1,10 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Loader2 } from "lucide-react"
 
-export default function IBVPage() {
+function IBVPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const applicationId = searchParams.get("id")
@@ -52,5 +52,13 @@ export default function IBVPage() {
       </p>
       {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
     </div>
+  )
+}
+
+export default function IBVPage() {
+  return (
+    <Suspense fallback={null}>
+      <IBVPageContent />
+    </Suspense>
   )
 }

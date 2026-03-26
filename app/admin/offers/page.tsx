@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, Suspense } from "react"
 import Link from "next/link"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -30,7 +30,7 @@ interface Offer {
   }
 }
 
-export default function AdminOffersPage() {
+function AdminOffersPageContent() {
   const [offers, setOffers] = useState<Offer[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
@@ -241,5 +241,13 @@ export default function AdminOffersPage() {
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+export default function AdminOffersPage() {
+  return (
+    <Suspense fallback={null}>
+      <AdminOffersPageContent />
+    </Suspense>
   )
 }

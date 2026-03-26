@@ -1,5 +1,6 @@
 "use client"
-import { use, useState, useEffect } from "react"
+
+import { use, useState, useEffect, Suspense } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -29,7 +30,7 @@ function approvalBadge(type: string) {
   }
 }
 
-export default function DealerMessageThreadPage({ params }: { params: Promise<{ threadId: string }> }) {
+function DealerMessageThreadPageContent({ params }: { params: Promise<{ threadId: string }> }) {
   const { threadId } = use(params)
   const searchParams = useSearchParams()
   const isSupportTicket = searchParams.get("type") === "support"
@@ -232,5 +233,13 @@ export default function DealerMessageThreadPage({ params }: { params: Promise<{ 
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+export default function DealerMessageThreadPage(props: { params: Promise<{ threadId: string }> }) {
+  return (
+    <Suspense fallback={null}>
+      <DealerMessageThreadPageContent {...props} />
+    </Suspense>
   )
 }

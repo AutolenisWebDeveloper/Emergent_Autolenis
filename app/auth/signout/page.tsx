@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { CheckCircle2, ArrowRight, Home, Loader2 } from "lucide-react"
@@ -13,7 +13,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 
-export default function SignOutPage() {
+function SignOutPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [isLoading, setIsLoading] = useState(true)
@@ -168,5 +168,13 @@ export default function SignOutPage() {
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+export default function SignOutPage() {
+  return (
+    <Suspense fallback={null}>
+      <SignOutPageContent />
+    </Suspense>
   )
 }

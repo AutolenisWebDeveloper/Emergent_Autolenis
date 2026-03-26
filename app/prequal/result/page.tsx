@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import { Loader2 } from "lucide-react"
 import { ResultPrequalified } from "@/components/prequal/ResultPrequalified"
@@ -17,7 +17,7 @@ interface ApplicationStatus {
   status: string
 }
 
-export default function PrequalResultPage() {
+function PrequalResultPageContent() {
   const searchParams = useSearchParams()
   const applicationId = searchParams.get("id")
   const [data, setData] = useState<ApplicationStatus | null>(null)
@@ -89,4 +89,12 @@ export default function PrequalResultPage() {
     default:
       return <ResultManualReview />
   }
+}
+
+export default function PrequalResultPage() {
+  return (
+    <Suspense fallback={null}>
+      <PrequalResultPageContent />
+    </Suspense>
+  )
 }

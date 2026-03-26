@@ -1,11 +1,11 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { usePrequalStatus } from "@/hooks/usePrequalStatus"
 import { ProcessingScreen } from "@/components/prequal/ProcessingScreen"
 
-export default function PrequalProcessingPage() {
+function PrequalProcessingPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const applicationId = searchParams.get("id")
@@ -63,4 +63,12 @@ export default function PrequalProcessingPage() {
   const currentStep = status ? (stepMap[status.status] ?? 1) : 1
 
   return <ProcessingScreen currentStep={currentStep} />
+}
+
+export default function PrequalProcessingPage() {
+  return (
+    <Suspense fallback={null}>
+      <PrequalProcessingPageContent />
+    </Suspense>
+  )
 }
