@@ -1,107 +1,98 @@
-// Maps real MicroBilt iPredict MBCLVRs response to ParsedIpredictResult
+// Maps raw MicroBilt iPredict API response into ParsedIpredictResult.
+// This is the ONLY module that touches raw vendor response fields.
+// All downstream code uses ParsedIpredictResult exclusively.
 
-import type { IpredictResponse, IpredictProperty, ParsedIpredictResult } from "./types"
+import type { IpredictResponse, ParsedIpredictResult } from "./types"
 
-/**
- * Maps the real MBCLVRs envelope to our internal ParsedIpredictResult.
- * Extracts score from RESPONSE.CONTENT.DECISION.SCORES[].Value and
- * risk indicators from RESPONSE.CONTENT.DECISION.PROPERTIES[].
- */
+function safeInt(val: string | undefined | null): number {
+  if (!val) return 0
+  const parsed = parseInt(val, 10)
+  return isNaN(parsed) ? 0 : parsed
+}
+
 export function mapIpredictResponse(raw: IpredictResponse): ParsedIpredictResult {
-  const decision = raw.RESPONSE?.CONTENT?.DECISION
-  const properties = decision?.PROPERTIES ?? []
+  const content = raw.RESPONSE?.CONTENT
+  const decision = content?.DECISION
+  const details = content?.SERVICEDETAILS
+  const pda = details?.PDA
+  const pdaSummary = pda?.summary
+  const publicRecords = details?.PUBLICRECORDS
+  const idv = details?.IDV
+  const preview = details?.iPreView
+  const dda = details?.DDA
+  const status = raw.RESPONSE?.STATUS
 
-  // ── Primary score ───────────────────────────────────────────────────────
-  let primaryScore: number | null = null
-  const scores = decision?.SCORES ?? []
-  if (scores.length > 0) {
-    // Prefer the first score with a parseable numeric Value
-    for (const s of scores) {
-      const parsed = s.Value !== undefined ? parseFloat(s.Value) : NaN
-      if (!isNaN(parsed) && parsed > 0) {
-        primaryScore = parsed
-        break
-      }
-    }
-  }
+  // Extract primary score from SCORES array
+  const primaryScoreObj = decision?.SCORES?.find((s) => s.Value)
+  const primaryScoreVal = primaryScoreObj?.Value ? parseInt(primaryScoreObj.Value, 10) : null
+  const plsVal = primaryScoreObj?.performsLikeScore
+    ? parseInt(primaryScoreObj.performsLikeScore, 10)
+    : null
 
-  // ── Boolean hard-fail indicators ────────────────────────────────────────
-  const ofacHit = extractPropertyBool(properties, ["OFAC_HIT", "OFAC"])
-  const bankruptcyIndicator = extractPropertyBool(properties, ["BANKRUPTCY", "BANKRUPT"])
-  const fraudIndicator = extractPropertyBool(properties, ["FRAUD", "FRAUD_ALERT"])
-  const deceasedIndicator = extractPropertyBool(properties, ["DECEASED_SSN", "DECEASED"])
-  const ddaFraudIndicator = extractPropertyBool(properties, ["DDA_FRAUD"])
+  // Extract reason codes
+  const reasonCodes = (decision?.REASONS ?? [])
+    .map((r) => r.code ?? r.Value)
+    .filter((c): c is string => !!c)
 
-  // ── Numeric indicators ──────────────────────────────────────────────────
-  const badLoanCount = extractPropertyInt(properties, ["BAD_LOAN_COUNT", "CHARGE_OFF_COUNT"]) ?? 0
-  const collectionCount = extractPropertyInt(properties, ["COLLECTION_COUNT"]) ?? 0
+  // Bankruptcy detection: check both IDV and public records
+  const bankruptcyCountFromPR = safeInt(publicRecords?.SUMMARY?.bankruptcies)
+  const bankruptcyFlagFromIDV = idv?.bankruptcyFlag === "Y" || idv?.bankruptcyFlag === "1"
+  const hasBankruptcyIndicator = bankruptcyCountFromPR > 0 || bankruptcyFlagFromIDV
 
-  // ── Vendor decline detection ────────────────────────────────────────────
-  // A "DECLINE" decision from the engine is treated as a vendor decline for scoring
-  const decisionValue = decision?.decision?.Value
-  const vendorDecline = decisionValue === "DECLINE"
+  // ELJ (evictions/liens/judgments)
+  const eljCount = safeInt(publicRecords?.SUMMARY?.evictionsliensjudgments)
+  const hasActiveJudgment = eljCount > 0
 
-  // ── No-score detection ─────────────────────────────────────────────────
-  // We reach here only when callIpredict() returned successfully (scores array non-empty),
-  // but if primaryScore is still null it means all score values were unparseable.
-  const noScore = primaryScore === null && !vendorDecline
+  // DDA fraud/closure
+  const ddaFraud = dda?.ddaclosures?.fraud
+  const ddaFraudIndicator = ddaFraud === "Y" || ddaFraud === "1" || safeInt(ddaFraud) > 0
+  const ddaClosureCount = (dda?.ddaclosures?.closuresdetail ?? []).length
 
-  // ── Request ID ─────────────────────────────────────────────────────────
-  const requestId =
-    raw.MsgRsHdr?.RqUID ??
-    raw.RESPONSE?.STATUS?.applicationNumber ??
-    `AL-${Date.now()}`
+  // Vendor-level decline
+  const vendorDecline = decision?.decision?.Value === "DECLINE"
+  const noScore = primaryScoreVal === null || isNaN(primaryScoreVal)
 
   return {
-    requestId,
-    primaryScore,
-    ofacHit,
-    bankruptcyIndicator,
-    fraudIndicator,
-    deceasedIndicator,
+    requestId: raw.MsgRsHdr?.RqUID ?? null,
+    responseStatus: status?.type === "ERROR" ? "ERROR" : "SUCCESS",
+    errorMessage: status?.error?.message ?? null,
+
+    decisionValue: decision?.decision?.Value ?? null,
+    decisionCode: decision?.decision?.code ?? null,
+
+    primaryScore: primaryScoreVal && !isNaN(primaryScoreVal) ? primaryScoreVal : null,
+    performsLikeScore: plsVal && !isNaN(plsVal) ? plsVal : null,
+    scoreModel: primaryScoreObj?.model ?? null,
+
+    reasonCodes,
+
+    totalInquiries: safeInt(pdaSummary?.inquiries),
+    recentInquiries: safeInt(pdaSummary?.recentinquiries),
+    totalLoans: safeInt(pdaSummary?.loans),
+    currentLoans: safeInt(pdaSummary?.loanscurrent),
+    badLoans: safeInt(pdaSummary?.badloans),
+    loansInCollections: safeInt(pdaSummary?.loanscollections),
+    loansPastDue: safeInt(pdaSummary?.loanspastdue),
+    loansWrittenOff: safeInt(pdaSummary?.loanswrittenoff),
+
+    bankruptcyCount: bankruptcyCountFromPR,
+    evictionLienJudgmentCount: eljCount,
+    hasBankruptcyIndicator,
+    hasActiveJudgment,
+
+    ssnValid: idv?.ssnValidCode === "Y" || preview?.SSNAttributes?.SSNValid === "Y",
+    ssnDeceased: idv?.deceasedIndicator === "Y" || preview?.SSNAttributes?.SSNDeceased === "Y",
+    fraudWarning: idv?.fraudWarning === "Y",
+    highRiskAddress: idv?.highRiskAddress === "Y" || preview?.AddressAttributes?.HighRiskAddress === "Y",
+    ofacMatch: preview?.WatchListAttributes?.OFACIndicator === "Y",
+
+    bankName: preview?.BankAccountAttributes?.bankName ?? null,
+    routingNumberValid: preview?.BankAccountAttributes?.routingNumberValid === "Y",
+
     ddaFraudIndicator,
-    badLoanCount,
-    collectionCount,
+    ddaClosureCount,
+
     vendorDecline,
     noScore,
-    rawResponse: raw,
   }
-}
-
-// ── Helpers ─────────────────────────────────────────────────────────────────
-
-/**
- * Returns true when any of the candidate property names has a "Y" / "true" / "1" value.
- */
-function extractPropertyBool(
-  properties: IpredictProperty[],
-  names: string[],
-): boolean {
-  for (const name of names) {
-    const prop = properties.find(
-      (p) => p.name?.toUpperCase() === name.toUpperCase(),
-    )
-    if (!prop) continue
-    const v = prop.Value?.toUpperCase()
-    if (v === "Y" || v === "YES" || v === "TRUE" || v === "1") return true
-  }
-  return false
-}
-
-/**
- * Returns the integer value of the first matching property name, or null if not found.
- */
-function extractPropertyInt(
-  properties: IpredictProperty[],
-  names: string[],
-): number | null {
-  for (const name of names) {
-    const prop = properties.find(
-      (p) => p.name?.toUpperCase() === name.toUpperCase(),
-    )
-    if (!prop?.Value) continue
-    const parsed = parseInt(prop.Value, 10)
-    if (!isNaN(parsed)) return parsed
-  }
-  return null
 }

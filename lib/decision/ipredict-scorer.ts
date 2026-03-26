@@ -17,16 +17,16 @@ export interface IpredictScoringResult {
  */
 export function scoreIpredict(result: ParsedIpredictResult): IpredictScoringResult {
   // Hard-fail overrides — immediate FAIL regardless of score
-  if (result.ofacHit) {
+  if (result.ofacMatch) {
     return { band: "FAIL", hardFailReason: HARD_FAIL_REASONS.OFAC_HIT }
   }
-  if (result.bankruptcyIndicator) {
+  if (result.hasBankruptcyIndicator) {
     return { band: "FAIL", hardFailReason: HARD_FAIL_REASONS.BANKRUPTCY }
   }
-  if (result.fraudIndicator) {
+  if (result.fraudWarning) {
     return { band: "FAIL", hardFailReason: HARD_FAIL_REASONS.FRAUD_ALERT }
   }
-  if (result.deceasedIndicator) {
+  if (result.ssnDeceased) {
     return { band: "FAIL", hardFailReason: HARD_FAIL_REASONS.DECEASED_SSN }
   }
   if (result.ddaFraudIndicator) {
@@ -35,7 +35,7 @@ export function scoreIpredict(result: ParsedIpredictResult): IpredictScoringResu
   if (result.vendorDecline) {
     return { band: "FAIL", hardFailReason: HARD_FAIL_REASONS.VENDOR_DECLINE }
   }
-  if (result.badLoanCount >= 5) {
+  if (result.badLoans >= IPREDICT_THRESHOLDS.BAD_LOAN_FAIL_MIN) {
     return { band: "FAIL", hardFailReason: HARD_FAIL_REASONS.EXCESSIVE_BAD_LOANS }
   }
 

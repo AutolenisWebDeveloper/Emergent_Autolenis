@@ -183,6 +183,53 @@ export interface IpredictProperty {
 }
 
 export interface IpredictServiceDetails {
+  PDA?: {
+    summary?: {
+      inquiries?: string
+      recentinquiries?: string
+      loans?: string
+      loanscurrent?: string
+      badloans?: string
+      loanscollections?: string
+      loanspastdue?: string
+      loanswrittenoff?: string
+    }
+  }
+  PUBLICRECORDS?: {
+    SUMMARY?: {
+      bankruptcies?: string
+      evictionsliensjudgments?: string
+    }
+  }
+  IDV?: {
+    ssnValidCode?: string
+    deceasedIndicator?: string
+    fraudWarning?: string
+    highRiskAddress?: string
+    bankruptcyFlag?: string
+  }
+  iPreView?: {
+    SSNAttributes?: {
+      SSNValid?: string
+      SSNDeceased?: string
+    }
+    AddressAttributes?: {
+      HighRiskAddress?: string
+    }
+    WatchListAttributes?: {
+      OFACIndicator?: string
+    }
+    BankAccountAttributes?: {
+      bankName?: string
+      routingNumberValid?: string
+    }
+  }
+  DDA?: {
+    ddaclosures?: {
+      fraud?: string
+      closuresdetail?: unknown[]
+    }
+  }
   AGGREGATES?: Record<string, string>
   ATTRIBUTES?: IpredictProperty[]
 }
@@ -193,18 +240,47 @@ export interface IpredictServiceDetails {
 // ============================================================
 
 export interface ParsedIpredictResult {
-  requestId: string
+  requestId: string | null
+  responseStatus: "SUCCESS" | "ERROR"
+  errorMessage: string | null
+
+  decisionValue: string | null
+  decisionCode: string | null
+
   primaryScore: number | null
-  ofacHit: boolean
-  bankruptcyIndicator: boolean
-  fraudIndicator: boolean
-  deceasedIndicator: boolean
+  performsLikeScore: number | null
+  scoreModel: string | null
+
+  reasonCodes: string[]
+
+  totalInquiries: number
+  recentInquiries: number
+  totalLoans: number
+  currentLoans: number
+  badLoans: number
+  loansInCollections: number
+  loansPastDue: number
+  loansWrittenOff: number
+
+  bankruptcyCount: number
+  evictionLienJudgmentCount: number
+  hasBankruptcyIndicator: boolean
+  hasActiveJudgment: boolean
+
+  ssnValid: boolean
+  ssnDeceased: boolean
+  fraudWarning: boolean
+  highRiskAddress: boolean
+  ofacMatch: boolean
+
+  bankName: string | null
+  routingNumberValid: boolean
+
   ddaFraudIndicator: boolean
-  badLoanCount: number
-  collectionCount: number
+  ddaClosureCount: number
+
   vendorDecline: boolean
   noScore: boolean
-  rawResponse: IpredictResponse
 }
 
 // ============================================================

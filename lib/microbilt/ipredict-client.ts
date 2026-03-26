@@ -190,7 +190,11 @@ export async function callIpredict(requestBody: IpredictRequestBody): Promise<Ip
         if (responseStatus?.type === "ERROR") {
           const errorCode = responseStatus.error?.code ?? "UNKNOWN"
           const errorMsg = responseStatus.error?.message ?? "iPredict returned an error"
-          // NO_SCORE error codes (insufficient data to score)
+          // NO_SCORE error codes per iPredict_6.yaml spec:
+          //   NO_SCORE           — insufficient trade/credit history to produce a score
+          //   INSUFFICIENT_DATA  — vendor alias for the same condition
+          // Additional vendor error codes (OFAC_BLOCKED, SYSTEM_ERROR, etc.) are
+          // treated as hard API errors and surface to the caller as MicroBiltApiError.
           if (errorCode === "NO_SCORE" || errorCode === "INSUFFICIENT_DATA") {
             throw new MicroBiltNoScoreError()
           }

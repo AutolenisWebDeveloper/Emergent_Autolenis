@@ -44,6 +44,7 @@ export const IPREDICT_THRESHOLDS = {
   PASS_MIN: 600,
   BORDERLINE_MIN: 500,
   // Below BORDERLINE_MIN = FAIL
+  BAD_LOAN_FAIL_MIN: 5, // badLoans >= this triggers FAIL regardless of score
 } as const
 
 // Cron job secrets
