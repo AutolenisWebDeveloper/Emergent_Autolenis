@@ -25,6 +25,7 @@ export const LOAN_DEFAULTS = {
   BASE_RATE_BORDERLINE: 0.1299,  // 12.99% APR for BORDERLINE band
   DEBT_TO_INCOME_MAX: 0.45,      // 45% DTI cap
   MONTHLY_PAYMENT_FLOOR_CENTS: 20000, // $200/month minimum
+  SHOPPING_RANGE_ROUNDING_INCREMENT_CENTS: 50000, // Round to nearest $500
 } as const
 
 // Hard-fail reasons for iPredict scoring

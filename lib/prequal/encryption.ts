@@ -5,7 +5,6 @@ import { createCipheriv, createDecipheriv, randomBytes } from "crypto"
 
 const ALGORITHM = "aes-256-gcm"
 const IV_LENGTH = 16
-const TAG_LENGTH = 16
 const KEY_LENGTH = 32 // 256-bit
 
 function getEncryptionKey(): Buffer {
@@ -88,6 +87,3 @@ export function encryptSsn(ssn: string): string {
 export function decryptSsn(encryptedSsn: string): string {
   return decrypt(encryptedSsn)
 }
-
-// Suppress unused import warning — TAG_LENGTH is part of the algorithm spec
-void TAG_LENGTH

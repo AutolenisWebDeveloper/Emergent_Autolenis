@@ -58,6 +58,8 @@ export interface IpredictRawResponse {
   collectionCount?: number
   errorCode?: string
   errorMessage?: string
+  /** Set to true when status is VENDOR_DECLINE to simplify downstream mapper logic. */
+  vendorDecline?: boolean
 }
 
 // ── Parsed iPredict Result (internal representation) ─────────────────────

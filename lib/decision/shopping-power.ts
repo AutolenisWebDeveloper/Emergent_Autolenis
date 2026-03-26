@@ -68,7 +68,7 @@ export function calculateShoppingRange(input: ShoppingRangeInput): ShoppingRange
   const minCents = Math.floor(adjustedMaxCents * 0.70)
 
   // Round to nearest $500
-  const roundTo = 50000 // $500 in cents
+  const roundTo = LOAN_DEFAULTS.SHOPPING_RANGE_ROUNDING_INCREMENT_CENTS
   const roundedMax = Math.round(adjustedMaxCents / roundTo) * roundTo
   const roundedMin = Math.round(minCents / roundTo) * roundTo
 

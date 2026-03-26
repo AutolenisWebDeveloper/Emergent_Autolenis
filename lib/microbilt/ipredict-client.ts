@@ -143,7 +143,7 @@ export async function callIpredict(requestBody: IpredictRequestBody): Promise<Ip
         }
 
         if (data.status === "VENDOR_DECLINE") {
-          return { ...data, vendorDecline: true } as IpredictRawResponse & { vendorDecline: boolean }
+          return { ...data, vendorDecline: true }
         }
 
         return data

@@ -26,7 +26,7 @@ export function mapIpredictResponse(raw: IpredictRawResponse): ParsedIpredictRes
   const collectionCount =
     raw.collectionCount ?? extractNumericIndicator(raw, "COLLECTION_COUNT") ?? 0
 
-  const vendorDecline = (raw as IpredictRawResponse & { vendorDecline?: boolean }).vendorDecline === true || raw.status === "VENDOR_DECLINE"
+  const vendorDecline = raw.vendorDecline === true || raw.status === "VENDOR_DECLINE"
   const noScore = raw.status === "NO_SCORE"
 
   return {
