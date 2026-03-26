@@ -162,14 +162,26 @@ function buildRequest(input: IpredictApplicationInput): IpredictRequest {
   return request
 }
 
+// ── Result shape ──────────────────────────────────────────────────────────
+
+/**
+ * The result returned by callIpredict — wraps the parsed decision data,
+ * the serialized raw response for encrypted storage, and the vendor request ID.
+ */
+export interface IpredictCallResult {
+  parsed: ParsedIpredictResult
+  rawResponseJson: string
+  vendorRequestId: string | null
+}
+
 // ── iPredict API call ──────────────────────────────────────────────────────
 
 /**
  * Calls the MicroBilt iPredict Advantage API via POST /GetReport.
  * SSN must be decrypted just before this call and must not be logged.
- * Returns the raw MBCLVRs IpredictResponse for encryption + mapping.
+ * Returns a parsed result, the serialized raw response for encryption, and the vendor request ID.
  */
-export async function callIpredict(input: IpredictApplicationInput): Promise<IpredictResponse> {
+export async function callIpredict(input: IpredictApplicationInput): Promise<IpredictCallResult> {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
 
@@ -237,7 +249,11 @@ export async function callIpredict(input: IpredictApplicationInput): Promise<Ipr
           throw new MicroBiltNoScoreError()
         }
 
-        return data
+        return {
+          parsed: mapIpredictResponse(data),
+          rawResponseJson: JSON.stringify(data),
+          vendorRequestId: data.MsgRsHdr?.RqUID ?? data.RESPONSE?.STATUS?.applicationNumber ?? null,
+        }
       } catch (error: unknown) {
         if (error instanceof Error && error.name === "AbortError") {
           throw new MicroBiltTimeoutError()
@@ -264,12 +280,12 @@ export async function callIpredict(input: IpredictApplicationInput): Promise<Ipr
 }
 
 /**
- * Convenience: calls iPredict and immediately maps the response to ParsedIpredictResult.
+ * Convenience: calls iPredict and immediately returns the parsed ParsedIpredictResult.
  * Use when you do not need to encrypt or persist the raw vendor response.
  */
 export async function callAndMapIpredict(input: IpredictApplicationInput): Promise<ParsedIpredictResult> {
-  const raw = await callIpredict(input)
-  return mapIpredictResponse(raw)
+  const result = await callIpredict(input)
+  return result.parsed
 }
 
 /**

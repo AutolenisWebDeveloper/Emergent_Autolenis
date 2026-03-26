@@ -5,9 +5,9 @@ import { decryptSsn, encrypt } from "@/lib/prequal/encryption"
 import { getPrequalSessionToken } from "@/lib/prequal/session"
 import { writePrequalAuditLog } from "@/lib/prequal/audit"
 import { callIpredict } from "@/lib/microbilt/ipredict-client"
-import { mapIpredictResponse } from "@/lib/microbilt/mappers"
+import type { IpredictApplicationInput } from "@/lib/microbilt/ipredict-client"
 import { scoreIpredict } from "@/lib/decision/ipredict-scorer"
-import { MicroBiltNoScoreError } from "@/lib/microbilt/errors"
+import { MicroBiltTimeoutError } from "@/lib/microbilt/errors"
 
 export const dynamic = "force-dynamic"
 
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     if (application.status !== "CONSENT_CAPTURED" && application.status !== "IPREDICT_PENDING") {
       return NextResponse.json(
         { success: false, error: `Invalid status for iPredict: ${application.status}` },
-        { status: 409 }
+        { status: 409 },
       )
     }
 
@@ -50,70 +50,83 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       description: "iPredict API call initiated",
     })
 
-    // Decrypt SSN just-in-time for the API call — never log or persist in plain text
+    // Decrypt SSN just-in-time — never log or persist in plain text
     const ssnPlain = decryptSsn(application.ssnEncrypted)
 
-    let rawResponse: import("@/lib/microbilt/types").IpredictResponse | undefined
+    // Convert gross monthly income from cents to dollars for the API
+    const grossMonthlyIncomeDollars = application.grossMonthlyIncome / 100
+
+    const input: IpredictApplicationInput = {
+      firstName: application.firstName,
+      lastName: application.lastName,
+      ssn: ssnPlain,
+      dob: application.dateOfBirth.toISOString().split("T")[0],
+      address1: application.addressLine1,
+      city: application.city,
+      state: application.state,
+      zip: application.zipCode,
+      phone: application.phone.replace(/\D/g, ""),
+      employerName: application.employerName ?? undefined,
+      grossMonthlyIncome: grossMonthlyIncomeDollars,
+      payFrequency: undefined,
+      applicationId: application.id,
+    }
+
+    let callResult
     let scoringResult
-    let isHardFail = false
 
     try {
-      rawResponse = await callIpredict({
-        ssn: ssnPlain,
-        firstName: application.firstName,
-        lastName: application.lastName,
-        dob: application.dateOfBirth.toISOString().split("T")[0],
-        address1: application.addressLine1,
-        city: application.city,
-        state: application.state,
-        zip: application.zipCode,
-        phone: application.phone,
-        employerName: application.employerName ?? undefined,
-        grossMonthlyIncome: application.grossMonthlyIncome / 100, // Convert from cents (DB) to dollars (API)
-        applicationId: application.id,
-      })
+      // Call with auto-retry (client handles one retry internally)
+      callResult = await callIpredict(input)
+      scoringResult = scoreIpredict(callResult.parsed)
+    } catch (firstError: unknown) {
+      // If retryable, try once more at the route level
+      if (firstError instanceof MicroBiltTimeoutError) {
+        try {
+          callResult = await callIpredict(input)
+          scoringResult = scoreIpredict(callResult.parsed)
+        } catch (retryError: unknown) {
+          // Both attempts failed — route to manual review
+          await prisma.prequalApplication.update({
+            where: { id: application.id },
+            data: { status: "SYSTEM_ERROR", queueSegment: "READY_FOR_REVIEW" },
+          })
 
-      const parsed = mapIpredictResponse(rawResponse)
-      scoringResult = scoreIpredict(parsed)
-    } catch (error: unknown) {
-      if (error instanceof MicroBiltNoScoreError) {
-        scoringResult = { band: "FAIL" as const, hardFailReason: "NO_SCORE" }
-        // Build a minimal MBCLVRs stub so the encrypted payload is type-consistent
-        rawResponse = {
-          MsgRsHdr: {
-            RqUID: "NO_SCORE",
-            Status: { StatusCode: 0, Severity: "Error", StatusDesc: "No score available" },
-          },
-          RESPONSE: {
-            STATUS: { type: "ERROR", error: { code: "NO_SCORE", message: "Insufficient data to score" } },
-          },
+          await writePrequalAuditLog({
+            applicationId: application.id,
+            eventType: "IPREDICT_ERROR",
+            actorType: "SYSTEM",
+            description: retryError instanceof Error ? retryError.message : "iPredict failed after retry",
+          })
+
+          return NextResponse.json(
+            { success: false, error: "Credit assessment service temporarily unavailable" },
+            { status: 503 },
+          )
         }
-        isHardFail = true
       } else {
-        // System error — mark application accordingly
+        // Non-retryable error
         await prisma.prequalApplication.update({
           where: { id: application.id },
           data: { status: "SYSTEM_ERROR" },
         })
+
         await writePrequalAuditLog({
           applicationId: application.id,
           eventType: "IPREDICT_ERROR",
           actorType: "SYSTEM",
-          description: error instanceof Error ? error.message : "iPredict API error",
+          description: firstError instanceof Error ? firstError.message : "iPredict API error",
         })
+
         return NextResponse.json(
           { success: false, error: "Credit assessment service temporarily unavailable" },
-          { status: 503 }
+          { status: 503 },
         )
       }
     }
 
-    // Encrypt and store the raw vendor response.
-    const requestId =
-      rawResponse?.MsgRsHdr?.RqUID ??
-      rawResponse?.RESPONSE?.STATUS?.applicationNumber ??
-      null
-    const encryptedPayload = encrypt(JSON.stringify(rawResponse))
+    // Encrypt and store the raw vendor response
+    const encryptedPayload = encrypt(callResult.rawResponseJson)
     await prisma.prequalIpredictReport.create({
       data: {
         applicationId: application.id,
@@ -121,7 +134,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         band: scoringResult.band,
         scoreRaw: scoringResult.scoreRaw ?? null,
         hardFailReason: scoringResult.hardFailReason ?? null,
-        requestId: requestId,
+        requestId: callResult.vendorRequestId ?? null,
       },
     })
 
@@ -132,8 +145,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     } else if (scoringResult.band === "BORDERLINE") {
       nextStatus = "IBV_PENDING"
     } else {
-      // PASS — go straight to decision
-      nextStatus = "IPREDICT_COMPLETED"
+      // PASS — go to IBV for income verification (configurable)
+      nextStatus = "IBV_PENDING"
     }
 
     await prisma.prequalApplication.update({
@@ -158,6 +171,27 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       },
     })
 
+    // If FAIL, finalize immediately
+    if (scoringResult.band === "FAIL") {
+      await prisma.prequalApplication.update({
+        where: { id: application.id },
+        data: {
+          status: "NOT_PREQUALIFIED",
+          finalStatus: "NOT_PREQUALIFIED",
+          queueSegment: "DECLINED",
+          completedAt: new Date(),
+        },
+      })
+
+      await writePrequalAuditLog({
+        applicationId: application.id,
+        eventType: "DECISION_MADE",
+        actorType: "SYSTEM",
+        newState: "NOT_PREQUALIFIED",
+        description: `Auto-declined: ${scoringResult.hardFailReason ?? "score below threshold"}`,
+      } as any)
+    }
+
     return NextResponse.json({
       success: true,
       band: scoringResult.band,
@@ -170,3 +204,4 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 })
   }
 }
+
