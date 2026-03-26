@@ -2,13 +2,14 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { logger } from "@/lib/logger"
 import { getSessionUser } from "@/lib/auth-server"
+import { ADMIN_ROLES } from "@/lib/authz/roles"
 
 export const dynamic = "force-dynamic"
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
     const user = await getSessionUser()
-    if (!user || !["ADMIN", "SUPER_ADMIN", "COMPLIANCE_ADMIN"].includes(user.role)) {
+    if (!user || !(ADMIN_ROLES as readonly string[]).includes(user.role)) {
       return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 403 })
     }
 

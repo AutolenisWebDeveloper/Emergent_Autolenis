@@ -3,6 +3,7 @@ import { z } from "zod"
 import { prisma } from "@/lib/prisma"
 import { logger } from "@/lib/logger"
 import { getSessionUser } from "@/lib/auth-server"
+import { ADMIN_ROLES } from "@/lib/authz/roles"
 import { writePrequalAuditLog } from "@/lib/prequal/audit"
 
 export const dynamic = "force-dynamic"
@@ -18,7 +19,7 @@ export async function POST(
 ): Promise<NextResponse> {
   try {
     const user = await getSessionUser()
-    if (!user || !["ADMIN", "SUPER_ADMIN", "COMPLIANCE_ADMIN"].includes(user.role)) {
+    if (!user || !(ADMIN_ROLES as readonly string[]).includes(user.role)) {
       return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 403 })
     }
 
