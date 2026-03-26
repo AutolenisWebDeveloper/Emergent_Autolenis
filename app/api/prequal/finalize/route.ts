@@ -118,7 +118,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         shoppingRangeMaxCents: shoppingMax ?? null,
         completedAt: new Date(),
         expiresAt,
-        queueSegment: queueSegmentMap[decisionResult.finalStatus] as any ?? "COMPLETED",
+        queueSegment: (queueSegmentMap[decisionResult.finalStatus] ?? "COMPLETED") as any,
       },
     })
 

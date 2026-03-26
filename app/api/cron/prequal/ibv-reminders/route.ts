@@ -31,7 +31,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         messages: {
           none: {
             messageType: "IBV_REMINDER",
-            createdAt: { gt: new Date(Date.now() - IBV_REMINDER_DELAY_HOURS * 60 * 60 * 1000) },
+            createdAt: { gt: cutoff },
           },
         },
       },

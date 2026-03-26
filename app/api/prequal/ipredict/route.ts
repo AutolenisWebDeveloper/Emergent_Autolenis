@@ -100,7 +100,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       }
     }
 
-    // Encrypt and store the raw vendor response
+    // Encrypt and store the raw vendor response.
+    // NOTE: rawResponse may be a NO_SCORE stub — define a typed local to avoid `any` cast.
+    const responseWithId = rawResponse as { requestId?: string }
     const encryptedPayload = encrypt(JSON.stringify(rawResponse))
     await prisma.prequalIpredictReport.create({
       data: {
@@ -109,7 +111,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         band: scoringResult.band,
         scoreRaw: scoringResult.scoreRaw ?? null,
         hardFailReason: scoringResult.hardFailReason ?? null,
-        requestId: (rawResponse as any).requestId ?? null,
+        requestId: responseWithId.requestId ?? null,
       },
     })
 
