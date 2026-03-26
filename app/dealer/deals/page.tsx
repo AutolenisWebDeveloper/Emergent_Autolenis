@@ -1,4 +1,6 @@
 "use client"
+
+import { Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import useSWR from "swr"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -18,7 +20,7 @@ const fetcher = async (url: string) => {
   return res.json()
 }
 
-export default function DealerDealsPage() {
+function DealerDealsPageContent() {
   const searchParams = useSearchParams()
   const status = searchParams.get("status")
   const apiUrl = status ? `/api/dealer/deals?status=${status}` : "/api/dealer/deals"
@@ -97,5 +99,13 @@ export default function DealerDealsPage() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function DealerDealsPage() {
+  return (
+    <Suspense fallback={null}>
+      <DealerDealsPageContent />
+    </Suspense>
   )
 }

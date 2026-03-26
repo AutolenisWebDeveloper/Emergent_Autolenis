@@ -1,12 +1,12 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, Suspense } from "react"
 import { useParams, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { ArrowRight, Car, Users, Shield, DollarSign, CheckCircle, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
-export default function ReferralLandingPage() {
+function ReferralLandingPageContent() {
   const params = useParams()
   const searchParams = useSearchParams()
   // const router = useRouter()
@@ -305,5 +305,13 @@ export default function ReferralLandingPage() {
         </div>
       </footer>
     </div>
+  )
+}
+
+export default function ReferralLandingPage() {
+  return (
+    <Suspense fallback={null}>
+      <ReferralLandingPageContent />
+    </Suspense>
   )
 }

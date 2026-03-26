@@ -1,13 +1,13 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useCallback, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Loader2, CheckCircle2, AlertCircle, Clock } from "lucide-react"
 
-export default function AgreementSuccessPage() {
+function AgreementSuccessPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [loading, setLoading] = useState(true)
@@ -125,5 +125,13 @@ export default function AgreementSuccessPage() {
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+export default function AgreementSuccessPage() {
+  return (
+    <Suspense fallback={null}>
+      <AgreementSuccessPageContent />
+    </Suspense>
   )
 }

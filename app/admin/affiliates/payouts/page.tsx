@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, Suspense } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -59,7 +59,7 @@ interface Payout {
   }
 }
 
-export default function AdminPayoutsPage() {
+function AdminPayoutsPageContent() {
   const searchParams = useSearchParams();
   const [statusFilter, setStatusFilter] = useState<string>(searchParams.get("status") || "PENDING")
   const [search, setSearch] = useState(searchParams.get("search") || "")
@@ -419,3 +419,11 @@ export default function AdminPayoutsPage() {
   )
 }
 
+
+export default function AdminPayoutsPage() {
+  return (
+    <Suspense fallback={null}>
+      <AdminPayoutsPageContent />
+    </Suspense>
+  )
+}

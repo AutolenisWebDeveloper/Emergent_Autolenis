@@ -4378,3 +4378,348 @@ model InventoryImportJob {
   @@index([status])
   @@index([createdAt])
 }
+
+// ============================================
+// BUYER PREQUALIFICATION SYSTEM — Consumer-Facing Soft Prequal
+// ============================================
+
+enum ApplicationStatus {
+  INTAKE_IN_PROGRESS
+  CONSENT_CAPTURED
+  IPREDICT_PENDING
+  IPREDICT_COMPLETED
+  IBV_PENDING
+  IBV_COMPLETED
+  DECISION_PENDING
+  PREQUALIFIED
+  PREQUALIFIED_CONDITIONAL
+  MANUAL_REVIEW
+  NOT_PREQUALIFIED
+  STALE
+  EXPIRED
+  SYSTEM_ERROR
+}
+
+enum IpredictBand {
+  PASS
+  BORDERLINE
+  FAIL
+}
+
+enum IbvOutcome {
+  SUFFICIENT
+  WEAK
+  INCOMPLETE
+  NOT_TRIGGERED
+}
+
+enum FinalStatus {
+  PREQUALIFIED
+  PREQUALIFIED_CONDITIONAL
+  MANUAL_REVIEW
+  NOT_PREQUALIFIED
+}
+
+enum QueueSegment {
+  NEW
+  IN_PROGRESS
+  ACTION_REQUIRED
+  READY_FOR_REVIEW
+  COMPLETED
+  DECLINED
+  STALE
+  EXPIRED
+}
+
+enum PrequalMessageChannel {
+  SMS
+  EMAIL
+}
+
+enum PrequalMessageType {
+  SUBMISSION_CONFIRMATION
+  RESULT_READY
+  IBV_REMINDER
+}
+
+enum PrequalMessageDeliveryStatus {
+  QUEUED
+  SENT
+  DELIVERED
+  FAILED
+}
+
+/// Consumer-facing soft prequalification application record.
+/// New model coexisting with legacy PreQualification — different purpose.
+model PrequalApplication {
+  id          String  @id @default(cuid())
+  workspaceId String?
+
+  // Application session cookie value (anonymous user identifier)
+  sessionToken String @unique
+
+  // Status tracking
+  status        ApplicationStatus @default(INTAKE_IN_PROGRESS)
+  queueSegment  QueueSegment      @default(NEW)
+
+  // Step 1 — Basic Identity
+  firstName   String
+  lastName    String
+  email       String
+  phone       String
+  dateOfBirth DateTime
+  ssnEncrypted String   // AES-256-GCM encrypted SSN
+
+  // Step 2 — Residence
+  addressLine1   String
+  addressLine2   String?
+  city           String
+  state          String
+  zipCode        String
+  residenceType  String // OWN, RENT, LIVE_WITH_FAMILY, OTHER
+  monthsAtAddress Int
+
+  // Step 3 — Income / Housing
+  employmentType      String // EMPLOYED, SELF_EMPLOYED, RETIRED, OTHER
+  employerName        String?
+  grossMonthlyIncome  Int    // cents
+  monthlyHousingPayment Int  // cents
+
+  // Step 4 — Shopping Inputs
+  downPaymentCents    Int    @default(0)
+  targetMonthlyPaymentCents Int @default(0)
+
+  // Consent
+  consentGiven    Boolean  @default(false)
+  consentGivenAt  DateTime?
+  consentIpAddress String?
+  consentUserAgent String?
+  consentVersionId String?
+
+  // iPredict result (denormalized for quick access)
+  ipredictBand     IpredictBand?
+  ipredictScoreRaw Int?
+
+  // IBV result (denormalized)
+  ibvOutcome IbvOutcome @default(NOT_TRIGGERED)
+
+  // Final result (denormalized)
+  finalStatus         FinalStatus?
+  shoppingRangeMinCents Int?
+  shoppingRangeMaxCents Int?
+
+  // SLA tracking
+  slaEscalatedAt  DateTime?
+  slaEscalationReason String?
+
+  // Metadata
+  ipAddress String?
+  userAgent String?
+  submittedAt DateTime?
+  completedAt DateTime?
+  expiresAt   DateTime?
+  stalledAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  consent       PrequalConsent?
+  ipredictReport PrequalIpredictReport?
+  ibvSession    PrequalIbvSession?
+  ibvReport     PrequalIbvReport?
+  decision      PrequalDecision?
+  auditLogs     PrequalAuditLog[]
+  messages      PrequalMessage[]
+  notes         PrequalNote[]
+
+  @@index([workspaceId])
+  @@index([sessionToken])
+  @@index([status])
+  @@index([queueSegment])
+  @@index([email])
+  @@index([createdAt])
+  @@map("prequal_application")
+}
+
+/// Consent capture record for the prequal application.
+model PrequalConsent {
+  id            String            @id @default(cuid())
+  applicationId String            @unique
+  application   PrequalApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  consentVersionId String
+  consentText      String  @db.Text
+  htmlHash         String?
+  consentGiven     Boolean
+  consentDate      DateTime
+  ipAddress        String?
+  userAgent        String?
+  fingerprintHash  String?
+
+  createdAt DateTime @default(now())
+
+  @@index([applicationId])
+  @@index([consentVersionId])
+  @@map("prequal_consent")
+}
+
+/// Encrypted storage for iPredict API response.
+model PrequalIpredictReport {
+  id            String            @id @default(cuid())
+  applicationId String            @unique
+  application   PrequalApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  // Encrypted vendor response (AES-256-GCM)
+  encryptedPayload String  @db.Text
+  encryptionKeyId  String?  // Key version identifier for rotation
+
+  // Parsed result fields (non-PII, safe to store in plain text)
+  band            IpredictBand
+  scoreRaw        Int?
+  hardFailReason  String?  // If band is FAIL due to hard-fail override
+
+  // Metadata
+  requestId       String?  // MicroBilt reference ID
+  latencyMs       Int?
+  retriedAt       DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([applicationId])
+  @@map("prequal_ipredict_report")
+}
+
+/// IBV bank verification session tracking.
+model PrequalIbvSession {
+  id            String            @id @default(cuid())
+  applicationId String            @unique
+  application   PrequalApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  // MicroBilt IBV session identifiers
+  ibvSessionId    String?
+  ibvFormUrl      String?  @db.Text
+
+  status          String   @default("CREATED") // CREATED, STARTED, COMPLETED, EXPIRED, FAILED
+  createdAt       DateTime @default(now())
+  startedAt       DateTime?
+  completedAt     DateTime?
+  expiresAt       DateTime?
+
+  @@index([applicationId])
+  @@index([ibvSessionId])
+  @@map("prequal_ibv_session")
+}
+
+/// IBV report storage.
+model PrequalIbvReport {
+  id            String            @id @default(cuid())
+  applicationId String            @unique
+  application   PrequalApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  // Encrypted vendor response (AES-256-GCM)
+  encryptedPayload String  @db.Text
+  encryptionKeyId  String?
+
+  // Parsed result fields
+  outcome       IbvOutcome
+  monthlyIncomeCents Int?  // Verified monthly income in cents
+  confidence    String?    // HIGH, MEDIUM, LOW
+
+  createdAt DateTime @default(now())
+
+  @@index([applicationId])
+  @@map("prequal_ibv_report")
+}
+
+/// Final decision record with shopping range.
+model PrequalDecision {
+  id            String            @id @default(cuid())
+  applicationId String            @unique
+  application   PrequalApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  finalStatus   FinalStatus
+  ipredictBand  IpredictBand
+  ibvOutcome    IbvOutcome
+
+  shoppingRangeMinCents Int?
+  shoppingRangeMaxCents Int?
+
+  // Decision metadata
+  decisionReason   String?  @db.Text
+  expiresAt        DateTime
+  manualOverride   Boolean  @default(false)
+  overrideActorId  String?
+  overrideReason   String?  @db.Text
+
+  createdAt DateTime @default(now())
+
+  @@index([applicationId])
+  @@index([finalStatus])
+  @@map("prequal_decision")
+}
+
+/// Immutable audit trail for prequal-specific events.
+model PrequalAuditLog {
+  id            String            @id @default(cuid())
+  applicationId String
+  application   PrequalApplication @relation(fields: [applicationId], references: [id], onDelete: Restrict)
+
+  eventType     String   // e.g. "APPLICATION_CREATED", "IPREDICT_COMPLETED", "DECISION_MADE"
+  actorId       String?  // Admin userId if triggered by admin; null if system
+  actorType     String   @default("SYSTEM") // SYSTEM, ADMIN, CONSUMER
+  description   String?  @db.Text
+  metadata      Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([applicationId])
+  @@index([eventType])
+  @@index([createdAt])
+  @@map("prequal_audit_log")
+}
+
+/// SMS/email message tracking for prequal flow.
+model PrequalMessage {
+  id            String            @id @default(cuid())
+  applicationId String
+  application   PrequalApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  channel         PrequalMessageChannel
+  messageType     PrequalMessageType
+  deliveryStatus  PrequalMessageDeliveryStatus @default(QUEUED)
+
+  recipient       String   // phone number or email
+  subject         String?  // for email only
+  body            String   @db.Text
+
+  sentAt          DateTime?
+  deliveredAt     DateTime?
+  failureReason   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([applicationId])
+  @@index([deliveryStatus])
+  @@index([createdAt])
+  @@map("prequal_message")
+}
+
+/// Admin reviewer notes on prequal applications.
+model PrequalNote {
+  id            String            @id @default(cuid())
+  applicationId String
+  application   PrequalApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  authorId    String   // Admin userId
+  body        String   @db.Text
+  isInternal  Boolean  @default(true)  // Internal admin note vs consumer-visible message
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([applicationId])
+  @@index([authorId])
+  @@map("prequal_note")
+}

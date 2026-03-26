@@ -1,9 +1,9 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 
-export default function DealerAuctionsPage() {
+function DealerAuctionsPageContent() {
   const [auctions, setAuctions] = useState([])
   const [loading, setLoading] = useState(true)
   const router = useRouter()
@@ -102,5 +102,13 @@ export default function DealerAuctionsPage() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function DealerAuctionsPage() {
+  return (
+    <Suspense fallback={null}>
+      <DealerAuctionsPageContent />
+    </Suspense>
   )
 }

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { ProtectedRoute } from "@/components/layout/protected-route"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -21,7 +21,7 @@ import { useToast } from "@/hooks/use-toast"
  *  - Direct authenticated application for dealers already signed in
  *  - Resume onboarding flow with prefill from prospect data
  */
-export default function DealerApplyPage() {
+function DealerApplyPageContent() {
   return (
     <ProtectedRoute allowedRoles={["DEALER", "DEALER_USER"]}>
       <DealerApplyContent />
@@ -252,5 +252,13 @@ function DealerApplyContent() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function DealerApplyPage() {
+  return (
+    <Suspense fallback={null}>
+      <DealerApplyPageContent />
+    </Suspense>
   )
 }
