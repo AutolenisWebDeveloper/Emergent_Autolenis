@@ -1,9 +1,16 @@
 // MicroBilt iPredict Advantage — OAuth2 + API Client
-// Sandbox endpoint: https://apitest.microbilt.com
+// Real API uses POST /GetReport with MBCLVRq envelope
+// Sandbox: https://apitest.microbilt.com/iPredict/GetReport
+// Production: https://api.microbilt.com/iPredict/GetReport
 
 import { logger } from "@/lib/logger"
 import { MicroBiltAuthError, MicroBiltApiError, MicroBiltTimeoutError, MicroBiltNoScoreError } from "./errors"
-import type { MicroBiltTokenResponse, IpredictRequestBody, IpredictRawResponse } from "./types"
+import type {
+  MicroBiltTokenResponse,
+  IpredictRequestBody,
+  IpredictRequest,
+  IpredictResponse,
+} from "./types"
 
 const TOKEN_URL = process.env["MICROBILT_TOKEN_URL"] ?? "https://apitest.microbilt.com/OAuth/Token"
 const IPREDICT_BASE_URL = process.env["MICROBILT_IPREDICT_BASE_URL"] ?? "https://apitest.microbilt.com/iPredict"
@@ -67,21 +74,74 @@ async function getAccessToken(): Promise<string> {
       throw new MicroBiltTimeoutError("MicroBilt OAuth2 token request timed out")
     }
     if (error instanceof MicroBiltAuthError) throw error
-    throw new MicroBiltAuthError(`Failed to obtain MicroBilt access token: ${error instanceof Error ? error.message : String(error)}`)
+    throw new MicroBiltAuthError(
+      `Failed to obtain MicroBilt access token: ${error instanceof Error ? error.message : String(error)}`,
+    )
   } finally {
     clearTimeout(timeout)
   }
 }
 
+// ── MBCLVRq envelope builder ───────────────────────────────────────────────
+
+/**
+ * Builds the real MicroBilt MBCLVRq request envelope from our flat IpredictRequestBody.
+ * The SSN must already be decrypted before this call. It must NOT be logged.
+ */
+function buildMBCLVRq(params: IpredictRequestBody, refNum: string): { MBCLVRq: IpredictRequest } {
+  const envelope: IpredictRequest = {
+    MsgRqHdr: {
+      RequestType: "N",
+      ReasonCode: "FPP", // Firm Pre-qualification (permissible purpose)
+      RefNum: refNum,
+    },
+    PersonInfo: {
+      PersonName: {
+        FirstName: params.firstName,
+        LastName: params.lastName,
+      },
+      ContactInfo: {
+        PostAddr: {
+          Addr1: params.address.street1,
+          ...(params.address.street2 ? { Addr2: params.address.street2 } : {}),
+          City: params.address.city,
+          StateProv: params.address.state,
+          PostalCode: params.address.zip,
+        },
+        ...(params.phone
+          ? {
+              PhoneNum: {
+                PhoneType: "CELL",
+                Phone: params.phone,
+              },
+            }
+          : {}),
+      },
+      TINInfo: {
+        TINType: "1",
+        TaxId: params.ssn,
+      },
+      BirthDt: params.dateOfBirth,
+    },
+  }
+
+  return { MBCLVRq: envelope }
+}
+
 // ── iPredict API call ──────────────────────────────────────────────────────
 
 /**
- * Calls the MicroBilt iPredict Advantage API.
+ * Calls the MicroBilt iPredict Advantage API via POST /GetReport.
+ * Internally builds the MBCLVRq envelope from the flat IpredictRequestBody.
  * SSN must be decrypted just before this call and must not be logged.
+ * Returns the raw MBCLVRs IpredictResponse for encryption + mapping.
  */
-export async function callIpredict(requestBody: IpredictRequestBody): Promise<IpredictRawResponse> {
+export async function callIpredict(requestBody: IpredictRequestBody): Promise<IpredictResponse> {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
+
+  // Deterministic reference number based on timestamp — not PII
+  const refNum = `AL-${Date.now()}`
 
   let attempt = 0
   const maxAttempts = 2
@@ -90,30 +150,17 @@ export async function callIpredict(requestBody: IpredictRequestBody): Promise<Ip
     while (attempt < maxAttempts) {
       attempt++
       const accessToken = await getAccessToken()
+      const envelope = buildMBCLVRq(requestBody, refNum)
 
       try {
-        const response = await fetch(`${IPREDICT_BASE_URL}/score`, {
+        const response = await fetch(`${IPREDICT_BASE_URL}/GetReport`, {
           method: "POST",
           headers: {
             Authorization: `Bearer ${accessToken}`,
             "Content-Type": "application/json",
             Accept: "application/json",
           },
-          body: JSON.stringify({
-            ssn: requestBody.ssn,
-            firstName: requestBody.firstName,
-            lastName: requestBody.lastName,
-            dateOfBirth: requestBody.dateOfBirth,
-            address: {
-              street1: requestBody.address.street1,
-              street2: requestBody.address.street2,
-              city: requestBody.address.city,
-              state: requestBody.address.state,
-              zip: requestBody.address.zip,
-            },
-            phone: requestBody.phone,
-            email: requestBody.email,
-          }),
+          body: JSON.stringify(envelope),
           signal: controller.signal,
         })
 
@@ -136,14 +183,24 @@ export async function callIpredict(requestBody: IpredictRequestBody): Promise<Ip
           )
         }
 
-        const data: IpredictRawResponse = await response.json()
+        const data: IpredictResponse = await response.json()
 
-        if (data.status === "NO_SCORE") {
-          throw new MicroBiltNoScoreError()
+        // Detect system error in the response envelope
+        const responseStatus = data.RESPONSE?.STATUS
+        if (responseStatus?.type === "ERROR") {
+          const errorCode = responseStatus.error?.code ?? "UNKNOWN"
+          const errorMsg = responseStatus.error?.message ?? "iPredict returned an error"
+          // NO_SCORE error codes (insufficient data to score)
+          if (errorCode === "NO_SCORE" || errorCode === "INSUFFICIENT_DATA") {
+            throw new MicroBiltNoScoreError()
+          }
+          throw new MicroBiltApiError(`iPredict error ${errorCode}: ${errorMsg}`)
         }
 
-        if (data.status === "VENDOR_DECLINE") {
-          return { ...data, vendorDecline: true }
+        // Detect no-score from missing/empty SCORES array
+        const scores = data.RESPONSE?.CONTENT?.DECISION?.SCORES
+        if (!scores || scores.length === 0) {
+          throw new MicroBiltNoScoreError()
         }
 
         return data
@@ -173,23 +230,27 @@ export async function callIpredict(requestBody: IpredictRequestBody): Promise<Ip
 }
 
 /**
- * Retrieves a previously archived iPredict report by requestId.
+ * Retrieves a previously archived iPredict report by its RqUID / reference number.
+ * Returns null if not found or on any error.
  */
-export async function retrieveIpredictArchive(requestId: string): Promise<IpredictRawResponse | null> {
+export async function retrieveIpredictArchive(rqUID: string): Promise<IpredictResponse | null> {
   try {
     const accessToken = await getAccessToken()
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
 
     try {
-      const response = await fetch(`${IPREDICT_BASE_URL}/archive/${encodeURIComponent(requestId)}`, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          Accept: "application/json",
+      const response = await fetch(
+        `${IPREDICT_BASE_URL}/GetReport/${encodeURIComponent(rqUID)}`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            Accept: "application/json",
+          },
+          signal: controller.signal,
         },
-        signal: controller.signal,
-      })
+      )
 
       if (!response.ok) return null
       return await response.json()
@@ -198,7 +259,7 @@ export async function retrieveIpredictArchive(requestId: string): Promise<Ipredi
     }
   } catch (error: unknown) {
     logger.warn("[MicroBilt] Failed to retrieve iPredict archive", {
-      requestId,
+      rqUID,
       error: error instanceof Error ? error.message : String(error),
     })
     return null

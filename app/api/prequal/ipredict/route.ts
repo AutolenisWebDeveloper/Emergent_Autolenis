@@ -53,7 +53,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // Decrypt SSN just-in-time for the API call — never log or persist in plain text
     const ssnPlain = decryptSsn(application.ssnEncrypted)
 
-    let rawResponse
+    let rawResponse: import("@/lib/microbilt/types").IpredictResponse | undefined
     let scoringResult
     let isHardFail = false
 
@@ -79,7 +79,16 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     } catch (error: unknown) {
       if (error instanceof MicroBiltNoScoreError) {
         scoringResult = { band: "FAIL" as const, hardFailReason: "NO_SCORE" }
-        rawResponse = { requestId: "NO_SCORE", status: "NO_SCORE" as const }
+        // Build a minimal MBCLVRs stub so the encrypted payload is type-consistent
+        rawResponse = {
+          MsgRsHdr: {
+            RqUID: "NO_SCORE",
+            Status: { StatusCode: 0, Severity: "Error", StatusDesc: "No score available" },
+          },
+          RESPONSE: {
+            STATUS: { type: "ERROR", error: { code: "NO_SCORE", message: "Insufficient data to score" } },
+          },
+        }
         isHardFail = true
       } else {
         // System error — mark application accordingly
@@ -101,8 +110,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     // Encrypt and store the raw vendor response.
-    // NOTE: rawResponse may be a NO_SCORE stub — define a typed local to avoid `any` cast.
-    const responseWithId = rawResponse as { requestId?: string }
+    const requestId =
+      rawResponse?.MsgRsHdr?.RqUID ??
+      rawResponse?.RESPONSE?.STATUS?.applicationNumber ??
+      null
     const encryptedPayload = encrypt(JSON.stringify(rawResponse))
     await prisma.prequalIpredictReport.create({
       data: {
@@ -111,7 +122,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         band: scoringResult.band,
         scoreRaw: scoringResult.scoreRaw ?? null,
         hardFailReason: scoringResult.hardFailReason ?? null,
-        requestId: responseWithId.requestId ?? null,
+        requestId: requestId,
       },
     })
 
