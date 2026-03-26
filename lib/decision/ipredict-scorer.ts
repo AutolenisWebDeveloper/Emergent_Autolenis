@@ -9,49 +9,79 @@ export interface IpredictScoringResult {
   band: IpredictBand
   hardFailReason?: string
   scoreRaw?: number
+  decisionSummary: {
+    vendorDecision: string | null
+    scoreModel: string | null
+    totalInquiries: number
+    totalLoans: number
+    badLoans: number
+    bankruptcyCount: number
+    eljCount: number
+  }
 }
+
+const COLLECTIONS_HARD_FAIL_THRESHOLD = 3
 
 /**
  * Scores a parsed iPredict result into a band.
  * Hard-fail overrides take priority over numeric score.
+ * NEVER expose thresholds, raw scores, or flags to the consumer.
  */
 export function scoreIpredict(result: ParsedIpredictResult): IpredictScoringResult {
+  const reasonCodes: string[] = []
+
   // Hard-fail overrides — immediate FAIL regardless of score
-  if (result.ofacMatch) {
-    return { band: "FAIL", hardFailReason: HARD_FAIL_REASONS.OFAC_HIT }
-  }
-  if (result.hasBankruptcyIndicator) {
-    return { band: "FAIL", hardFailReason: HARD_FAIL_REASONS.BANKRUPTCY }
-  }
-  if (result.fraudWarning) {
-    return { band: "FAIL", hardFailReason: HARD_FAIL_REASONS.FRAUD_ALERT }
-  }
-  if (result.ssnDeceased) {
-    return { band: "FAIL", hardFailReason: HARD_FAIL_REASONS.DECEASED_SSN }
-  }
-  if (result.ddaFraudIndicator) {
-    return { band: "FAIL", hardFailReason: HARD_FAIL_REASONS.DDA_FRAUD }
-  }
-  if (result.vendorDecline) {
-    return { band: "FAIL", hardFailReason: HARD_FAIL_REASONS.VENDOR_DECLINE }
-  }
-  if (result.badLoans >= IPREDICT_THRESHOLDS.BAD_LOAN_FAIL_MIN) {
-    return { band: "FAIL", hardFailReason: HARD_FAIL_REASONS.EXCESSIVE_BAD_LOANS }
+  if (result.vendorDecline) reasonCodes.push(HARD_FAIL_REASONS.VENDOR_DECLINE)
+  if (result.ssnDeceased) reasonCodes.push(HARD_FAIL_REASONS.DECEASED_SSN)
+  if (result.ofacMatch) reasonCodes.push(HARD_FAIL_REASONS.OFAC_HIT)
+  if (result.fraudWarning) reasonCodes.push(HARD_FAIL_REASONS.FRAUD_ALERT)
+  if (result.ddaFraudIndicator) reasonCodes.push(HARD_FAIL_REASONS.DDA_FRAUD)
+  if (result.hasBankruptcyIndicator) reasonCodes.push(HARD_FAIL_REASONS.BANKRUPTCY)
+  if (result.hasActiveJudgment) reasonCodes.push(HARD_FAIL_REASONS.ACTIVE_JUDGMENT_LIEN)
+  if (result.badLoans >= IPREDICT_THRESHOLDS.BAD_LOAN_FAIL_MIN) reasonCodes.push(HARD_FAIL_REASONS.EXCESSIVE_BAD_LOANS)
+  if (result.loansInCollections >= COLLECTIONS_HARD_FAIL_THRESHOLD) reasonCodes.push(HARD_FAIL_REASONS.MULTIPLE_COLLECTIONS)
+
+  if (reasonCodes.length > 0) {
+    return buildResult("FAIL", result, reasonCodes[0])
   }
 
-  // No score = FAIL (cannot assess risk)
+  // No score = FAIL
   if (result.noScore || result.primaryScore === null) {
-    return { band: "FAIL", hardFailReason: "NO_SCORE" }
+    return buildResult("FAIL", result, "NO_SCORE")
   }
 
   const score = result.primaryScore
 
-  // Numeric band assignment
   if (score >= IPREDICT_THRESHOLDS.PASS_MIN) {
-    return { band: "PASS", scoreRaw: score }
+    return buildResult("PASS", result, undefined, score)
   }
+
   if (score >= IPREDICT_THRESHOLDS.BORDERLINE_MIN) {
-    return { band: "BORDERLINE", scoreRaw: score }
+    return buildResult("BORDERLINE", result, undefined, score)
   }
-  return { band: "FAIL", scoreRaw: score }
+
+  return buildResult("FAIL", result, undefined, score)
 }
+
+function buildResult(
+  band: IpredictBand,
+  parsed: ParsedIpredictResult,
+  hardFailReason?: string,
+  scoreRaw?: number,
+): IpredictScoringResult {
+  return {
+    band,
+    hardFailReason,
+    scoreRaw,
+    decisionSummary: {
+      vendorDecision: parsed.decisionValue,
+      scoreModel: parsed.scoreModel,
+      totalInquiries: parsed.totalInquiries,
+      totalLoans: parsed.totalLoans,
+      badLoans: parsed.badLoans,
+      bankruptcyCount: parsed.bankruptcyCount,
+      eljCount: parsed.evictionLienJudgmentCount,
+    },
+  }
+}
+
