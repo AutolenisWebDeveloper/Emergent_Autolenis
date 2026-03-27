@@ -37,7 +37,7 @@ function extractClientIp(request: NextRequest): string {
     const first = xff.split(",")[0]?.trim()
     if (first) return first
   }
-  return (request as any).ip || "unknown"
+  return ("ip" in request ? (request as { ip?: string }).ip : undefined) || "unknown"
 }
 
 export async function rateLimit(request: NextRequest, config: RateLimitConfig): Promise<NextResponse | null> {

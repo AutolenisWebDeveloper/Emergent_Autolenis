@@ -84,7 +84,7 @@ export const supabase: SupabaseClient = new Proxy({} as SupabaseClient, {
   get: (_, prop) => {
     if (prop === "then") return undefined // Allow await checks
     const client = getOrCreateSupabase()
-    return (client as any)[prop]
+    return (client as unknown as Record<string, unknown>)[prop as string]
   },
 })
 
@@ -144,7 +144,7 @@ export const prisma = new Proxy({} as any, {
         `Prisma client not available. The app uses Supabase for database operations. Error: ${_prismaLoadError || 'Prisma not installed'}`
       )
     }
-    return client[prop]
+    return (client as Record<string, unknown>)[prop as string]
   },
 })
 

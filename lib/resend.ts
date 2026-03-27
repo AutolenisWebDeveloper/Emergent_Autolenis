@@ -28,7 +28,7 @@ function ensureResend(): Resend {
 export const resend: Resend = new Proxy({} as Resend, {
   get(_target, prop) {
     const instance = ensureResend()
-    const value = (instance as any)[prop]
+    const value = (instance as unknown as Record<string, unknown>)[prop as string]
     return typeof value === "function" ? value.bind(instance) : value
   },
 })

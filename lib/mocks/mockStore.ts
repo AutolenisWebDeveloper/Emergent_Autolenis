@@ -2382,7 +2382,7 @@ export const mockSelectors = {
     }
   },
   adminAffiliatePayments({ status, affiliateId, page = 1, limit = 50 }: { status?: string; affiliateId?: string; page?: number; limit?: number }) {
-    let payments = (mockDb.payouts as any[]).filter((p: any) => p.affiliateId)
+    let payments = (mockDb.payouts as Record<string, unknown>[]).filter((p: Record<string, unknown>) => p["affiliateId"])
     if (status && status !== "all") {
       payments = payments.filter((p: any) => p.status === status)
     }

@@ -58,7 +58,7 @@ export async function validateCronRequest(request: NextRequest): Promise<NextRes
 
   // Verify IP address in production environments
   if (process.env.NODE_ENV === "production") {
-    const ip = (request as any).ip || request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip")
+    const ip = ("ip" in request ? (request as { ip?: string }).ip : undefined) || request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip")
 
     if (!ip) {
       logger.warn("[CronSecurity] No IP address found in request")
@@ -68,7 +68,7 @@ export async function validateCronRequest(request: NextRequest): Promise<NextRes
     const isValidIp = VERCEL_CRON_IPS.some((range) => isIpInRange(ip, range))
 
     if (!isValidIp) {
-      logger.warn("[CronSecurity] Request from unauthorized IP:", ip)
+      logger.warn("[CronSecurity] Request from unauthorized IP", { ip })
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
   }

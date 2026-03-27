@@ -336,7 +336,7 @@ export function SignUpForm() {
               className="flex h-11 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
               value={formData.role}
               onChange={(e) =>
-                setFormData({ ...formData, role: e.target.value as any })
+                setFormData({ ...formData, role: e.target.value as "BUYER" | "DEALER" | "AFFILIATE" })
               }
               disabled={loading}
             >
