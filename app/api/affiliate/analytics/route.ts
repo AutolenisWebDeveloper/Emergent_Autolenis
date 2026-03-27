@@ -96,7 +96,7 @@ export async function GET(req: NextRequest) {
       earningsByDay,
       topReferrals,
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("[Affiliate Analytics] Error:", error)
     return NextResponse.json({ error: "Failed to get analytics" }, { status: 500 })
   }

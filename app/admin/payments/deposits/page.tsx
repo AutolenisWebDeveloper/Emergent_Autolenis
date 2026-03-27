@@ -93,8 +93,8 @@ export default function AdminDepositsPage() {
       setShowInitiate(false)
       setForm({ buyerId: "", dealId: "", amount: "", notes: "", dueDate: "" })
       mutate()
-    } catch (err: any) {
-      toast({ variant: "destructive", title: "Failed", description: err.message })
+    } catch (err: unknown) {
+      toast({ variant: "destructive", title: "Failed", description: (err instanceof Error ? err.message : String(err)) })
     } finally {
       setProcessing(false)
     }

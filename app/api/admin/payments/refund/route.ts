@@ -27,7 +27,7 @@ export async function POST(request: Request) {
 
     const result = await PaymentService.processRefund(paymentId, type || "deposit", reason, user.userId)
     return NextResponse.json({ success: true, data: result })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[Admin Payment Refund API]", error)
     return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 })
   }

@@ -147,11 +147,11 @@ export default function AffiliateDashboardPage() {
       setRecipientEmail("")
       setShareMessage("")
       setShareOpen(false)
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast({
         variant: "destructive",
         title: "Send failed",
-        description: err.message || "Unable to send referral email.",
+        description: (err instanceof Error ? err.message : String(err)) || "Unable to send referral email.",
       })
     } finally {
       setShareSending(false)

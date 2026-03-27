@@ -363,7 +363,7 @@ export class AffiliateService {
     const commissions: any[] = []
 
     // Use transaction for atomicity
-    await prisma.$transaction(async (tx: any) => {
+    await prisma.$transaction(async (tx: typeof prisma) => {
       for (const referral of referrals) {
         const rate = this.COMMISSION_RATES[referral.level as 1 | 2 | 3] || 0
         const amountCents = Math.floor(baseFee * rate)
@@ -452,7 +452,7 @@ export class AffiliateService {
       AND "event_type" = 'COMMISSION_EARNED' 
       AND "reference_id" = ${serviceFeePaymentId}
       LIMIT 1
-    `) as any[]
+    `) as Record<string, unknown>[]
 
     if (existingNotification.length > 0) {
       return // Already notified
@@ -494,7 +494,7 @@ export class AffiliateService {
     })
 
     for (const commission of commissions) {
-      await prisma.$transaction(async (tx: any) => {
+      await prisma.$transaction(async (tx: typeof prisma) => {
         await tx.commission.update({
           where: { id: commission.id },
           data: {
@@ -654,7 +654,7 @@ export class AffiliateService {
         VALUES (gen_random_uuid()::text, ${affiliateId}, ${eventType}, ${JSON.stringify(details)}::jsonb)
       `
     } catch (e) {
-      console.error("[AffiliateService] Failed to log event:", e)
+      logger.error("[AffiliateService] Failed to log event:", e)
     }
   }
 
@@ -664,7 +664,7 @@ export class AffiliateService {
       paymentsChecked: 0,
       missingFound: 0,
       created: 0,
-      discrepancies: [] as any[],
+      discrepancies: [] as Record<string, unknown>[],
     }
 
     // Get all SUCCEEDED service fee payments (include legacy "PAID" for backward compatibility)
@@ -842,7 +842,7 @@ export class AffiliateService {
 
     const totalCents = earnedCommissions.reduce((sum: any, c: any) => sum + (c.amount_cents || 0), 0)
 
-    const payout = await prisma.$transaction(async (tx: any) => {
+    const payout = await prisma.$transaction(async (tx: typeof prisma) => {
       const newPayout = await tx.payout.create({
         data: {
           affiliateId,
@@ -901,7 +901,7 @@ export class AffiliateService {
 
     if (!payout) throw new Error("Payout not found")
 
-    await prisma.$transaction(async (tx: any) => {
+    await prisma.$transaction(async (tx: typeof prisma) => {
       await tx.payout.update({
         where: { id: payoutId },
         data: {

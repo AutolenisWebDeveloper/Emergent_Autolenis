@@ -22,7 +22,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ dea
     }
 
     return NextResponse.json({ success: true, data: { dealId, refunds: [] } })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[Admin Deal Refunds API]", error)
     return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 })
   }
@@ -104,7 +104,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ dea
     }
 
     // 3. Only persist DB record after Stripe confirms
-    const buyerId = (payment as any).buyerId
+    const buyerId = (payment as Record<string, unknown>)["buyerId"] as string | undefined
     if (!buyerId) {
       return NextResponse.json(
         { error: "Payment record is missing buyerId" },
@@ -140,7 +140,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ dea
     })
 
     return NextResponse.json({ success: true, data: refund })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[Admin Deal Refunds POST]", error)
     return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 })
   }

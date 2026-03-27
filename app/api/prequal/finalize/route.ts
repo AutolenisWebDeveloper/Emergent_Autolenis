@@ -7,6 +7,8 @@ import { makeFinalDecision } from "@/lib/decision/final-decision"
 import { calculateShoppingRange, getShoppingPassExpiry } from "@/lib/decision/shopping-power"
 import type { IpredictBand, IbvOutcome } from "@/lib/types/prequal"
 
+import type { ApplicationStatus, QueueSegment } from "@/lib/types/prequal"
+
 export const dynamic = "force-dynamic"
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
@@ -112,13 +114,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     await prisma.prequalApplication.update({
       where: { id: application.id },
       data: {
-        status: newAppStatus as any,
+        status: newAppStatus as ApplicationStatus,
         finalStatus: decisionResult.finalStatus,
         shoppingRangeMinCents: shoppingMin ?? null,
         shoppingRangeMaxCents: shoppingMax ?? null,
         completedAt: new Date(),
         expiresAt,
-        queueSegment: (queueSegmentMap[decisionResult.finalStatus] ?? "COMPLETED") as any,
+        queueSegment: (queueSegmentMap[decisionResult.finalStatus] ?? "COMPLETED") as QueueSegment,
       },
     })
 

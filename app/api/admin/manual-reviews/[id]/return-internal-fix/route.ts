@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getSession, isCmaApprover } from "@/lib/auth-server"
-import { returnToInternalFix, CMA_INTERNAL_QUEUES } from "@/lib/services/contract-shield"
+import { returnToInternalFix, CMA_INTERNAL_QUEUES, type CmaInternalQueue } from "@/lib/services/contract-shield"
 import { z } from "zod"
 
 const bodySchema = z.object({
@@ -35,7 +35,7 @@ export async function POST(
     const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown"
     const userAgent = request.headers.get("user-agent") || undefined
 
-    const result = await returnToInternalFix(id, parsed.data.assignedQueue as any, parsed.data.notes, {
+    const result = await returnToInternalFix(id, parsed.data.assignedQueue as CmaInternalQueue, parsed.data.notes, {
       adminId: session.userId,
       adminRole: session.role,
       ipAddress: ip,

@@ -40,7 +40,7 @@ export async function POST(_request: Request) {
       secret, // User needs this for manual entry
       factorId,
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[MFA Enroll] Error:", error)
     return NextResponse.json({ error: "Failed to start MFA enrollment" }, { status: 500 })
   }

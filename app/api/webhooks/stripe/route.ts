@@ -24,8 +24,8 @@ export async function POST(request: Request) {
 
   try {
     event = constructWebhookEvent(body, signature)
-  } catch (err: any) {
-    logger.error("Webhook Error: Stripe signature verification failed", { error: err.message })
+  } catch (err: unknown) {
+    logger.error("Webhook Error: Stripe signature verification failed", { error: (err instanceof Error ? err.message : String(err)) })
     return NextResponse.json({ error: "Webhook Error: signature verification failed" }, { status: 400 })
   }
 
@@ -118,7 +118,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
   if (type === "deposit") {
     // Transaction: update deposit status + log compliance event
-    const depositRecord = await prisma.$transaction(async (tx: any) => {
+    const depositRecord = await prisma.$transaction(async (tx: typeof prisma) => {
       await tx.depositPayment.updateMany({
         where: {
           buyerId: metadata['buyerId'],
@@ -195,8 +195,9 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       .single()
 
     if (payment) {
+      const dealRec = (payment as Record<string, unknown>)["deal"] as Record<string, unknown> | null
       // Transaction: update service fee + update deal status + log compliance event
-      await prisma.$transaction(async (tx: any) => {
+      await prisma.$transaction(async (tx: typeof prisma) => {
         await tx.serviceFeePayment.update({
           where: { id: payment.id },
           data: {
@@ -213,7 +214,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         await tx.complianceEvent.create({
           data: {
             eventType: "SERVICE_FEE_PAYMENT",
-            buyerId: (payment.deal as any)?.buyerId,
+            buyerId: dealRec?.["buyerId"] as string | undefined,
             dealId: metadata['dealId'],
             action: "FEE_PAID_CARD",
             details: {
@@ -226,14 +227,14 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       })
 
       // Process affiliate commission (outside transaction — external service call)
-      if ((payment.deal as any)?.buyerId) {
+      if (dealRec?.["buyerId"]) {
         const buyer = await prisma.buyerProfile.findUnique({
-          where: { id: (payment.deal as any)?.buyerId },
+          where: { id: dealRec["buyerId"] as string },
           select: { userId: true, user: { select: { referredBy: true } } },
         })
 
-        if ((buyer?.user as any)?.referredBy) {
-          await affiliateService.processCommission((buyer?.user as any)?.referredBy, buyer!.userId, payment.finalAmount, "PURCHASE")
+        if ((buyer?.user as Record<string, unknown> | null)?.["referredBy"]) {
+          await affiliateService.processCommission((buyer?.user as Record<string, unknown>)["referredBy"] as string, buyer!.userId, payment.finalAmount, "PURCHASE")
         }
       }
 
@@ -262,10 +263,10 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       // Sync premium fee payment to canonical buyer_package_billing via RPC
       // This records the concierge fee payment for PREMIUM buyers and updates
       // the remaining balance in buyer_package_billing.
-      if ((payment.deal as any)?.buyerId) {
+      if (dealRec?.["buyerId"]) {
         try {
           await recordPremiumFeePayment(
-            (payment.deal as any).buyerId,
+            dealRec["buyerId"] as string,
             payment.finalAmount || 0,
             session.payment_intent as string,
             { sessionId: session.id, dealId: metadata['dealId'] },
@@ -282,7 +283,7 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
   const metadata = paymentIntent.metadata || {}
 
   // Transaction: update payment status + mirror to Transaction ledger
-  await prisma.$transaction(async (tx: any) => {
+  await prisma.$transaction(async (tx: typeof prisma) => {
     if (metadata['type'] === "deposit") {
       await tx.depositPayment.updateMany({
         where: { stripePaymentIntentId: paymentIntent.id },
@@ -413,7 +414,7 @@ async function handleChargeRefunded(charge: Stripe.Charge) {
 
   if (depositPayment) {
     // Transaction: mark deposit refunded + log compliance event + ledger entry
-    await prisma.$transaction(async (tx: any) => {
+    await prisma.$transaction(async (tx: typeof prisma) => {
       await tx.depositPayment.update({
         where: { id: depositPayment.id },
         data: { refunded: true },
@@ -488,7 +489,7 @@ async function handleChargeRefunded(charge: Stripe.Charge) {
 
   if (serviceFeePayment) {
     // Transaction: mark service fee refunded + log compliance event + ledger entry
-    await prisma.$transaction(async (tx: any) => {
+    await prisma.$transaction(async (tx: typeof prisma) => {
       await tx.serviceFeePayment.update({
         where: { id: serviceFeePayment.id },
         data: { status: "REFUNDED" },
@@ -559,7 +560,7 @@ async function handleDisputeCreated(dispute: Stripe.Dispute) {
   const amount = (dispute.amount || 0) / 100
 
   // Transaction: create chargeback + mirror to Transaction ledger atomically
-  await prisma.$transaction(async (tx: any) => {
+  await prisma.$transaction(async (tx: typeof prisma) => {
     // Find parent transaction
     let transactionId: string | null = null
     if (piId) {

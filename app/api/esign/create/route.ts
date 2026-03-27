@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
     const envelope = await esignService.createEnvelope(dealId, user.id)
 
     return NextResponse.json(envelope)
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[E-Sign Create]", error)
     return NextResponse.json({ error: "Failed to create e-sign envelope" }, { status: 500 })
   }

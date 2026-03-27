@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
     })
 
     return NextResponse.json({ success: true, pickups })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[Admin Pickups] List error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }

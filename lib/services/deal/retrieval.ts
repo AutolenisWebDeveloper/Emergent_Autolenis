@@ -221,7 +221,7 @@ export async function getDealForAdmin(dealId: string) {
     SELECT * FROM "deal_status_history" 
     WHERE "selected_deal_id" = ${dealId}
     ORDER BY "created_at" DESC
-  `) as any[]
+  `) as Record<string, unknown>[]
 
   const complianceEvents = await prisma.complianceEvent.findMany({
     where: { relatedId: dealId },

@@ -153,8 +153,8 @@ export async function upsertIdentityTrustAsync(
     })
 
     return { success: true, record: mapDbRowToIdentityRecord(row), error: null }
-  } catch (err: any) {
-    return { success: false, record: null, error: err?.message ?? "Unknown error" }
+  } catch (err: unknown) {
+    return { success: false, record: null, error: (err instanceof Error ? err.message : undefined) ?? "Unknown error" }
   }
 }
 

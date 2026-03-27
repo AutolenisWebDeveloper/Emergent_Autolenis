@@ -26,7 +26,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ off
         validationErrors: updatedOffer.validation_errors_json,
       },
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[API] Admin override validity error:", error)
     if (error instanceof Error && error.message === "Unauthorized") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })

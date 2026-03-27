@@ -12,7 +12,7 @@ export async function GET() {
       success: true,
       data: { makes, bodyStyles },
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[Inventory Filters]", error)
     return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 })
   }

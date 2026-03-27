@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
     const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10))
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "50", 10)))
 
-    const where: any = {}
+    const where: Record<string, unknown> = {}
 
     if (action) {
       where.action = action

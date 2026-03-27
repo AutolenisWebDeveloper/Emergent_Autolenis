@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getSession, isAdminRole } from "@/lib/auth-server"
-import { listManualReviews } from "@/lib/services/contract-shield"
+import { listManualReviews, type ManualReviewStatus } from "@/lib/services/contract-shield"
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     }
 
     const url = new URL(request.url)
-    const status = url.searchParams.get("status") as any
+    const status = url.searchParams.get("status") as ManualReviewStatus | null
     const dealId = url.searchParams.get("dealId") || undefined
 
     const reviews = await listManualReviews({

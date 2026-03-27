@@ -134,7 +134,7 @@ export class PaymentService {
       userId: payment.buyerId,
       buyerId: payment.buyerId,
       details: {
-        amountCents: (payment as any).amountCents || (payment as any).amount_cents || payment.amount,
+        amountCents: ((payment as Record<string, unknown>)["amountCents"] as number) || ((payment as Record<string, unknown>)["amount_cents"] as number) || payment.amount,
         paymentIntentId,
       },
     })
@@ -298,7 +298,7 @@ export class PaymentService {
       // FIX 6 — FeeFinancingDisclosure consent gate (LOAN_INCLUSION only):
       // For loan-inclusion fee method, a disclosure consent record must exist
       // with buyerConsented=true before the deal can advance to FEE_PAID.
-      const feeMeth = (payment as any).method || (payment as any).paymentMethod
+      const feeMeth = ((payment as Record<string, unknown>)["method"] as string) || ((payment as Record<string, unknown>)["paymentMethod"] as string)
       if (feeMeth === "LOAN_INCLUSION") {
         const { prisma: prismaClient } = await import("@/lib/db")
         const feeDisclosure = await prismaClient.feeFinancingDisclosure.findFirst({
@@ -334,12 +334,12 @@ export class PaymentService {
       const { error: auditError } = await supabase.from("ComplianceEvent").insert({
         eventType: "SERVICE_FEE_PAYMENT",
         action: "FEE_PAID",
-        userId: (payment as any).user_id || deal?.buyerId,
+        userId: ((payment as Record<string, unknown>)["user_id"] as string) || deal?.buyerId,
         dealId: payment.dealId,
         details: {
           baseFeeCents: payment.baseFeeCents || payment.base_fee_cents,
-          depositAppliedCents: (payment as any).depositAppliedCents || (payment as any).deposit_applied_cents,
-          remainingCents: (payment as any).remainingCents || (payment as any).remaining_cents,
+          depositAppliedCents: ((payment as Record<string, unknown>)["depositAppliedCents"] as number) || ((payment as Record<string, unknown>)["deposit_applied_cents"] as number),
+          remainingCents: ((payment as Record<string, unknown>)["remainingCents"] as number) || ((payment as Record<string, unknown>)["remaining_cents"] as number),
           method: "CARD_DIRECT",
           paymentIntentId,
         },
@@ -532,7 +532,7 @@ export class PaymentService {
       .insert({
         id: crypto.randomUUID(),
         dealId,
-        amount_cents: (payment as any).remainingCents || (payment as any).remaining_cents || 0,
+        amount_cents: ((payment as Record<string, unknown>)["remainingCents"] as number) || ((payment as Record<string, unknown>)["remaining_cents"] as number) || 0,
         status: LenderDisbursementStatus.PENDING,
         requested_at_v2: now,
       })
@@ -614,7 +614,7 @@ export class PaymentService {
         userId: adminId,
         details: {
           paymentId,
-          amountCents: (payment as any).amountCents || (payment as any).amount_cents || payment.amount,
+          amountCents: ((payment as Record<string, unknown>)["amountCents"] as number) || ((payment as Record<string, unknown>)["amount_cents"] as number) || payment.amount,
           reason,
           refundId: refund.id,
         },
@@ -635,7 +635,7 @@ export class PaymentService {
         sourceModule: "payment.service",
         correlationId: crypto.randomUUID(),
         idempotencyKey: `refund-deposit-${paymentId}`,
-        payload: { type: "deposit", reason, amountCents: (payment as any).amountCents || (payment as any).amount_cents || payment.amount },
+        payload: { type: "deposit", reason, amountCents: ((payment as Record<string, unknown>)["amountCents"] as number) || ((payment as Record<string, unknown>)["amount_cents"] as number) || payment.amount },
       }).catch(() => { /* non-critical */ })
 
       return { success: true, refundId: refund.id }
@@ -679,7 +679,7 @@ export class PaymentService {
           userId: adminId,
           details: {
             paymentId,
-            amountCents: (payment as any).remainingCents || (payment as any).remaining_cents,
+            amountCents: ((payment as Record<string, unknown>)["remainingCents"] as number) || ((payment as Record<string, unknown>)["remaining_cents"] as number),
             reason,
             refundId: refund.id,
           },
@@ -700,7 +700,7 @@ export class PaymentService {
           sourceModule: "payment.service",
           correlationId: crypto.randomUUID(),
           idempotencyKey: `refund-fee-${paymentId}`,
-          payload: { type: "service_fee", reason, amountCents: (payment as any).remainingCents || (payment as any).remaining_cents },
+          payload: { type: "service_fee", reason, amountCents: ((payment as Record<string, unknown>)["remainingCents"] as number) || ((payment as Record<string, unknown>)["remaining_cents"] as number) },
         }).catch(() => { /* non-critical */ })
 
         return { success: true, refundId: refund.id }
@@ -811,7 +811,7 @@ export class PaymentService {
       userId: payment.buyerId,
       buyerId: payment.buyerId,
       details: {
-        amountCents: (payment as any).amountCents || (payment as any).amount_cents || payment.amount,
+        amountCents: ((payment as Record<string, unknown>)["amountCents"] as number) || ((payment as Record<string, unknown>)["amount_cents"] as number) || payment.amount,
         paymentIntentId,
       },
     })
@@ -969,12 +969,12 @@ export class PaymentService {
       const { error: auditError } = await supabase.from("ComplianceEvent").insert({
         eventType: "SERVICE_FEE_PAYMENT",
         action: "FEE_PAID",
-        userId: (payment as any).user_id || deal?.buyerId,
+        userId: ((payment as Record<string, unknown>)["user_id"] as string) || deal?.buyerId,
         dealId: payment.dealId,
         details: {
           baseFeeCents: payment.baseFeeCents || payment.base_fee_cents,
-          depositAppliedCents: (payment as any).depositAppliedCents || (payment as any).deposit_applied_cents,
-          remainingCents: (payment as any).remainingCents || (payment as any).remaining_cents,
+          depositAppliedCents: ((payment as Record<string, unknown>)["depositAppliedCents"] as number) || ((payment as Record<string, unknown>)["deposit_applied_cents"] as number),
+          remainingCents: ((payment as Record<string, unknown>)["remainingCents"] as number) || ((payment as Record<string, unknown>)["remaining_cents"] as number),
           method: "CARD_DIRECT",
           paymentIntentId,
         },

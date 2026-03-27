@@ -71,7 +71,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ dea
     }
 
     return NextResponse.json({ success: true, data: docRequest })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[Admin DocRequest] POST error:", error)
     return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 })
   }
@@ -119,7 +119,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ dea
     }
 
     return NextResponse.json({ success: true, data: requests })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[Admin DocRequest] GET error:", error)
     return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 })
   }

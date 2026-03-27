@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     }
 
     const searchParams = request.nextUrl.searchParams
-    const type = (searchParams.get("type") as any) || "all"
+    const type = (searchParams.get("type") || "all") as "all" | "deposit" | "fee"
     const status = searchParams.get("status") || "all"
     const search = searchParams.get("search") || undefined
     const page = Number.parseInt(searchParams.get("page") || "1")
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ error: "Invalid action" }, { status: 400 })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[Admin Payments Action Error]", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }

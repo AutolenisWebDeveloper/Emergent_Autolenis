@@ -158,11 +158,12 @@ export async function GET(request: Request) {
     }
 
     return NextResponse.json({ results })
-  } catch (error: any) {
-    if (error?.statusCode === 401) {
+  } catch (error: unknown) {
+    const statusCode = (error as { statusCode?: number }).statusCode
+    if (statusCode === 401) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
-    if (error?.statusCode === 403) {
+    if (statusCode === 403) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
     return NextResponse.json({ error: "Search failed" }, { status: 500 })

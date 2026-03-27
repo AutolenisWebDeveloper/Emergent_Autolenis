@@ -94,11 +94,11 @@ export default function ManualPreApprovalPage() {
       } else {
         throw new Error(extractApiError(data.error, "Submission failed"))
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         variant: "destructive",
         title: "Submission failed",
-        description: error.message || "Unable to submit pre-approval",
+        description: (error instanceof Error ? error.message : String(error)) || "Unable to submit pre-approval",
       })
     } finally {
       setUploading(false)

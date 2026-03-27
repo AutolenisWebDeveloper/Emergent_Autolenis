@@ -112,7 +112,7 @@ export class AuctionService {
     const allDealerIds = Array.from(new Set([...shortlistDealerIds, ...matchingInventory.map((i: any) => i.dealerId)]))
 
     // Transaction: create auction + link deposit + invite dealers + log compliance
-    const auction = await prisma.$transaction(async (tx: any) => {
+    const auction = await prisma.$transaction(async (tx: typeof prisma) => {
       const newAuction = await tx.auction.create({
         data: {
           buyerId,
@@ -419,7 +419,7 @@ export class AuctionService {
     }
 
     // Transaction: delete old offers + create new offer + update participant + log compliance
-    const offer = await prisma.$transaction(async (tx: any) => {
+    const offer = await prisma.$transaction(async (tx: typeof prisma) => {
       // Delete existing offers from this dealer for this auction (one best offer rule)
       await tx.auctionOffer.deleteMany({
         where: {
@@ -489,7 +489,7 @@ export class AuctionService {
     }
 
     // Transaction: update auction status + refund deposit (if no offers)
-    await prisma.$transaction(async (tx: any) => {
+    await prisma.$transaction(async (tx: typeof prisma) => {
       if (auction.offers.length === 0) {
         // No offers - mark as NO_OFFERS and refund deposit
         await tx.auction.update({

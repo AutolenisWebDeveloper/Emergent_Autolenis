@@ -20,6 +20,7 @@ import {
   type FunctionDeclarationSchema,
   SchemaType,
 } from "@google/generative-ai"
+import { logger } from "@/lib/logger"
 
 // ---------------------------------------------------------------------------
 // Types
@@ -140,7 +141,7 @@ function getClient(): GoogleGenerativeAI | null {
   if (_client) return _client
   const apiKey = process.env.GEMINI_API_KEY
   if (!apiKey) {
-    console.warn("[Gemini] GEMINI_API_KEY is not configured — AI assistant will use fallback responses")
+    logger.warn("[Gemini] GEMINI_API_KEY is not configured — AI assistant will use fallback responses")
     return null
   }
   _client = new GoogleGenerativeAI(apiKey)
@@ -242,7 +243,7 @@ export async function callGemini(opts: CallGeminiOptions): Promise<GeminiRespons
   }
 
   // All retries exhausted
-  console.error(`[Gemini] All ${maxRetries + 1} attempts failed for ${correlationId}:`, lastError?.message)
+  logger.error(`[Gemini] All ${maxRetries + 1} attempts failed for ${correlationId}:`, lastError?.message)
   return {
     text: "I'm sorry — the AI assistant encountered an error. Please try again shortly.",
     toolCalls: [],

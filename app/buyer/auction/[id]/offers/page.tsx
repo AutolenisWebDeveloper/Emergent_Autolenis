@@ -89,11 +89,11 @@ export default function AuctionOffersPage({ params }: { params: Promise<{ id: st
         title: "Offer declined",
         description: data.data.message,
       })
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message,
+        description: (error instanceof Error ? error.message : String(error)),
       })
     } finally {
       setDecliningOffer(null)
@@ -125,11 +125,11 @@ export default function AuctionOffersPage({ params }: { params: Promise<{ id: st
       })
 
       router.push(`/buyer/deal`)
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message,
+        description: (error instanceof Error ? error.message : String(error)),
       })
     } finally {
       setSelectingOffer(null)

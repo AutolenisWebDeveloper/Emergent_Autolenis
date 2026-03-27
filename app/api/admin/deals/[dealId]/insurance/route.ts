@@ -42,7 +42,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ dea
       success: true,
       data,
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error fetching admin insurance detail:", error)
     return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 })
   }

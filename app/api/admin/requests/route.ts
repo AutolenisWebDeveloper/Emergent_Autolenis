@@ -80,7 +80,7 @@ export async function GET(request: Request) {
     .range(offset, offset + limit - 1)
 
   if (auctionStatus) {
-    query = query.eq("status", auctionStatus as any)
+    query = query.eq("status", auctionStatus as string)
   }
 
   const { data: auctions, error } = await query

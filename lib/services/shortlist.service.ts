@@ -162,8 +162,8 @@ export class ShortlistService {
         status,
         withinBudget,
         isValidForAuction,
-        isPrimaryChoice: (item as any).is_primary_choice || false,
-        notes: (item as any).notes || null,
+        isPrimaryChoice: (item as Record<string, unknown>)["is_primary_choice"] || false,
+        notes: (item as Record<string, unknown>)["notes"] || null,
         photos,
         addedAt: item.addedAt,
       }
@@ -393,7 +393,7 @@ export class ShortlistService {
     limit?: number
     offset?: number
   }) {
-    const where: any = {}
+    const where: Record<string, unknown> = {}
 
     if (filters?.userId) {
       where.buyerId = filters.userId
@@ -472,9 +472,9 @@ export class ShortlistService {
         id: item.id,
         inventoryItemId: item.inventoryItemId,
         addedAt: item.addedAt,
-        removedAt: (item as any).removed_at,
-        notes: (item as any).notes,
-        isPrimaryChoice: (item as any).is_primary_choice,
+        removedAt: (item as Record<string, unknown>)["removed_at"],
+        notes: (item as Record<string, unknown>)["notes"],
+        isPrimaryChoice: (item as Record<string, unknown>)["is_primary_choice"],
         vehicle: item.inventoryItem ? {
           year: item.inventoryItem.year,
           make: item.inventoryItem.make,

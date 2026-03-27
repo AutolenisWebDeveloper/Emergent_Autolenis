@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server"
+import { type NextRequest, NextResponse } from "next/server"
 import { AuthService } from "@/lib/services/auth.service"
 import { signUpSchema } from "@/lib/validators/auth"
 import { setSessionCookie } from "@/lib/auth-server"
@@ -77,7 +77,7 @@ export async function POST(request: Request) {
 
   // ── Rate-limit only valid-looking requests ─────────────────────────────
   try {
-    const rateLimitResponse = await rateLimit(request as any, rateLimits.auth)
+    const rateLimitResponse = await rateLimit(request as NextRequest, rateLimits.auth)
     if (rateLimitResponse) {
       return rateLimitResponse
     }
@@ -127,13 +127,13 @@ export async function POST(request: Request) {
         redirect,
       },
     })
-  } catch (error: any) {
-    if (error.message?.includes("already exists")) {
+  } catch (error: unknown) {
+    if ((error instanceof Error ? error.message : "").includes("already exists")) {
       return handleError(new ConflictError("An account with this email already exists"))
     }
     // Catch validation-like errors from AuthService (e.g. missing package tier)
-    if (error.message?.includes("Package tier is required") ||
-        error.message?.includes("Validation")) {
+    if ((error instanceof Error ? error.message : "").includes("Package tier is required") ||
+        (error instanceof Error ? error.message : "").includes("Validation")) {
       return handleError(new ValidationError("Registration validation failed. Please check your input."))
     }
     // All other errors — structured response, never expose internal details

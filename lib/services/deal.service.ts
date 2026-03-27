@@ -3,6 +3,7 @@ import { PaymentService } from "@/lib/services/payment.service"
 import { dealContextService } from "@/lib/services/deal-context.service"
 import type { DealInsuranceReadiness } from "@/lib/types"
 import { InventoryStatus } from "@/lib/constants/statuses"
+import { logger } from "@/lib/logger"
 
 // ─── Lender References Note ──────────────────────────────────────────────
 // "lender_name" / "lenderName" in deal creation and financing logic refers
@@ -154,7 +155,7 @@ export class DealService {
       : offer.financingOptions[0]
 
     // Transaction: create deal + financing offer + decision + auction status + inventory reserve + compliance
-    const result = await prisma.$transaction(async (tx: any) => {
+    const result = await prisma.$transaction(async (tx: typeof prisma) => {
       // Create new deal
       const deal = await tx.selectedDeal.create({
         data: {
@@ -171,7 +172,7 @@ export class DealService {
           totalOtdAmountCents: otdCents,
           total_otd_amount_cents: otdCents,
           taxAmount: (offer.tax_amount_cents || offer.taxAmountCents || 0) / 100,
-          feesBreakdown: (offer.fee_breakdown_json || offer.feeBreakdownJson || offer.feesBreakdown) as any,
+          feesBreakdown: (offer.fee_breakdown_json || offer.feeBreakdownJson || offer.feesBreakdown) as object,
           payment_type: "FINANCED",
           concierge_fee_method: "UNDECIDED",
           concierge_fee_status: "PENDING",
@@ -411,7 +412,7 @@ export class DealService {
 
     const { paymentType, primaryFinancingOfferId, externalPreApproval } = payload
 
-    let updateData: any = { payment_type: paymentType }
+    let updateData: Record<string, unknown> = { payment_type: paymentType }
 
     switch (paymentType) {
       case "CASH":
@@ -514,7 +515,7 @@ export class DealService {
       await this.logStatusChange(
         dealId,
         previousStatus,
-        updateData.status,
+        updateData.status as string,
         userId,
         "BUYER",
         "Financing choice updated",
@@ -820,7 +821,7 @@ export class DealService {
 
     if (newStatus && VALID_TRANSITIONS[currentStatus as DealStatus]?.includes(newStatus)) {
       // Transaction: update status + log status change
-      await prisma.$transaction(async (tx: any) => {
+      await prisma.$transaction(async (tx: typeof prisma) => {
         await tx.selectedDeal.update({
           where: { id: dealId },
           data: {
@@ -862,7 +863,7 @@ export class DealService {
     }
 
     // Transaction: update deal + release inventory + log status change + log compliance event
-    await prisma.$transaction(async (tx: any) => {
+    await prisma.$transaction(async (tx: typeof prisma) => {
       // Update deal
       await tx.selectedDeal.update({
         where: { id: dealId },
@@ -915,7 +916,7 @@ export class DealService {
     const currentStatus = normalizeDealStatus(deal.status) ?? deal.status
 
     // Transaction: update deal + log status change + log compliance event
-    await prisma.$transaction(async (tx: any) => {
+    await prisma.$transaction(async (tx: typeof prisma) => {
       // Update deal
       await tx.selectedDeal.update({
         where: { id: dealId },
@@ -1076,7 +1077,7 @@ export class DealService {
       SELECT * FROM "deal_status_history" 
       WHERE "selected_deal_id" = ${dealId}
       ORDER BY "created_at" DESC
-    `) as any[]
+    `) as Record<string, unknown>[]
 
     const complianceEvents = await prisma.complianceEvent.findMany({
       where: { relatedId: dealId },
@@ -1112,7 +1113,7 @@ export class DealService {
     } catch (e) {
       // If inside a transaction, re-throw to trigger rollback
       if (tx) throw e
-      console.error("Failed to log status change:", e)
+      logger.error("Failed to log status change:", e)
     }
   }
 

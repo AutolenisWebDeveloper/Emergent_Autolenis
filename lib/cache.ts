@@ -75,10 +75,10 @@ export async function withCache<T>(key: string, fetcher: () => Promise<T>, ttlSe
 }
 
 export function invalidatePattern(pattern: string): void {
-  const keys = Array.from((cache as any).cache.keys())
-  keys.forEach((key: any) => {
-    if ((key as string).includes(pattern)) {
-      cache.delete(key as string)
+  const keys = Array.from((cache as unknown as { cache: Map<string, unknown> }).cache.keys())
+  keys.forEach((key: string) => {
+    if (key.includes(pattern)) {
+      cache.delete(key)
     }
   })
 }

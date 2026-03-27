@@ -4,6 +4,7 @@ import type { ExternalPreApprovalSubmitInput, ExternalPreApprovalReviewInput } f
 import { emailService } from "@/lib/services/email.service"
 import { writeEventAsync } from "@/lib/services/event-ledger"
 import { PlatformEventType, EntityType, ActorType } from "@/lib/services/event-ledger"
+import { logger } from "@/lib/logger"
 
 // ---------------------------------------------------------------------------
 // External Pre-Approval Service
@@ -300,7 +301,7 @@ export class ExternalPreApprovalService {
       .range(from, to)
 
     if (error) {
-      console.error("[External PreApproval] listPendingReview error:", error.message)
+      logger.error("[External PreApproval] listPendingReview error:", error.message)
     }
 
     return {
@@ -356,7 +357,7 @@ export class ExternalPreApprovalService {
           .eq("id", existing.preQualificationId)
           .maybeSingle()
         if (pqError) {
-          console.error("[External PreApproval] idempotent prequal lookup error:", pqError.message)
+          logger.error("[External PreApproval] idempotent prequal lookup error:", pqError.message)
         }
         existingPreQual = pqData
       }

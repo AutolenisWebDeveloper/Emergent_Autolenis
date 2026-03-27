@@ -132,7 +132,7 @@ export default function AdminRequestDetailPage({ params }: { params: Promise<{ r
                   window.location.reload()
                 } else {
                   const err = await res.json().catch(() => ({}))
-                  toast({ title: "Activation failed", description: err.error || "Unable to activate request", variant: "destructive" as any })
+                  toast({ title: "Activation failed", description: err.error || "Unable to activate request", variant: "destructive" })
                 }
               }}
             >

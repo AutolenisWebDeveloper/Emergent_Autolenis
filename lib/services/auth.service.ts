@@ -236,8 +236,8 @@ export class AuthService {
         token,
         referral,
       }
-    } catch (error: any) {
-      logger.error("Signup failed", { correlationId, error: error?.message })
+    } catch (error: unknown) {
+      logger.error("Signup failed", { correlationId, error: error instanceof Error ? error.message : String(error) })
       throw error
     }
   }
@@ -269,7 +269,7 @@ export class AuthService {
 
       if (result.error) {
         // workspaceId column may not exist yet — retry without it
-        console.warn(`signin_warning reason=workspaceId_column_missing correlationId=${correlationId} error=${result.error?.message}`)
+        logger.warn(`signin_warning reason=workspaceId_column_missing correlationId=${correlationId} error=${result.error?.message}`)
         const fallback = await supabase
           .from("User")
           .select("id, email, passwordHash, role, first_name, last_name, is_affiliate, is_email_verified")
@@ -371,7 +371,7 @@ export class AuthService {
         }
       } catch {
         // Workspace lookup failed — proceed with LIVE defaults
-        console.warn(`signin_warning reason=workspace_lookup_failed correlationId=${correlationId}`)
+        logger.warn(`signin_warning reason=workspace_lookup_failed correlationId=${correlationId}`)
         workspaceMode = "LIVE"
         workspaceId = undefined
       }
@@ -402,8 +402,8 @@ export class AuthService {
         },
         token,
       }
-    } catch (error: any) {
-      logger.error("Signin failed", { correlationId, error: error?.message })
+    } catch (error: unknown) {
+      logger.error("Signin failed", { correlationId, error: error instanceof Error ? error.message : String(error) })
       throw error
     }
   }

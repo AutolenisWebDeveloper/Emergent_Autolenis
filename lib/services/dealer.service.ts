@@ -317,7 +317,7 @@ export class DealerService {
   ) {
     const supabase = getSupabase()
 
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
       updatedAt: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }
@@ -681,7 +681,7 @@ export class DealerService {
   ) {
     const supabase = getSupabase()
 
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
       updatedAt: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }

@@ -174,7 +174,7 @@ class DealContextService {
             model: inv.model ?? null,
             trim: inv.trim ?? null,
             mileage: inv.mileage ?? null,
-            condition: (inv as any).condition ?? null,
+            condition: (inv as Record<string, unknown>)["condition"] as string ?? null,
           }
         }
       }
@@ -189,12 +189,12 @@ class DealContextService {
     const dealerInfo: DealDealer = {
       id: deal.dealerId,
       businessName: dealerName,
-      address: (dealerRecord as any)?.address ?? null,
-      city: (dealerRecord as any)?.city ?? null,
-      state: (dealerRecord as any)?.state ?? null,
-      zip: (dealerRecord as any)?.zip ?? null,
-      phone: (dealerRecord as any)?.phone ?? null,
-      email: (dealerRecord as any)?.email ?? null,
+      address: ((dealerRecord as Record<string, unknown> | null)?.["address"] as string) ?? null,
+      city: ((dealerRecord as Record<string, unknown> | null)?.["city"] as string) ?? null,
+      state: ((dealerRecord as Record<string, unknown> | null)?.["state"] as string) ?? null,
+      zip: ((dealerRecord as Record<string, unknown> | null)?.["zip"] as string) ?? null,
+      phone: ((dealerRecord as Record<string, unknown> | null)?.["phone"] as string) ?? null,
+      email: ((dealerRecord as Record<string, unknown> | null)?.["email"] as string) ?? null,
     }
 
     const pricing: DealPricing = {

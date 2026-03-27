@@ -119,14 +119,14 @@ export async function sendEmail({
     })
 
     return { success: true, messageId: data?.id }
-  } catch (error: any) {
+  } catch (error: unknown) {
     await logEmail({
       type,
       recipient: recipients[0],
       subject,
       status: "failed",
       userId,
-      metadata: { ...metadata, error: error.message },
+      metadata: { ...metadata, error: error instanceof Error ? error.message : String(error) },
       idempotencyKey,
     })
 

@@ -69,8 +69,8 @@ export default function InsuranceQuotesListPage() {
 
       toast({ title: "Quote Selected", description: "Proceeding to quote details." })
       router.push(`/buyer/deal/insurance/quotes/${quoteId}`)
-    } catch (err: any) {
-      toast({ variant: "destructive", title: "Error", description: err.message })
+    } catch (err: unknown) {
+      toast({ variant: "destructive", title: "Error", description: (err instanceof Error ? err.message : String(err)) })
     } finally {
       setSelecting(null)
     }

@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/db"
+import { logger } from "@/lib/logger"
 
 export async function refundDeposit(depositId: string, reason: string, adminId: string, workspaceId?: string) {
   const { data: deposit, error: fetchError } = await supabase
@@ -152,7 +153,7 @@ export async function updateSystemSettings(key: string, value: any, adminId: str
   )
 
   if (upsertError) {
-    console.error("[AdminService] Error updating system settings:", upsertError)
+    logger.error("[AdminService] Error updating system settings:", upsertError)
     throw new Error("Failed to update settings")
   }
 

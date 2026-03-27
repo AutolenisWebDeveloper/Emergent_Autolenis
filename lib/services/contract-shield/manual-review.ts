@@ -303,7 +303,7 @@ export async function approveManualValidated(
     : null
 
   // Execute approval in a transaction
-  const result = await prisma.$transaction(async (tx: any) => {
+  const result = await prisma.$transaction(async (tx: typeof prisma) => {
     const updated = await tx.contractManualReview.update({
       where: { id: manualReviewId },
       data: {
@@ -417,7 +417,7 @@ export async function approveExceptionOverride(
     ? computeDocHash(latestDoc.documentUrl, latestDoc.version)
     : null
 
-  const result = await prisma.$transaction(async (tx: any) => {
+  const result = await prisma.$transaction(async (tx: typeof prisma) => {
     const updated = await tx.contractManualReview.update({
       where: { id: manualReviewId },
       data: {
@@ -549,7 +549,7 @@ export async function secondApprove(
       ? "CONTRACT_ADMIN_OVERRIDE_APPROVED"
       : "CONTRACT_APPROVED"
 
-  const result = await prisma.$transaction(async (tx: any) => {
+  const result = await prisma.$transaction(async (tx: typeof prisma) => {
     const updated = await tx.contractManualReview.update({
       where: { id: manualReviewId },
       data: {
@@ -610,7 +610,7 @@ export async function returnToInternalFix(
     throw new Error(`Cannot return to fix: review is in ${review.status} state`)
   }
 
-  const result = await prisma.$transaction(async (tx: any) => {
+  const result = await prisma.$transaction(async (tx: typeof prisma) => {
     const updated = await tx.contractManualReview.update({
       where: { id: manualReviewId },
       data: {
@@ -670,7 +670,7 @@ export async function revokeManualReview(
     throw new Error(`Cannot revoke: review is in ${review.status} state`)
   }
 
-  const result = await prisma.$transaction(async (tx: any) => {
+  const result = await prisma.$transaction(async (tx: typeof prisma) => {
     const updated = await tx.contractManualReview.update({
       where: { id: manualReviewId },
       data: {
@@ -757,7 +757,7 @@ export async function revokeIfDocsChanged(
       // Idempotency: check if already revoked for this reason
       if (review.status === "REVOKED") continue
 
-      const revoked = await prisma.$transaction(async (tx: any) => {
+      const revoked = await prisma.$transaction(async (tx: typeof prisma) => {
         const updated = await tx.contractManualReview.update({
           where: { id: review.id },
           data: {

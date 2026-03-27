@@ -64,7 +64,7 @@ export async function GET() {
       )
       if (ctx) {
         // Attach normalized sourced deal data so the UI can render consistently
-        ;(deal as any).sourcedDealContext = {
+        ;(deal as Record<string, unknown>)["sourcedDealContext"] = {
           source: ctx.source,
           vehicle: ctx.vehicle,
           dealer: ctx.dealer,

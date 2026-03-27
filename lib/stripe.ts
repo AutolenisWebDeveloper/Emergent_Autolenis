@@ -44,7 +44,7 @@ export async function createDepositCheckoutSession(params: {
   cancelUrl?: string
 }) {
   const session = await stripe.checkout.sessions.create({
-    ui_mode: params.successUrl ? "hosted" as any : "embedded",
+    ui_mode: params.successUrl ? "hosted" as Stripe.Checkout.SessionCreateParams.UiMode : "embedded",
     redirect_on_completion: params.successUrl ? undefined : "never",
     success_url: params.successUrl,
     cancel_url: params.cancelUrl,
@@ -80,7 +80,7 @@ export async function createServiceFeeCheckoutSession(params: {
   cancelUrl?: string
 }) {
   const session = await stripe.checkout.sessions.create({
-    ui_mode: params.successUrl ? "hosted" as any : "embedded",
+    ui_mode: params.successUrl ? "hosted" as Stripe.Checkout.SessionCreateParams.UiMode : "embedded",
     redirect_on_completion: params.successUrl ? undefined : "never",
     success_url: params.successUrl,
     cancel_url: params.cancelUrl,

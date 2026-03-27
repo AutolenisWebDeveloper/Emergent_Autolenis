@@ -167,7 +167,7 @@ export function AdminListPageShell<T = any>({
                         <tr key={rowKey(item)} className="hover:bg-muted/30 transition-colors">
                           {columns.map((col) => (
                             <td key={col.key} className="px-6 py-4 whitespace-nowrap text-sm">
-                              {col.render ? col.render(item) : (item as any)[col.key]}
+                              {col.render ? col.render(item) : String((item as Record<string, unknown>)[col.key] ?? "")}
                             </td>
                           ))}
                         </tr>

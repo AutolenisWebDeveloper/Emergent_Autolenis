@@ -20,18 +20,18 @@ export async function POST() {
         .catch((err: unknown) => console.error("[Referral Activate] Welcome email failed:", err))
     }
 
-    const refCode = getReferralCode(affiliate as any)
+    const refCode = getReferralCode(affiliate as Record<string, unknown>)
     const referralLink = buildReferralLink(refCode)
 
     return NextResponse.json({
       success: true,
       data: {
-        affiliateId: (affiliate as any).id,
+        affiliateId: (affiliate as Record<string, unknown>)["id"] as string,
         refCode,
         referralLink,
       },
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[Referral Activate] Error:", error)
     return NextResponse.json(
       { success: false, error: "Failed to activate referrals" },

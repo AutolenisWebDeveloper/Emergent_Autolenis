@@ -79,8 +79,8 @@ export async function verifySession(token: string): Promise<SessionUser> {
     // Default mfa_verified to false for tokens minted before this field existed
     if (session.mfa_verified === undefined) session.mfa_verified = false
     return session
-  } catch (error: any) {
-    logger.error("Session verification failed", { error: error.message })
+  } catch (error: unknown) {
+    logger.error("Session verification failed", { error: error instanceof Error ? error.message : String(error) })
     throw error
   }
 }

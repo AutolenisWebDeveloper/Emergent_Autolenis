@@ -41,7 +41,7 @@ export async function POST(request: Request) {
       user.userId,
     )
     return NextResponse.json({ success: true, data: result })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[buyer/fee/pay-card] Error:", error)
     return NextResponse.json(
       { success: false, error: "Failed to process fee payment" },

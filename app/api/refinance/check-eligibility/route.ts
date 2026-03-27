@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
     maxRequests: 10,
     windowMs: 10 * 60 * 1000,
     keyGenerator: (req) => {
-      const ip = (req as any).ip || req.headers.get("x-forwarded-for") || "unknown"
+      const ip = (req as unknown as { ip?: string }).ip || req.headers.get("x-forwarded-for") || "unknown"
       // Basic separation per email to reduce abuse while allowing shared IPs
       const email = req.headers.get("x-refi-email") || "unknown"
       return `refi_eligibility:${ip}:${String(email).toLowerCase()}`

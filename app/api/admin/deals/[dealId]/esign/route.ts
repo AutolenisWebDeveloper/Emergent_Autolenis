@@ -33,7 +33,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ dea
     const result = await esignService.getEnvelopeForAdmin(dealId)
 
     return NextResponse.json({ success: true, ...result })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[Admin E-Sign] Get error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }

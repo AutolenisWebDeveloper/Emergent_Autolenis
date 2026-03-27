@@ -33,7 +33,7 @@ export async function POST(request: Request) {
       data: {
         options: updatedOptions,
         message:
-          (updatedOptions as any).length > 0
+          Array.isArray(updatedOptions) && updatedOptions.length > 0
             ? "Offer declined. Here are your updated options."
             : "You've reviewed all available offers.",
       },

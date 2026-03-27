@@ -40,11 +40,12 @@ export async function POST(req: NextRequest) {
       success: true,
       data: result,
     })
-  } catch (error: any) {
-    if (error?.statusCode === 403) {
+  } catch (error: unknown) {
+    const statusCode = (error as { statusCode?: number }).statusCode
+    if (statusCode === 403) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
-    if (error?.statusCode === 404) {
+    if (statusCode === 404) {
       return NextResponse.json({ error: "Not found" }, { status: 404 })
     }
     console.error("[v0] Fix resolution error:", error)

@@ -31,7 +31,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ dea
       success: true,
       data: { quotes: quotes || [] },
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[Insurance Quotes] GET error:", error)
     return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 })
   }

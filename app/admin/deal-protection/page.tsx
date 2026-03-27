@@ -134,7 +134,7 @@ export default function AdminDealProtectionPage() {
         title="Deal Protection"
         subtitle={view === "identity" ? "Identity release events" : "Message redaction events"}
         headerActions={
-          <Select value={view} onValueChange={(v) => { setView(v as any); setPage(1) }}>
+          <Select value={view} onValueChange={(v) => { setView(v as "alerts" | "identity" | "redaction"); setPage(1) }}>
             <SelectTrigger className="w-48">
               <SelectValue />
             </SelectTrigger>
@@ -173,7 +173,7 @@ export default function AdminDealProtectionPage() {
       title="Deal Protection"
       subtitle="Monitor circumvention attempts, identity masking, and message redaction"
       headerActions={
-        <Select value={view} onValueChange={(v) => { setView(v as any); setPage(1) }}>
+        <Select value={view} onValueChange={(v) => { setView(v as "alerts" | "identity" | "redaction"); setPage(1) }}>
           <SelectTrigger className="w-48">
             <SelectValue />
           </SelectTrigger>

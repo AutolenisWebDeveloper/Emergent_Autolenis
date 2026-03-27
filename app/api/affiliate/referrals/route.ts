@@ -129,7 +129,7 @@ export async function GET(req: NextRequest) {
         totalPages: Math.ceil((count || 0) / limit),
       },
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("[Affiliate Referrals] Error:", error)
     return NextResponse.json({ error: "Failed to get referrals" }, { status: 500 })
   }

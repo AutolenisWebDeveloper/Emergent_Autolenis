@@ -41,7 +41,7 @@ export async function POST(request: Request) {
       body.auctionId || "",
     )
     return NextResponse.json({ success: true, data: result })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[create-checkout-session] Error:", error)
     return NextResponse.json(
       { success: false, error: "Failed to create checkout session" },

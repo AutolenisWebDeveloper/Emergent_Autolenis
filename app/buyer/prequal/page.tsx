@@ -108,11 +108,11 @@ export default function BuyerPreQualPage() {
       } else {
         throw new Error(extractApiError(data.error, "Failed to refresh"))
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         variant: "destructive",
         title: "Refresh failed",
-        description: error.message || "Unable to refresh pre-qualification",
+        description: (error instanceof Error ? error.message : String(error)) || "Unable to refresh pre-qualification",
       })
     } finally {
       setRefreshing(false)

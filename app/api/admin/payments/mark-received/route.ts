@@ -21,7 +21,7 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ success: false, error: "Payment processing not available" }, { status: 501 })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[Admin Payment Received API]", error)
     return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 })
   }

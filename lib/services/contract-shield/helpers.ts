@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db"
+import { logger } from "@/lib/logger"
 
 export async function logEvent(
   dealId: string,
@@ -11,11 +12,11 @@ export async function logEvent(
         dealId,
         eventType,
         action: eventType,
-        details: details as any,
+        details: details as Record<string, unknown>,
       },
     })
   } catch (error) {
-    console.error("Failed to log event:", error)
+    logger.error("Failed to log event:", error)
   }
 }
 
@@ -42,10 +43,10 @@ export async function logCmaEvent(
         userId: context?.userId,
         ipAddress: context?.ipAddress,
         userAgent: context?.userAgent,
-        details: details as any,
+        details: details as Record<string, unknown>,
       },
     })
   } catch (error) {
-    console.error("Failed to log CMA event:", error)
+    logger.error("Failed to log CMA event:", error)
   }
 }

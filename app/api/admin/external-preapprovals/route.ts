@@ -35,7 +35,7 @@ export async function GET(request: Request) {
       success: true,
       data: result,
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[Admin External PreApproval API] GET error:", error)
     return NextResponse.json(
       { success: false, error: "Internal server error" },

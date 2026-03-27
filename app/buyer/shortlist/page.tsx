@@ -108,11 +108,11 @@ export default function BuyerShortlistPage() {
         title: "Removed from shortlist",
         description: "Vehicle removed successfully",
       })
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message,
+        description: (error instanceof Error ? error.message : String(error)),
       })
     }
   }
@@ -145,11 +145,11 @@ export default function BuyerShortlistPage() {
       })
 
       router.push(`/buyer/auction/${data.data.auction.id}`)
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message,
+        description: (error instanceof Error ? error.message : String(error)),
       })
     } finally {
       setCreatingAuction(false)

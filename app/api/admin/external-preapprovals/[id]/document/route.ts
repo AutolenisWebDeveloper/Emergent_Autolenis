@@ -80,7 +80,7 @@ export async function GET(
         sha256: submission.sha256,
       },
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[Admin External PreApproval Document API] GET error:", error)
     return NextResponse.json(
       { success: false, error: "Internal server error" },

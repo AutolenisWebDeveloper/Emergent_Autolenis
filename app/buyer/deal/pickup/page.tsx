@@ -94,11 +94,11 @@ export default function DealPickupPage() {
         title: "Pickup scheduled!",
         description: "Your appointment has been confirmed",
       })
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message,
+        description: (error instanceof Error ? error.message : String(error)),
       })
     } finally {
       setScheduling(false)

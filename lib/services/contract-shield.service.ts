@@ -1236,11 +1236,11 @@ export class ContractShieldService {
         data: {
           dealId,
           eventType,
-          details: details as any,
+          details: details as Record<string, unknown>,
         },
       })
     } catch (error) {
-      console.error("Failed to log event:", error)
+      logger.error("Failed to log event:", error)
     }
   }
 
@@ -1284,7 +1284,7 @@ export class ContractShieldService {
       dealId,
       dealerId,
       documentUrl,
-      documentType as any,
+      documentType as DocumentType,
     )
   }
 }

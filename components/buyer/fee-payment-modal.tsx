@@ -59,11 +59,11 @@ export function FeePaymentModal({ open, onClose, dealId, onComplete }: FeePaymen
         setLoanImpact(data.data)
         setStep("loan-impact")
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message,
+        description: (error instanceof Error ? error.message : String(error)),
       })
     }
   }
@@ -112,11 +112,11 @@ export function FeePaymentModal({ open, onClose, dealId, onComplete }: FeePaymen
 
       onComplete()
       onClose()
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message,
+        description: (error instanceof Error ? error.message : String(error)),
       })
     } finally {
       setLoading(false)
