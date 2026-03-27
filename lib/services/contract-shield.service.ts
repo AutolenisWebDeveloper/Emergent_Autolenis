@@ -1236,7 +1236,7 @@ export class ContractShieldService {
         data: {
           dealId,
           eventType,
-          details: details as any,
+          details: details as Record<string, unknown>,
         },
       })
     } catch (error) {
@@ -1284,7 +1284,7 @@ export class ContractShieldService {
       dealId,
       dealerId,
       documentUrl,
-      documentType as any,
+      documentType as DocumentType,
     )
   }
 }

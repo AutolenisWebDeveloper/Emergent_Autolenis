@@ -391,7 +391,7 @@ export class BestPriceService {
         where: { key: "BEST_PRICE_WEIGHTS" },
       })
       if (setting?.value) {
-        return { ...DEFAULT_WEIGHTS, ...(setting.value as any) }
+        return { ...DEFAULT_WEIGHTS, ...(setting.value as Record<string, unknown>) }
       }
     } catch {
       // Use defaults
@@ -661,9 +661,9 @@ export class BestPriceService {
 
     // Group by type
     const grouped = {
-      best_cash: { primary: null as any, alternatives: [] as any[] },
-      best_monthly: { primary: null as any, alternatives: [] as any[] },
-      balanced: { primary: null as any, alternatives: [] as any[] },
+      best_cash: { primary: null as unknown, alternatives: [] as unknown[] },
+      best_monthly: { primary: null as unknown, alternatives: [] as unknown[] },
+      balanced: { primary: null as unknown, alternatives: [] as unknown[] },
     }
 
     for (const option of options) {
@@ -845,7 +845,7 @@ export class BestPriceService {
         status: "PENDING_FINANCING",
         cashOtd: otdCents / 100,
         taxAmount: (offer.taxAmountCents || offer.tax_amount_cents || Math.round((offer.taxAmount || 0) * 100)) / 100,
-        feesBreakdown: (offer.fee_breakdown_json || offer.feeBreakdownJson || offer.feesBreakdown) as any,
+        feesBreakdown: (offer.fee_breakdown_json || offer.feeBreakdownJson || offer.feesBreakdown) as object,
         total_otd_amount_cents: otdCents,
       },
     })

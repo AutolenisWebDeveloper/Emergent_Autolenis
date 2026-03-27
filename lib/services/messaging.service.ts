@@ -442,7 +442,7 @@ export class MessagingService {
 
     // Build readiness payloads for each thread
     const results: ThreadSummary[] = []
-    for (const t of threads as any[]) {
+    for (const t of threads) {
       let readiness: BuyerReadinessPayload | null = null
       try {
         readiness = await this.buildBuyerReadinessPayloadForMessaging(t.buyerId)
@@ -561,7 +561,7 @@ export class MessagingService {
     ])
 
     return {
-      threads: (threads as any[]).map((t) => ({
+      threads: threads.map((t: typeof threads[number]) => ({
         id: t.id,
         buyerId: t.buyerId,
         dealerId: t.dealerId,
@@ -597,7 +597,7 @@ export class MessagingService {
     ])
 
     const distribution: Record<string, number> = {}
-    for (const g of approvalDistribution as any[]) {
+    for (const g of approvalDistribution) {
       distribution[g.approvalType] = g._count.id
     }
 

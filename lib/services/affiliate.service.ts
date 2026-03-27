@@ -452,7 +452,7 @@ export class AffiliateService {
       AND "event_type" = 'COMMISSION_EARNED' 
       AND "reference_id" = ${serviceFeePaymentId}
       LIMIT 1
-    `) as any[]
+    `) as Record<string, unknown>[]
 
     if (existingNotification.length > 0) {
       return // Already notified
@@ -664,7 +664,7 @@ export class AffiliateService {
       paymentsChecked: 0,
       missingFound: 0,
       created: 0,
-      discrepancies: [] as any[],
+      discrepancies: [] as Record<string, unknown>[],
     }
 
     // Get all SUCCEEDED service fee payments (include legacy "PAID" for backward compatibility)

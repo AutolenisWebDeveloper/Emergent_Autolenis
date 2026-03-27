@@ -88,7 +88,7 @@ function mapHealthRow(row: Record<string, any>): SEOHealth {
   return {
     pageKey: row.page_key,
     score: row.score,
-    issues: row.issues_json as any,
+    issues: row.issues_json as SEOHealth["issues"],
     lastScanAt: new Date(row.last_scan_at),
   }
 }
@@ -482,7 +482,7 @@ export class SEOService {
     const avgScore = records.length > 0 ? records.reduce((sum, h) => sum + h.score, 0) / records.length : 0
 
     const criticalIssues = records.reduce((count, h) => {
-      const issues = (h.issues_json as any[]) || []
+      const issues = (h.issues_json as Array<Record<string, unknown>>) || []
       return count + issues.filter((i) => i.severity === "critical").length
     }, 0)
 

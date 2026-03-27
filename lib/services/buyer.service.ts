@@ -55,7 +55,7 @@ export const buyerService = {
       // Flatten the email from the user relation
       const flattenedProfile = {
         ...profile,
-        email: (profile.user as any)?.email || null,
+        email: (Array.isArray(profile.user) ? (profile.user[0] as Record<string, unknown> | undefined)?.["email"] : (profile.user as Record<string, unknown> | null)?.["email"]) || null,
         user: undefined, // Remove the nested user object
       }
 

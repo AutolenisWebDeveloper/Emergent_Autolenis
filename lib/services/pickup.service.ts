@@ -190,7 +190,7 @@ export class PickupService {
       return { appointment: null }
     }
 
-    const metaJson = appointment.meta_json as any
+    const metaJson = appointment.meta_json as Record<string, unknown> | null
 
     return {
       appointment: {
@@ -263,7 +263,7 @@ export class PickupService {
           email: user?.email,
           phone: profile?.phone,
         },
-        notes: (appointment.meta_json as any)?.notes,
+        notes: (appointment.meta_json as Record<string, unknown> | null)?.["notes"],
         arrivedAt: appointment.arrivedAt,
         completedAt: appointment.completedAt,
       },
@@ -309,7 +309,7 @@ export class PickupService {
     }
 
     // Check QR code expiry
-    if ((appointment as any).qrCodeExpiresAt && new Date((appointment as any).qrCodeExpiresAt) < new Date()) {
+    if ((appointment as Record<string, unknown>)["qrCodeExpiresAt"] && new Date((appointment as Record<string, unknown>)["qrCodeExpiresAt"] as string) < new Date()) {
       throw new Error("QR_EXPIRED: Pickup QR code has expired")
     }
 
@@ -467,7 +467,7 @@ export class PickupService {
     }
 
     // Update appointment
-    const metaJson = (appointment.meta_json || {}) as any
+    const metaJson = (appointment.meta_json || {}) as Record<string, unknown>
     const updated = await prisma.pickupAppointment.update({
       where: { id: appointmentId },
       data: {
@@ -620,7 +620,7 @@ export class PickupService {
       throw new Error("QR_INVALID: Pickup QR code not found")
     }
 
-    if ((appointment as any).qrCodeExpiresAt && new Date((appointment as any).qrCodeExpiresAt) < new Date()) {
+    if ((appointment as Record<string, unknown>)["qrCodeExpiresAt"] && new Date((appointment as Record<string, unknown>)["qrCodeExpiresAt"] as string) < new Date()) {
       throw new Error("QR_EXPIRED: Pickup QR code has expired")
     }
 
@@ -652,8 +652,8 @@ export class PickupService {
     }
 
     if (
-      (appointment as any).qrCodeExpiresAt &&
-      new Date((appointment as any).qrCodeExpiresAt) < new Date()
+      (appointment as Record<string, unknown>)["qrCodeExpiresAt"] &&
+      new Date((appointment as Record<string, unknown>)["qrCodeExpiresAt"] as string) < new Date()
     ) {
       return { valid: false, reason: "QR code has expired" }
     }

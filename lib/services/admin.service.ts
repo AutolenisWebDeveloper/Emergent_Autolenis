@@ -502,7 +502,7 @@ export class AdminService {
 
     return {
       auctions: (auctions || []).map((a) => {
-        const buyer = buyerMap[a.buyerId] || ({} as any)
+        const buyer = buyerMap[a.buyerId] || ({} as Record<string, string>)
         return {
           id: a.id,
           buyerName: `${buyer.firstName || ""} ${buyer.lastName || ""}`.trim() || "Unknown",
@@ -592,8 +592,8 @@ export class AdminService {
 
     return {
       deals: (deals || []).map((d) => {
-        const buyer = buyerMap[d.buyerId] || ({} as any)
-        const dealer = dealerMap[d.dealerId] || ({} as any)
+        const buyer = buyerMap[d.buyerId] || ({} as Record<string, string>)
+        const dealer = dealerMap[d.dealerId] || ({} as Record<string, string>)
         return {
           id: d.id,
           buyerName: `${buyer.firstName || ""} ${buyer.lastName || ""}`.trim() || "Unknown",

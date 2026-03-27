@@ -81,7 +81,7 @@ export class EmailService {
     if (options.replyTo) payload.replyTo = options.replyTo
     if (options.tags) payload.tags = options.tags
 
-    const { data, error } = await resend.emails.send(payload as any)
+    const { data, error } = await resend.emails.send(payload as unknown as Parameters<typeof resend.emails.send>[0])
 
     if (error) {
       throw new Error(`Resend API error: ${error.message}`)

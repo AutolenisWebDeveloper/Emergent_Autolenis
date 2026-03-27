@@ -12,7 +12,7 @@ export async function logEvent(
         dealId,
         eventType,
         action: eventType,
-        details: details as any,
+        details: details as Record<string, unknown>,
       },
     })
   } catch (error) {
@@ -43,7 +43,7 @@ export async function logCmaEvent(
         userId: context?.userId,
         ipAddress: context?.ipAddress,
         userAgent: context?.userAgent,
-        details: details as any,
+        details: details as Record<string, unknown>,
       },
     })
   } catch (error) {

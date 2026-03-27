@@ -157,7 +157,7 @@ export class CheckoutService {
     const idempotencyKey = `deposit_cs_${paymentId}_${attemptCount}`
 
     const session = await stripe.checkout.sessions.create({
-      ui_mode: params.successUrl ? "hosted" as any : "embedded",
+      ui_mode: params.successUrl ? "hosted" as "hosted" | "embedded" : "embedded",
       redirect_on_completion: params.successUrl ? undefined : "never",
       success_url: params.successUrl,
       cancel_url: params.cancelUrl,
@@ -237,7 +237,7 @@ export class CheckoutService {
     }
 
     const dealStatus = String(deal.status || "").toUpperCase()
-    if (!FEE_ELIGIBLE_DEAL_STATUSES.includes(dealStatus as any)) {
+    if (!(FEE_ELIGIBLE_DEAL_STATUSES as readonly string[]).includes(dealStatus)) {
       throw new CheckoutError("Deal is not in a valid state for fee payment", "INVALID_STATE")
     }
 
@@ -312,7 +312,7 @@ export class CheckoutService {
     const idempotencyKey = `svc_fee_cs_${paymentId}_${attemptCount}`
 
     const session = await stripe.checkout.sessions.create({
-      ui_mode: params.successUrl ? "hosted" as any : "embedded",
+      ui_mode: params.successUrl ? "hosted" as "hosted" | "embedded" : "embedded",
       redirect_on_completion: params.successUrl ? undefined : "never",
       success_url: params.successUrl,
       cancel_url: params.cancelUrl,

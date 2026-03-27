@@ -917,9 +917,9 @@ export class SourcingService {
     }
 
     // Reserve the InventoryItem if one is linked
-    if ((offer as any).inventoryItemId) {
+    if ((offer as Record<string, unknown>)["inventoryItemId"]) {
       const item = await prisma.inventoryItem.findUnique({
-        where: { id: (offer as any).inventoryItemId },
+        where: { id: (offer as Record<string, unknown>)["inventoryItemId"] as string },
         select: { id: true, status: true },
       })
 

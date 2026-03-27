@@ -172,7 +172,7 @@ export class DealService {
           totalOtdAmountCents: otdCents,
           total_otd_amount_cents: otdCents,
           taxAmount: (offer.tax_amount_cents || offer.taxAmountCents || 0) / 100,
-          feesBreakdown: (offer.fee_breakdown_json || offer.feeBreakdownJson || offer.feesBreakdown) as any,
+          feesBreakdown: (offer.fee_breakdown_json || offer.feeBreakdownJson || offer.feesBreakdown) as object,
           payment_type: "FINANCED",
           concierge_fee_method: "UNDECIDED",
           concierge_fee_status: "PENDING",
@@ -1077,7 +1077,7 @@ export class DealService {
       SELECT * FROM "deal_status_history" 
       WHERE "selected_deal_id" = ${dealId}
       ORDER BY "created_at" DESC
-    `) as any[]
+    `) as Record<string, unknown>[]
 
     const complianceEvents = await prisma.complianceEvent.findMany({
       where: { relatedId: dealId },

@@ -99,7 +99,7 @@ export async function createOrGetSelectedDealFromBestPrice(
         totalOtdAmountCents: otdCents,
         total_otd_amount_cents: otdCents,
         taxAmount: (offer.tax_amount_cents || offer.taxAmountCents || 0) / 100,
-        feesBreakdown: (offer.fee_breakdown_json || offer.feeBreakdownJson || offer.feesBreakdown) as any,
+        feesBreakdown: (offer.fee_breakdown_json || offer.feeBreakdownJson || offer.feesBreakdown) as object,
         payment_type: "FINANCED",
         concierge_fee_method: "UNDECIDED",
         concierge_fee_status: "PENDING",
