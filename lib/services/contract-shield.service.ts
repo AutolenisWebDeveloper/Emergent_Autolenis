@@ -1240,7 +1240,7 @@ export class ContractShieldService {
         },
       })
     } catch (error) {
-      console.error("Failed to log event:", error)
+      logger.error("Failed to log event:", error)
     }
   }
 

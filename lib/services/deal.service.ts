@@ -3,6 +3,7 @@ import { PaymentService } from "@/lib/services/payment.service"
 import { dealContextService } from "@/lib/services/deal-context.service"
 import type { DealInsuranceReadiness } from "@/lib/types"
 import { InventoryStatus } from "@/lib/constants/statuses"
+import { logger } from "@/lib/logger"
 
 // ─── Lender References Note ──────────────────────────────────────────────
 // "lender_name" / "lenderName" in deal creation and financing logic refers
@@ -1112,7 +1113,7 @@ export class DealService {
     } catch (e) {
       // If inside a transaction, re-throw to trigger rollback
       if (tx) throw e
-      console.error("Failed to log status change:", e)
+      logger.error("Failed to log status change:", e)
     }
   }
 

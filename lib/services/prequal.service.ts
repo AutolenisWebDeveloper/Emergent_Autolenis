@@ -11,6 +11,7 @@ import {
 } from "@/lib/services/prequal/provider-interface"
 import { providerRegistry } from "@/lib/services/prequal/provider-registry"
 import { consentArtifactService } from "@/lib/services/prequal/consent-artifact.service"
+import { logger } from "@/lib/logger"
 
 // Types
 export type PreQualStatus = "ACTIVE" | "EXPIRED" | "REVOKED" | "FAILED"
@@ -308,7 +309,7 @@ export class PreQualService {
     } catch (err) {
       // Consent artifact creation is best-effort during migration;
       // fall back to legacy raw SQL consent event recording
-      console.warn("[PreQual] Consent artifact creation failed (migration fallback):", err instanceof Error ? err.message : err)
+      logger.warn("[PreQual] Consent artifact creation failed (migration fallback):", err instanceof Error ? err.message : err)
     }
 
     // Legacy consent event recording (maintained for backward compatibility)
@@ -425,7 +426,7 @@ export class PreQualService {
       try {
         await consentArtifactService.linkToPreQualification(consentArtifactId, prequal.id)
       } catch (err) {
-        console.warn("[PreQual] Consent artifact linking failed (migration fallback):", err instanceof Error ? err.message : err)
+        logger.warn("[PreQual] Consent artifact linking failed (migration fallback):", err instanceof Error ? err.message : err)
       }
     }
 
@@ -445,7 +446,7 @@ export class PreQualService {
         },
       })
     } catch (err) {
-      console.warn("[PreQual] Prisma provider event creation failed (migration fallback):", err instanceof Error ? err.message : err)
+      logger.warn("[PreQual] Prisma provider event creation failed (migration fallback):", err instanceof Error ? err.message : err)
     }
 
     // Legacy provider event recording (maintained for backward compatibility)

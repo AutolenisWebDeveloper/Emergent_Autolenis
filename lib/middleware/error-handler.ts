@@ -3,6 +3,7 @@
 
 import { NextResponse } from "next/server"
 import { ZodError } from "zod"
+import { logger } from "@/lib/logger"
 
 export class AppError extends Error {
   constructor(
@@ -61,7 +62,7 @@ interface ErrorResponse {
 }
 
 export function handleError(error: unknown): NextResponse<ErrorResponse> {
-  console.error("[ErrorHandler]", error)
+  logger.error("[ErrorHandler]", error)
 
   // Zod validation errors
   if (error instanceof ZodError) {

@@ -10,6 +10,7 @@
 import { GoogleGenerativeAI, type GenerativeModel, type Content } from "@google/generative-ai"
 import { buildFullSystemPrompt } from "./prompts/system-prompt"
 import type { AIRole } from "./context-builder"
+import { logger } from "@/lib/logger"
 
 // ---------------------------------------------------------------------------
 // Configuration
@@ -176,7 +177,7 @@ export async function* streamChatWithGemini(options: GeminiChatOptions): AsyncGe
       }
     }
   } catch (error) {
-    console.error("[Gemini Stream Error]:", error)
+    logger.error("[Gemini Stream Error]:", error)
     yield fallbackResponse("", null)
   }
 }

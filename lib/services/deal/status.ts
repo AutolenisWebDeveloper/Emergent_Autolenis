@@ -4,6 +4,7 @@ import { DealStatus, VALID_TRANSITIONS, normalizeDealStatus } from "./types"
 import { writeEventAsync } from "@/lib/services/event-ledger"
 import { PlatformEventType, EntityType, ActorType } from "@/lib/services/event-ledger"
 import { InventoryStatus } from "@/lib/constants/statuses"
+import { logger } from "@/lib/logger"
 
 export async function advanceDealStatusIfReady(dealId: string, userId?: string) {
   const deal = await prisma.selectedDeal.findUnique({
@@ -242,7 +243,7 @@ export async function logStatusChange(
   } catch (e) {
     // If inside a transaction, re-throw to trigger rollback
     if (tx) throw e
-    console.error("Failed to log status change:", e)
+    logger.error("Failed to log status change:", e)
   }
 }
 

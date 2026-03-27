@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin"
 import { getSiteUrl } from "@/lib/seo/site-url"
 import { publicPages } from "@/lib/seo/registry"
+import { logger } from "@/lib/logger"
 
 export interface SEOPageData {
   id: string
@@ -128,7 +129,7 @@ export class SEOService {
       .maybeSingle()
 
     if (error) {
-      console.error("[SEO] Error fetching page SEO:", error)
+      logger.error("[SEO] Error fetching page SEO:", error)
       return null
     }
     return data ? mapPageRow(data) : null
@@ -156,7 +157,7 @@ export class SEOService {
         .single()
 
       if (error) {
-        console.error("[SEO] Error updating page SEO:", error)
+        logger.error("[SEO] Error updating page SEO:", error)
         return null
       }
       return mapPageRow(updated)
@@ -168,7 +169,7 @@ export class SEOService {
         .single()
 
       if (error) {
-        console.error("[SEO] Error creating page SEO:", error)
+        logger.error("[SEO] Error creating page SEO:", error)
         return null
       }
       return mapPageRow(created)
@@ -187,7 +188,7 @@ export class SEOService {
       .order("page_key", { ascending: true })
 
     if (error) {
-      console.error("[SEO] Error fetching all pages:", error)
+      logger.error("[SEO] Error fetching all pages:", error)
       return []
     }
     return (data || []).map(mapPageRow)
@@ -203,7 +204,7 @@ export class SEOService {
       .eq("page_key", pageKey)
 
     if (error) {
-      console.error("[SEO] Error fetching page schema:", error)
+      logger.error("[SEO] Error fetching page schema:", error)
       return []
     }
     return (data || []).map(mapSchemaRow)
@@ -235,7 +236,7 @@ export class SEOService {
         .single()
 
       if (error) {
-        console.error("[SEO] Error updating page schema:", error)
+        logger.error("[SEO] Error updating page schema:", error)
         return null
       }
       return mapSchemaRow(updated)
@@ -247,7 +248,7 @@ export class SEOService {
         .single()
 
       if (error) {
-        console.error("[SEO] Error creating page schema:", error)
+        logger.error("[SEO] Error creating page schema:", error)
         return null
       }
       return mapSchemaRow(created)
@@ -261,7 +262,7 @@ export class SEOService {
     const { error } = await supabase.from("seo_schema").delete().eq("id", id)
 
     if (error) {
-      console.error("[SEO] Error deleting page schema:", error)
+      logger.error("[SEO] Error deleting page schema:", error)
     }
   }
 
@@ -276,7 +277,7 @@ export class SEOService {
       .maybeSingle()
 
     if (error) {
-      console.error("[SEO] Error fetching page health:", error)
+      logger.error("[SEO] Error fetching page health:", error)
       return null
     }
 
@@ -371,7 +372,7 @@ export class SEOService {
         .single()
 
       if (error) {
-        console.error("[SEO] Error updating health score:", error)
+        logger.error("[SEO] Error updating health score:", error)
         return null
       }
       result = data
@@ -383,7 +384,7 @@ export class SEOService {
         .single()
 
       if (error) {
-        console.error("[SEO] Error creating health score:", error)
+        logger.error("[SEO] Error creating health score:", error)
         return null
       }
       result = data
@@ -403,7 +404,7 @@ export class SEOService {
       .maybeSingle()
 
     if (error) {
-      console.error("[SEO] Error fetching page keywords:", error)
+      logger.error("[SEO] Error fetching page keywords:", error)
       return null
     }
 
@@ -437,7 +438,7 @@ export class SEOService {
         .single()
 
       if (error) {
-        console.error("[SEO] Error updating page keywords:", error)
+        logger.error("[SEO] Error updating page keywords:", error)
         return null
       }
       result = updated
@@ -449,7 +450,7 @@ export class SEOService {
         .single()
 
       if (error) {
-        console.error("[SEO] Error creating page keywords:", error)
+        logger.error("[SEO] Error creating page keywords:", error)
         return null
       }
       result = created
@@ -471,7 +472,7 @@ export class SEOService {
         .select("page_key, score, issues_json, last_scan_at")
 
       if (error) {
-        console.error("[SEO] Error fetching health records:", error)
+        logger.error("[SEO] Error fetching health records:", error)
       }
       records = healthRecords || []
     }
@@ -518,7 +519,7 @@ export class SEOService {
     try {
       const supabase = this.getSupabase()
       if (!supabase) {
-        console.warn("[SEO] Supabase client unavailable — returning static fallback sitemap")
+        logger.warn("[SEO] Supabase client unavailable — returning static fallback sitemap")
         return this.getFallbackSitemap()
       }
 
@@ -528,7 +529,7 @@ export class SEOService {
         .eq("indexable", true)
 
       if (error) {
-        console.warn("[SEO] DB query failed during sitemap generation — using fallback:", error.message)
+        logger.warn("[SEO] DB query failed during sitemap generation — using fallback:", error.message)
         return this.getFallbackSitemap()
       }
 
@@ -543,7 +544,7 @@ export class SEOService {
         priority: page.page_key === "home" ? "1.0" : "0.8",
       }))
     } catch (err) {
-      console.warn("[SEO] Unexpected error generating sitemap — using fallback:", err)
+      logger.warn("[SEO] Unexpected error generating sitemap — using fallback:", err)
       return this.getFallbackSitemap()
     }
   }

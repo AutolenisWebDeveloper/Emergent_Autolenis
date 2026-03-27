@@ -21,6 +21,7 @@
 
 import { createAdminClient } from "@/lib/supabase/admin"
 import type { BuyerPackageTier } from "@/lib/constants/buyer-packages"
+import { logger } from "@/lib/logger"
 
 // ---------------------------------------------------------------------------
 // Types
@@ -87,7 +88,7 @@ export async function initializeBuyerPackage(
     p_version: version,
   })
   if (error) {
-    console.error("[BuyerPackageService] initialize_buyer_package_registration failed", error)
+    logger.error("[BuyerPackageService] initialize_buyer_package_registration failed", error)
     throw new Error(`Failed to initialize buyer package: ${error.message}`)
   }
 }
@@ -108,7 +109,7 @@ export async function upgradeBuyerToPremium(
     p_reason: reason,
   })
   if (error) {
-    console.error("[BuyerPackageService] upgrade_buyer_to_premium failed", error)
+    logger.error("[BuyerPackageService] upgrade_buyer_to_premium failed", error)
     throw new Error(`Failed to upgrade buyer to premium: ${error.message}`)
   }
 }
@@ -131,7 +132,7 @@ export async function markDepositPaid(
     p_metadata: metadata,
   })
   if (error) {
-    console.error("[BuyerPackageService] mark_buyer_deposit_paid failed", error)
+    logger.error("[BuyerPackageService] mark_buyer_deposit_paid failed", error)
     throw new Error(`Failed to mark deposit paid: ${error.message}`)
   }
 }
@@ -150,7 +151,7 @@ export async function markDepositFailed(
     p_metadata: metadata,
   })
   if (error) {
-    console.error("[BuyerPackageService] mark_buyer_deposit_failed failed", error)
+    logger.error("[BuyerPackageService] mark_buyer_deposit_failed failed", error)
     throw new Error(`Failed to mark deposit failed: ${error.message}`)
   }
 }
@@ -169,7 +170,7 @@ export async function markDepositRefunded(
     p_metadata: metadata,
   })
   if (error) {
-    console.error("[BuyerPackageService] mark_buyer_deposit_refunded failed", error)
+    logger.error("[BuyerPackageService] mark_buyer_deposit_refunded failed", error)
     throw new Error(`Failed to mark deposit refunded: ${error.message}`)
   }
 }
@@ -192,7 +193,7 @@ export async function recordPremiumFeePayment(
     p_metadata: metadata,
   })
   if (error) {
-    console.error("[BuyerPackageService] record_premium_fee_payment failed", error)
+    logger.error("[BuyerPackageService] record_premium_fee_payment failed", error)
     throw new Error(`Failed to record premium fee payment: ${error.message}`)
   }
 }
@@ -210,7 +211,7 @@ export async function getBuyerPackageBilling(buyerId: string): Promise<BuyerPack
     .eq("buyer_id", buyerId)
     .maybeSingle()
   if (error) {
-    console.error("[BuyerPackageService] getBuyerPackageBilling failed", error)
+    logger.error("[BuyerPackageService] getBuyerPackageBilling failed", error)
     return null
   }
   return data as BuyerPackageBilling | null
@@ -225,7 +226,7 @@ export async function getBuyerPackageHistory(buyerId: string): Promise<BuyerPack
     .eq("buyer_id", buyerId)
     .order("changed_at", { ascending: false })
   if (error) {
-    console.error("[BuyerPackageService] getBuyerPackageHistory failed", error)
+    logger.error("[BuyerPackageService] getBuyerPackageHistory failed", error)
     return []
   }
   return (data || []) as BuyerPackageHistoryEntry[]
@@ -240,7 +241,7 @@ export async function getBuyerPaymentLedger(buyerId: string): Promise<BuyerPayme
     .eq("buyer_id", buyerId)
     .order("created_at", { ascending: false })
   if (error) {
-    console.error("[BuyerPackageService] getBuyerPaymentLedger failed", error)
+    logger.error("[BuyerPackageService] getBuyerPaymentLedger failed", error)
     return []
   }
   return (data || []) as BuyerPaymentLedgerEntry[]
@@ -255,7 +256,7 @@ export async function getBuyerPackageState(buyerId: string) {
     .eq("id", buyerId)
     .maybeSingle()
   if (error) {
-    console.error("[BuyerPackageService] getBuyerPackageState failed", error)
+    logger.error("[BuyerPackageService] getBuyerPackageState failed", error)
     return null
   }
   return data

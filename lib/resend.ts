@@ -1,4 +1,5 @@
 import { Resend } from "resend"
+import { logger } from "@/lib/logger"
 
 // Lazy-initialized Resend singleton to avoid throwing at module-import time
 // when RESEND_API_KEY is not set (e.g. during `next build`).
@@ -13,7 +14,7 @@ function ensureResend(): Resend {
       )
     }
     if (!apiKey) {
-      console.warn(
+      logger.warn(
         "[Resend] RESEND_API_KEY not configured. Email sending will fail. Set this environment variable to enable Resend."
       )
     }

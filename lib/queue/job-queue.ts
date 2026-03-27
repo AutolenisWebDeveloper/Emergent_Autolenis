@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger"
 /**
  * Job queue abstraction for background processing.
  * Supports in-memory (default) and can be extended for Redis-backed queues.
@@ -105,7 +106,7 @@ export class InMemoryJobQueue implements JobQueue {
     // Trigger processing on next tick if a handler is registered
     if (this.handler && !this.processing) {
       void this.tick().catch((err) => {
-        console.error("[JobQueue] Unhandled error during background processing:", err)
+        logger.error("[JobQueue] Unhandled error during background processing:", err)
       })
     }
     return id
@@ -198,7 +199,7 @@ export function getJobQueue(): JobQueue {
   if (provider === "redis") {
     // Future: plug in a BullMQ / Redis-backed queue here.
     // For now, fall back to in-memory with a warning.
-    console.warn("[JobQueue] QUEUE_PROVIDER=redis is not yet implemented. Falling back to in-memory queue.")
+    logger.warn("[JobQueue] QUEUE_PROVIDER=redis is not yet implemented. Falling back to in-memory queue.")
   }
 
   queueInstance = new InMemoryJobQueue()

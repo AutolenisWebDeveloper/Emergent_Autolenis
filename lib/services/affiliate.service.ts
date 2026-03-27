@@ -654,7 +654,7 @@ export class AffiliateService {
         VALUES (gen_random_uuid()::text, ${affiliateId}, ${eventType}, ${JSON.stringify(details)}::jsonb)
       `
     } catch (e) {
-      console.error("[AffiliateService] Failed to log event:", e)
+      logger.error("[AffiliateService] Failed to log event:", e)
     }
   }
 

@@ -8,17 +8,18 @@ import {
   CLOSED_CASE_STATUSES,
 } from "@/lib/constants/statuses"
 import { resolveBuyerEligibility, type PrequalStatus } from "@/lib/constants/buyer-eligibility"
+import { logger } from "@/lib/logger"
 
 export const buyerService = {
   async getDashboardData(userId: string) {
     // Return default data if database is not configured
     if (!isDatabaseConfigured()) {
-      console.warn("[BuyerService] Database not configured, returning default data")
+      logger.warn("[BuyerService] Database not configured, returning default data")
       return getDefaultDashboardData()
     }
 
     if (!userId) {
-      console.warn("[BuyerService] No userId provided, returning default data")
+      logger.warn("[BuyerService] No userId provided, returning default data")
       return getDefaultDashboardData()
     }
 
@@ -47,7 +48,7 @@ export const buyerService = {
 
       // If no profile found, return default data
       if (!profile) {
-        console.warn("[BuyerService] No buyer profile found for user:", userId)
+        logger.warn("[BuyerService] No buyer profile found for user:", userId)
         return getDefaultDashboardData()
       }
 
@@ -256,7 +257,7 @@ export const buyerService = {
         billing: packageBilling,
       }
     } catch (error) {
-      console.error("[BuyerService] Error fetching dashboard data:", error)
+      logger.error("[BuyerService] Error fetching dashboard data:", error)
       return getDefaultDashboardData()
     }
   },
@@ -458,7 +459,7 @@ async function getRecentActivity(_userId: string, buyerId: string) {
       })
     }
   } catch (error) {
-    console.error("[BuyerService] Error fetching recent activity:", error)
+    logger.error("[BuyerService] Error fetching recent activity:", error)
   }
 
   // Sort by timestamp and return top 10

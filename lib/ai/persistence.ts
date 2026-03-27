@@ -9,6 +9,7 @@
  */
 
 import type { AIRole } from "./context-builder"
+import { logger } from "@/lib/logger"
 
 // ---------------------------------------------------------------------------
 // Lazy Prisma import (avoids build failures when DB is not configured)
@@ -51,7 +52,7 @@ export async function persistConversation(input: CreateConversationInput): Promi
       },
     })
   } catch (err) {
-    console.error("[AI Persistence] Failed to persist conversation:", err instanceof Error ? err.message : err)
+    logger.error("[AI Persistence] Failed to persist conversation:", err instanceof Error ? err.message : err)
   }
 }
 
@@ -81,7 +82,7 @@ export async function persistMessage(input: CreateMessageInput): Promise<void> {
       },
     })
   } catch (err) {
-    console.error("[AI Persistence] Failed to persist message:", err instanceof Error ? err.message : err)
+    logger.error("[AI Persistence] Failed to persist message:", err instanceof Error ? err.message : err)
   }
 }
 
@@ -121,7 +122,7 @@ export async function persistToolCall(input: CreateToolCallInput): Promise<void>
       },
     })
   } catch (err) {
-    console.error("[AI Persistence] Failed to persist tool call:", err instanceof Error ? err.message : err)
+    logger.error("[AI Persistence] Failed to persist tool call:", err instanceof Error ? err.message : err)
   }
 }
 
@@ -149,7 +150,7 @@ export async function persistAdminAction(input: CreateAdminActionInput): Promise
       },
     })
   } catch (err) {
-    console.error("[AI Persistence] Failed to persist admin action:", err instanceof Error ? err.message : err)
+    logger.error("[AI Persistence] Failed to persist admin action:", err instanceof Error ? err.message : err)
   }
 }
 
@@ -184,7 +185,7 @@ export async function persistLead(input: CreateLeadInput): Promise<string | null
     })
     return lead.id
   } catch (err) {
-    console.error("[AI Persistence] Failed to persist lead:", err instanceof Error ? err.message : err)
+    logger.error("[AI Persistence] Failed to persist lead:", err instanceof Error ? err.message : err)
     return null
   }
 }
@@ -224,7 +225,7 @@ export async function persistSeoDraft(input: CreateSeoDraftInput): Promise<strin
     })
     return draft.id
   } catch (err) {
-    console.error("[AI Persistence] Failed to persist SEO draft:", err instanceof Error ? err.message : err)
+    logger.error("[AI Persistence] Failed to persist SEO draft:", err instanceof Error ? err.message : err)
     return null
   }
 }
@@ -270,7 +271,7 @@ export async function persistContractExtraction(input: CreateContractExtractionI
     })
     return extraction.id
   } catch (err) {
-    console.error("[AI Persistence] Failed to persist contract extraction:", err instanceof Error ? err.message : err)
+    logger.error("[AI Persistence] Failed to persist contract extraction:", err instanceof Error ? err.message : err)
     return null
   }
 }
