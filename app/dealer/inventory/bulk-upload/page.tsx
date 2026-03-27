@@ -173,7 +173,7 @@ export default function BulkUploadPage() {
         setUploadProgress("idle")
         throw new Error(result.error || "Upload failed")
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       setUploadProgress("idle")
       toast({
         variant: "destructive",
@@ -216,7 +216,7 @@ export default function BulkUploadPage() {
       } else {
         throw new Error(result.error || "Import failed")
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         variant: "destructive",
         title: "Import failed",

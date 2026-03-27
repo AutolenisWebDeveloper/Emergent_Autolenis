@@ -29,7 +29,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ dea
         totalExtraCostCents: impact.totalExtraCostCents,
       },
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[Payment Fee Loan Impact]", error)
     return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 })
   }

@@ -22,7 +22,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ dea
     }
 
     return NextResponse.json({ success: true, data: { dealId, refunds: [] } })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[Admin Deal Refunds API]", error)
     return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 })
   }
@@ -140,7 +140,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ dea
     })
 
     return NextResponse.json({ success: true, data: refund })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[Admin Deal Refunds POST]", error)
     return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 })
   }

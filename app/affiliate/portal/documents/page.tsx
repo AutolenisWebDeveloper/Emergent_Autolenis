@@ -61,7 +61,7 @@ export default function AffiliateDocumentsPage() {
 
       toast({ title: "Document uploaded", description: `Your ${DOC_TYPES.find((d) => d.value === docType)?.label || docType} has been uploaded successfully.` })
       mutate()
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast({ variant: "destructive", title: "Upload failed", description: err.message || "Unable to upload document." })
     } finally {
       setUploading(false)

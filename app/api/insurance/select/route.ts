@@ -13,7 +13,7 @@ export async function POST(request: Request) {
       success: true,
       data: { policy: result },
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[Insurance Select]", error)
     return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 })
   }

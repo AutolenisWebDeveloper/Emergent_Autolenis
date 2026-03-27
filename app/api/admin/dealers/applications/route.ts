@@ -9,7 +9,7 @@ export async function GET() {
     const applications = await dealerApprovalService.getPendingApplications()
 
     return NextResponse.json({ success: true, data: applications })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[DealerApplications] Error:", error)
     const status = error instanceof Error && error.message === "Unauthorized" ? 401 : error instanceof Error && error.message === "Forbidden" ? 403 : 500
     const msg = status === 401 ? "Unauthorized" : status === 403 ? "Forbidden" : "Internal server error"

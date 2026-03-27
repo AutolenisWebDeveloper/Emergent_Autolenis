@@ -106,7 +106,7 @@ function AdminPayoutsPageContent() {
       setProcessDialog({ open: false, payout: null })
       setTransactionId("")
       mutate()
-    } catch (error: any) {
+    } catch (error: unknown) {
       alert(error.message)
     } finally {
       setProcessing(false)

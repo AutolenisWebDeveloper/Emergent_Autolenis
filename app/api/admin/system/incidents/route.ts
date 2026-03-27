@@ -22,7 +22,7 @@ export async function GET(_request: NextRequest) {
       data: incidents,
       total: incidents.length,
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     const rawMessage = error?.message ?? "Unknown error"
     const safeMessage = String(rawMessage).replace(/[\r\n]+/g, " ")
     console.error("[System Incidents API] Error:", safeMessage)
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
     })
 
     return NextResponse.json({ success: true, data: incident })
-  } catch (error: any) {
+  } catch (error: unknown) {
     const rawMessage = error?.message ?? "Unknown error"
     const safeMessage = String(rawMessage).replace(/[\r\n]+/g, " ")
     console.error("[System Incidents API] Error:", safeMessage)
@@ -105,7 +105,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     return NextResponse.json({ success: true, data: incident })
-  } catch (error: any) {
+  } catch (error: unknown) {
     const rawMessage = error?.message ?? "Unknown error"
     const safeMessage = String(rawMessage).replace(/[\r\n]+/g, " ")
     console.error("[System Incidents API] Error:", safeMessage)

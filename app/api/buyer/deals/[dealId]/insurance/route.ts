@@ -15,7 +15,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ dea
       success: true,
       data,
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error?.statusCode === 401 || error?.statusCode === 403) {
       return NextResponse.json({ success: false, error: error.statusCode === 403 ? "Forbidden" : "Unauthorized" }, { status: error.statusCode })
     }

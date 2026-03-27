@@ -46,3 +46,10 @@ next-env.d.ts
 .supabase/
 supabase/.temp/
 node_modules/
+
+# agent artifacts
+skills-lock.json
+
+# backup and patch files
+*.bak
+*.patch

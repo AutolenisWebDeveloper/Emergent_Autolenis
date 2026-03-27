@@ -148,7 +148,7 @@ export async function POST(request: NextRequest) {
     )
 
     return NextResponse.json({ success: true, data: { ...result, fileUrl } })
-  } catch (error: any) {
+  } catch (error: unknown) {
     const correlationId = randomUUID()
     console.error("[Insurance Upload] Error:", { correlationId, error })
     const message = error?.message || "Insurance upload failed"

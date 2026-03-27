@@ -112,7 +112,7 @@ export default function BuyerSettingsPage() {
         description: "Your profile has been updated",
       })
       await loadUser()
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         variant: "destructive",
         title: "Error",
@@ -149,7 +149,7 @@ export default function BuyerSettingsPage() {
       toast({ title: "Password changed", description: "Your password has been updated successfully" })
       setShowPasswordDialog(false)
       setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" })
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({ variant: "destructive", title: "Error", description: error.message })
     } finally {
       setChangingPassword(false)
@@ -168,7 +168,7 @@ export default function BuyerSettingsPage() {
 
       setMfaEnrollData(data.data)
       setShowMfaEnrollDialog(true)
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({ variant: "destructive", title: "Error", description: error.message })
     } finally {
       setMfaProcessing(false)
@@ -195,7 +195,7 @@ export default function BuyerSettingsPage() {
       setMfaCode("")
       setMfaEnrollData(null)
       setMfaEnabled(true)
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({ variant: "destructive", title: "Error", description: error.message })
     } finally {
       setMfaProcessing(false)
@@ -222,7 +222,7 @@ export default function BuyerSettingsPage() {
       setMfaDisablePassword("")
       setMfaDisableCode("")
       setMfaEnabled(false)
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({ variant: "destructive", title: "Error", description: error.message })
     } finally {
       setMfaProcessing(false)

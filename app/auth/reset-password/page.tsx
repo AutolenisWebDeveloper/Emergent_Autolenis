@@ -107,7 +107,7 @@ function ResetPasswordForm() {
         title: "Password Reset!",
         description: "Your password has been reset successfully.",
       })
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         variant: "destructive",
         title: "Error",

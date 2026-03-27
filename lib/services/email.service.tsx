@@ -149,7 +149,7 @@ export class EmailService {
       })
 
       return result
-    } catch (err: any) {
+    } catch (err: unknown) {
       const errorMessage = err?.message || "Unknown send error"
       logger.error("[EmailService.send] failed", { to: resolvedTo, subject: options.subject, error: errorMessage })
 

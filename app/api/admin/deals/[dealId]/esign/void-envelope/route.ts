@@ -41,7 +41,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ dea
     const result = await esignService.voidEnvelope(dealId, user.userId, reason)
 
     return NextResponse.json(result)
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[Admin E-Sign] Void error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }

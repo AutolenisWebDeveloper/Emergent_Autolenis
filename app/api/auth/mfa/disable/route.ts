@@ -112,7 +112,7 @@ export async function POST(request: Request) {
       success: true,
       message: "Two-factor authentication disabled successfully",
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[MFA Disable] Error:", error)
     return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 })
   }

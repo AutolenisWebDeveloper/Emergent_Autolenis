@@ -80,7 +80,7 @@ export default function AffiliateSettingsPage() {
         title: "Settings saved",
         description: "Your affiliate profile has been updated.",
       })
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         variant: "destructive",
         title: "Save failed",
@@ -122,7 +122,7 @@ export default function AffiliateSettingsPage() {
       }
       toast({ title: "Password changed", description: "Your password has been updated successfully." })
       setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" })
-    } catch (error: any) {
+    } catch (error: unknown) {
       setPasswordError(error.message || "Failed to change password")
     } finally {
       setChangingPassword(false)

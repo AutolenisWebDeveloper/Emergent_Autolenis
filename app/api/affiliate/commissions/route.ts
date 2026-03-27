@@ -207,7 +207,7 @@ export async function GET(req: NextRequest) {
         totalPages: Math.ceil(total / limit),
       },
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("[Affiliate Commissions] Error:", error)
     return NextResponse.json({ error: "Failed to get commissions" }, { status: 500 })
   }

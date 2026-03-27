@@ -46,7 +46,7 @@ export default function PickupSchedulePage() {
       const qrRes = await fetch(`/api/pickup/${data.id}/qr`)
       const qrData = await qrRes.json()
       setQrCode(qrData.qrCode)
-    } catch (err: any) {
+    } catch (err: unknown) {
       alert(err.message)
     } finally {
       setLoading(false)

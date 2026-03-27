@@ -95,7 +95,7 @@ export default function AdminConciergeFeesPage() {
       setShowInitiate(false)
       setForm({ buyerId: "", dealId: "", amount: "", notes: "" })
       mutate()
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast({ variant: "destructive", title: "Failed", description: err.message })
     } finally {
       setProcessing(false)

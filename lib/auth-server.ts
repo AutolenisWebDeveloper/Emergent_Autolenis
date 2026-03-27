@@ -20,7 +20,7 @@ export async function getSession(): Promise<SessionUser | null> {
     const session = await verifySession(token)
     logger.debug("Session verified", { userId: session.userId })
     return session
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("Session verification failed", { error: error.message })
     return null
   }

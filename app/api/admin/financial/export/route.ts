@@ -131,7 +131,7 @@ export async function GET(request: Request) {
         "Content-Disposition": `attachment; filename="financial-export-${new Date().toISOString().slice(0, 10)}.csv"`,
       },
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("[Financial Export] Export failed", { error: error.message })
     return NextResponse.json(
       { error: "Export failed", correlationId: correlationId() },

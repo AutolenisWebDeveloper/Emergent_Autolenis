@@ -78,7 +78,7 @@ function InsuranceBindPageContent() {
 
       toast({ title: "Policy Bound!", description: "Your insurance policy has been activated." })
       router.push("/buyer/deal/insurance/confirmed")
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast({ variant: "destructive", title: "Error", description: err.message })
     } finally {
       setBinding(false)

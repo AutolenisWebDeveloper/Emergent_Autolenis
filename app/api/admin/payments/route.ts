@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ error: "Invalid action" }, { status: 400 })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[Admin Payments Action Error]", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }

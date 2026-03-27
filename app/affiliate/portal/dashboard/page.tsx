@@ -147,7 +147,7 @@ export default function AffiliateDashboardPage() {
       setRecipientEmail("")
       setShareMessage("")
       setShareOpen(false)
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast({
         variant: "destructive",
         title: "Send failed",

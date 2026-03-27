@@ -297,7 +297,7 @@ export async function GET(request: Request) {
         transactions,
       },
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     const cid = correlationId()
     console.error(`[financial-api] ${cid}:`, error?.message || error)
     return NextResponse.json(

@@ -119,7 +119,7 @@ export default function DealerApplicationPage() {
       })
 
       router.push("/dealer/onboarding?pending=true")
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         variant: "destructive",
         title: "Submission Failed",

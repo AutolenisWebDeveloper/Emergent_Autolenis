@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
       success: true,
       data: result,
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error?.statusCode === 403) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }

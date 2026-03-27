@@ -101,7 +101,7 @@ export default function DealerOnboardingPage() {
       setTimeout(() => {
         router.push("/dealer/dashboard")
       }, 3000)
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         variant: "destructive",
         title: "Submission failed",

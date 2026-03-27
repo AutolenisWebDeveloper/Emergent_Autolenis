@@ -69,7 +69,7 @@ export default function DealFinancingPage() {
       })
 
       router.push("/buyer/deal/fee")
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         variant: "destructive",
         title: "Error",

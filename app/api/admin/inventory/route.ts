@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
       success: true,
       ...result,
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[v0] Admin inventory error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }

@@ -114,7 +114,7 @@ export default function AdminRefundsPage() {
       setShowInitiate(false)
       setForm({ buyerId: "", relatedPaymentId: "", relatedPaymentType: "manual", amount: "", reason: "" })
       mutate()
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast({ variant: "destructive", title: "Failed", description: err.message })
     } finally {
       setProcessing(false)

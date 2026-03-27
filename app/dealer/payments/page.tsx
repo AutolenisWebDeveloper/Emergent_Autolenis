@@ -29,7 +29,7 @@ export default function DealerPaymentsPage() {
       } else {
         throw new Error(result.error || "Unable to initiate payment")
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast({
         variant: "destructive",
         title: "Payment failed",

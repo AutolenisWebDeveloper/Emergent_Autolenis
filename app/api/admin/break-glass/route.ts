@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
     })
 
     return NextResponse.json({ success: true, correlationId })
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("[Break-Glass] Unexpected error", { correlationId, error: error.message })
     return NextResponse.json(
       { error: { code: "INTERNAL_ERROR", message: "Internal server error" }, correlationId },

@@ -109,7 +109,7 @@ export default function DealerAuctionDetailPage() {
           setTradeIn(tradeInData.data.tradeIn)
         }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error fetching auction:", err.message || err)
       toast({
         title: "Error",
@@ -194,7 +194,7 @@ export default function DealerAuctionDetailPage() {
       } else {
         throw new Error(extractApiError(data.error, "Auction operation failed"))
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast({
         variant: "destructive",
         title: "Error",

@@ -127,7 +127,7 @@ export async function POST(request: Request) {
         redirect,
       },
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error.message?.includes("already exists")) {
       return handleError(new ConflictError("An account with this email already exists"))
     }

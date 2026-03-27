@@ -211,7 +211,7 @@ export function SignUpForm() {
           router.replace("/")
         }
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("[SignUpForm] Error:", error.message)
       setError(error.message || "An error occurred. Please try again.")
     } finally {

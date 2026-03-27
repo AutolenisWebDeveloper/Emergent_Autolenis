@@ -108,7 +108,7 @@ export default function BuyerPreQualPage() {
       } else {
         throw new Error(extractApiError(data.error, "Failed to refresh"))
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         variant: "destructive",
         title: "Refresh failed",

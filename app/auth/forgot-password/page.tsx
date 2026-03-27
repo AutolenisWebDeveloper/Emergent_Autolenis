@@ -45,7 +45,7 @@ export default function ForgotPasswordPage() {
       }
 
       setSubmitted(true)
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         variant: "destructive",
         title: "Error",

@@ -26,7 +26,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       success: true,
       data: { scan, documents },
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[v0] Admin contract detail error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
@@ -57,7 +57,7 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
       success: true,
       data: { scan },
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[v0] Admin override error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }

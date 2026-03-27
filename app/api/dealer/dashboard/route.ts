@@ -64,7 +64,7 @@ export async function GET(_req: NextRequest) {
 
     const stats = await getDealerDashboardStats(dealerUser.dealerId)
     return NextResponse.json({ success: true, ...stats })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[Dealer Dashboard] Error:", error)
     const status = error?.statusCode && Number.isInteger(error.statusCode) ? error.statusCode : 500
     return NextResponse.json({ error: status === 401 ? "Unauthorized" : "Failed to get dashboard" }, { status })

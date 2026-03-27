@@ -90,7 +90,7 @@ export default function AffiliateOnboardingPage() {
       })
 
       setStep(3)
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         variant: "destructive",
         title: "Setup failed",

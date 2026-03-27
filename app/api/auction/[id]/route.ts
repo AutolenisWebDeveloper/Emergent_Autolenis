@@ -28,7 +28,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
       success: true,
       data: { auction },
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error.statusCode === 401) {
       return NextResponse.json({ success: false, error: "Authentication required" }, { status: 401 })
     }

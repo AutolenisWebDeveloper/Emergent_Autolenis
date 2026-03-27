@@ -41,7 +41,7 @@ export default function BuyerAuctionsPage() {
       })
 
       router.push("/buyer/deal")
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         variant: "destructive",
         title: "Error",

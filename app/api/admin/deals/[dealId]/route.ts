@@ -43,7 +43,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ dea
       deal: dealData,
       data: dealData,
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error fetching deal for admin:", error)
     return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 })
   }

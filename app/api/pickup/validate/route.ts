@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
     const pickup = await pickupService.validatePickupCode(code)
 
     return NextResponse.json(pickup)
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[Pickup Validate]", error)
     return NextResponse.json({ error: "Invalid pickup code" }, { status: 400 })
   }

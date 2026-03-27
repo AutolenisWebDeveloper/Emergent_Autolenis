@@ -158,7 +158,7 @@ export async function GET(request: Request) {
     }
 
     return NextResponse.json({ results })
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error?.statusCode === 401) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }

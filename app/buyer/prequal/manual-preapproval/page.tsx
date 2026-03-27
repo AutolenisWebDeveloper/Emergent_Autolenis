@@ -94,7 +94,7 @@ export default function ManualPreApprovalPage() {
       } else {
         throw new Error(extractApiError(data.error, "Submission failed"))
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         variant: "destructive",
         title: "Submission failed",

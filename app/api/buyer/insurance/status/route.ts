@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
           { status: 400 },
         )
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[Buyer Insurance Action Error]", error)
     const message = error?.message || "Insurance operation failed"
     const status = message.includes("not found") || message.includes("unauthorized") ? 404 : 500

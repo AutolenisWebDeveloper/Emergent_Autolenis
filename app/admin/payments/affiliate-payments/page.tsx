@@ -101,7 +101,7 @@ export default function AdminAffiliatePaymentsPage() {
       setShowInitiate(false)
       setForm({ affiliateId: "", amount: "", method: "BANK_TRANSFER" })
       mutate()
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast({ variant: "destructive", title: "Failed", description: err.message })
     } finally {
       setProcessing(false)

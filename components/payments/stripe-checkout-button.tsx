@@ -39,7 +39,7 @@ export function StripeCheckoutButton({ type, auctionId, dealId, amount, label, c
       } else {
         throw new Error(extractApiError(data.error, "Failed to create checkout session"))
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Checkout error:", error)
       alert(error.message || "Failed to start checkout")
     } finally {

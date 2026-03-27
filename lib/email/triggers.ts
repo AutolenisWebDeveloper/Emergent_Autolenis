@@ -119,7 +119,7 @@ export async function sendEmail({
     })
 
     return { success: true, messageId: data?.id }
-  } catch (error: any) {
+  } catch (error: unknown) {
     await logEmail({
       type,
       recipient: recipients[0],

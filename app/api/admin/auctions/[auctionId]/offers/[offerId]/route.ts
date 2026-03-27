@@ -22,7 +22,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ auc
     }
 
     return NextResponse.json(offer)
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("[API] Admin get offer detail error:", error)
     const status = error instanceof Error && error.message === "Unauthorized" ? 401 : error instanceof Error && error.message === "Forbidden" ? 403 : 500
     const msg = status === 401 ? "Unauthorized" : status === 403 ? "Forbidden" : "Internal server error"

@@ -79,7 +79,7 @@ function BuyerTradeInPageContent() {
       })
 
       router.push("/buyer/shortlist")
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         variant: "destructive",
         title: "Error",
@@ -116,7 +116,7 @@ function BuyerTradeInPageContent() {
       })
 
       router.push("/buyer/shortlist")
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         variant: "destructive",
         title: "Error",

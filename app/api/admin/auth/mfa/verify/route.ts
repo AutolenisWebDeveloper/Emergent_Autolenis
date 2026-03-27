@@ -124,7 +124,7 @@ export async function POST(request: Request) {
       success: true,
       message: isEnrollment ? "MFA enrolled successfully" : "MFA verified successfully",
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[MFA Verify] Error:", error)
     return NextResponse.json({ error: "Verification failed" }, { status: 500 })
   }

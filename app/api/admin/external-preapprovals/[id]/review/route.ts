@@ -57,7 +57,7 @@ export async function POST(
       success: true,
       data: result,
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[Admin External PreApproval Review API] POST error:", error)
 
     if (error.message === "Submission not found") {

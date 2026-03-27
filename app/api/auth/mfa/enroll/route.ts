@@ -64,7 +64,7 @@ export async function POST() {
         factorId,
       },
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[MFA Enroll] Error:", error)
     return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 })
   }

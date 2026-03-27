@@ -27,7 +27,7 @@ export async function POST(request: Request) {
       success: true,
       data: { closedCount },
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("[Auction Close Expired]", error)
     return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 })
   }

@@ -63,7 +63,7 @@ export async function GET(_request: NextRequest) {
         category: "database",
         lastChecked: now,
       })
-    } catch (err: any) {
+    } catch (err: unknown) {
       checks.push({
         name: "Database Tables",
         status: "warning",
@@ -219,7 +219,7 @@ export async function GET(_request: NextRequest) {
         failed: checks.filter(c => c.status === "fail").length,
       },
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[Admin Health API] Error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }

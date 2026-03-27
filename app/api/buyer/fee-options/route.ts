@@ -25,7 +25,7 @@ export async function GET() {
       success: true,
       data: { options: [] },
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[buyer/fee-options] Error:", error)
     return NextResponse.json(
       { success: false, error: "Failed to fetch fee options" },

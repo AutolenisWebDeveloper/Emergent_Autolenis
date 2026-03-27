@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
         },
       },
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[Admin TradeIn API] GET error:", error)
     return NextResponse.json({ success: false, error: "Failed to fetch trade-ins" }, { status: 500 })
   }

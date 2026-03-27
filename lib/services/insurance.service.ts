@@ -307,7 +307,7 @@ export class InsuranceService {
         coverageJson: q.coverageJson,
         expiresAt: q.expiresAt,
       }))
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Log failure
       await this.logEvent("QUOTE_FAILED", dealId, userId, null, {
         error: error.message,
@@ -471,7 +471,7 @@ export class InsuranceService {
         documentUrl: policy.documentUrl,
         insuranceStatus: "BOUND",
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       await this.logEvent("ERROR", dealId, userId, null, {
         action: "BIND_POLICY",
         error: error.message,

@@ -94,7 +94,7 @@ export async function GET(req: NextRequest) {
       availableBalance: (affiliate.available_balance_cents || (affiliate.pendingEarnings || 0) * 100 || 0) / 100,
       minimumPayout: 50,
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("[Affiliate Payouts] Error:", error)
     return NextResponse.json({ error: "Failed to get payouts" }, { status: 500 })
   }
@@ -162,7 +162,7 @@ export async function POST(req: NextRequest) {
       success: true,
       payout,
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("[Affiliate Payouts] Error:", error)
     return NextResponse.json({ error: "Failed to request payout" }, { status: 500 })
   }

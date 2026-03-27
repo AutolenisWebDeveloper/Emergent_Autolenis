@@ -207,7 +207,7 @@ export async function createDocumentTrustRecordAsync(
     })
 
     return { success: true, record: mapDbRowToDocRecord(row), error: null }
-  } catch (err: any) {
+  } catch (err: unknown) {
     return { success: false, record: null, error: err?.message ?? "Unknown error" }
   }
 }

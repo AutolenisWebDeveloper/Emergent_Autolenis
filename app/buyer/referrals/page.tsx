@@ -41,7 +41,7 @@ export default function BuyerReferralsPage() {
       })
 
       router.replace("/affiliate/portal/dashboard")
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast({
         variant: "destructive",
         title: "Activation failed",

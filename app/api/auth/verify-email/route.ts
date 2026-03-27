@@ -24,7 +24,7 @@ export async function GET(request: Request) {
 
     logger.info("[VerifyEmail] Verification succeeded", { userId: result.userId })
     return NextResponse.redirect(new URL("/auth/verify-email?success=true", request.url))
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("[VerifyEmail] Unexpected error", { error: error.message })
     return NextResponse.redirect(new URL("/auth/verify-email?error=verification_failed", request.url))
   }

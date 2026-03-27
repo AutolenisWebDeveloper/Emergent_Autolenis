@@ -202,7 +202,7 @@ export async function writeEventAsync(input: EventWriteInput): Promise<WriteEven
     })
 
     return { success: true, event: mapDbRowToEvent(row), duplicate: false, error: null }
-  } catch (err: any) {
+  } catch (err: unknown) {
     // Handle unique constraint violation (idempotency key collision)
     if (err?.code === "P2002" && input.idempotencyKey) {
       const existing = await db.platformEvent.findUnique({

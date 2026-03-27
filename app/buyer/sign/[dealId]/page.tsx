@@ -38,7 +38,7 @@ export default function ESignPage() {
 
       const data = await res.json()
       setEnvelope(data)
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Signing failed")
     }
     }

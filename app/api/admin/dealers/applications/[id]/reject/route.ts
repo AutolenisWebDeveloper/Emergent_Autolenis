@@ -15,7 +15,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     await dealerApprovalService.rejectApplication(id, user.userId, body.reason)
 
     return NextResponse.json({ success: true, message: "Application rejected" })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[RejectDealerApplication] Error:", error)
     const status = error instanceof Error && error.message === "Unauthorized" ? 401 : error instanceof Error && error.message === "Forbidden" ? 403 : 500
     const msg = status === 401 ? "Unauthorized" : status === 403 ? "Forbidden" : "Internal server error"

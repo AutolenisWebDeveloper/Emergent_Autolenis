@@ -60,7 +60,7 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ success: false, error: "Invalid payment type" }, { status: 400 })
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error?.statusCode === 401 || error?.statusCode === 403) {
       return NextResponse.json({ success: false, error: error.statusCode === 403 ? "Forbidden" : "Unauthorized" }, { status: error.statusCode })
     }

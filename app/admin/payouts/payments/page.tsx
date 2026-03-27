@@ -136,7 +136,7 @@ export default function AdminAffiliatePaymentsPage() {
       setInitiateOpen(false)
       setInitiateForm({ affiliateId: "", amount: "", method: "bank_transfer" })
       mutate()
-    } catch (err: any) {
+    } catch (err: unknown) {
       alert(err.message)
     } finally {
       setInitiating(false)
@@ -165,7 +165,7 @@ export default function AdminAffiliatePaymentsPage() {
       setActionDialog({ open: false, payment: null, action: null })
       setExternalTxnId("")
       mutate()
-    } catch (err: any) {
+    } catch (err: unknown) {
       alert(err.message)
     } finally {
       setActionProcessing(false)

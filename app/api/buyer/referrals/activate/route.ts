@@ -31,7 +31,7 @@ export async function POST() {
         referralLink,
       },
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[Referral Activate] Error:", error)
     return NextResponse.json(
       { success: false, error: "Failed to activate referrals" },

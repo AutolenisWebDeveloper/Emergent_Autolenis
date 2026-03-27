@@ -13,7 +13,7 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     const pickup = await pickupService.checkIn(id, user.id)
 
     return NextResponse.json(pickup)
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[Pickup CheckIn]", error)
     return NextResponse.json({ error: "Failed to check in" }, { status: 500 })
   }

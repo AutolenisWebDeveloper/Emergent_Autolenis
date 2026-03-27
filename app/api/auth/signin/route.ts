@@ -97,7 +97,7 @@ export async function POST(request: Request) {
         redirect,
       },
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error.code === "EMAIL_NOT_VERIFIED") {
       logger.info("Signin: email not verified", { correlationId })
       return NextResponse.json(

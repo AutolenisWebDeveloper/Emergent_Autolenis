@@ -59,7 +59,7 @@ export default function AddInventoryPage() {
 
       toast({ title: "Vehicle added to inventory!" })
       router.push("/dealer/inventory")
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({ variant: "destructive", title: error.message })
     } finally {
       setLoading(false)

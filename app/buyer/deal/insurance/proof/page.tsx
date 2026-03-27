@@ -67,7 +67,7 @@ export default function InsuranceProofPage() {
 
       toast({ title: "Proof Uploaded", description: "Your insurance proof has been submitted." })
       router.push("/buyer/deal/insurance/confirmed")
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast({ variant: "destructive", title: "Error", description: err.message })
     } finally {
       setSubmitting(false)

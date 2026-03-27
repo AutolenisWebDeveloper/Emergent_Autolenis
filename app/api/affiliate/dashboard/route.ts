@@ -213,7 +213,7 @@ export async function GET(_req: NextRequest) {
         createdAt: c.createdAt,
       })),
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("[Affiliate Dashboard] Error:", error)
     return NextResponse.json({ error: "Failed to get dashboard" }, { status: 500 })
   }

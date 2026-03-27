@@ -84,7 +84,7 @@ export default function DealEsignPage() {
         title: "Documents ready",
         description: "Click to open the signing portal",
       })
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         variant: "destructive",
         title: "Error",

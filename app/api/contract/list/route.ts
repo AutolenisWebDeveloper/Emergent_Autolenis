@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
       success: true,
       data: { contracts: documents },
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error?.statusCode === 403) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
