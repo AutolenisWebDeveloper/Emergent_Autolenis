@@ -92,6 +92,7 @@ function makeDealSignals(overrides?: Partial<DealSignals>): DealSignals {
     pickupStatus: null,
     payoutStatus: null,
     refundStatus: null,
+    deliveryBlockFlag: false,
     complianceFlags: [],
     manualHold: false,
     ...overrides,
