@@ -20,10 +20,11 @@
 --     PaymentMethod, InsuranceUpload, DealerApplication
 --
 -- Helper functions referenced (all schema-qualified, all pre-existing):
---   public.current_user_id()    → TEXT  (maps auth.uid() → User.id CUID)
---   public.is_admin()           → BOOL  (checks User.role via auth.uid())
---   public.current_dealer_ids() → SETOF TEXT (Dealer + DealerUser lookup)
+--   public.current_user_id()       → TEXT  (maps auth.uid() → User.id CUID)
+--   public.is_admin()              → BOOL  (checks User.role via auth.uid())
+--   public.current_dealer_ids()    → SETOF TEXT (Dealer + DealerUser lookup)
 --   public.current_affiliate_ids() → SETOF TEXT (Affiliate lookup)
+--   public.current_workspace_id()  → TEXT (maps auth.uid() → User.workspaceId)
 --   public.current_user_id_uuid()  → UUID (safe UUID cast)
 --   public.current_user_id_text()  → TEXT (JWT sub/user_id as text)
 --
