@@ -63,9 +63,9 @@ export async function getSelectedDealForBuyer(userId: string, dealId: string) {
     where: { selected_deal_id: dealId },
   })
 
-  // Get deposit payment if exists
+  // Get deposit payment if exists (accept both canonical "PAID" and "SUCCEEDED")
   const depositPayment = await prisma.depositPayment.findFirst({
-    where: { buyerId: buyer.id, status: "PAID" },
+    where: { buyerId: buyer.id, status: { in: ["PAID", "SUCCEEDED"] } },
     orderBy: { createdAt: "desc" },
   })
 

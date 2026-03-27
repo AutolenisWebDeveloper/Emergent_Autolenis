@@ -2,9 +2,10 @@ import { NextResponse } from "next/server"
 import { requireAuth } from "@/lib/auth-server"
 import { isTestWorkspace } from "@/lib/app-mode"
 import { mockSelectors } from "@/lib/mocks/mockStore"
-import { prisma } from "@/lib/db"
+import { prisma, getSupabase } from "@/lib/db"
 import { stripe } from "@/lib/stripe"
 import type Stripe from "stripe"
+import { logger } from "@/lib/logger"
 
 export async function GET(_request: Request, { params }: { params: Promise<{ dealId: string }> }) {
   try {
@@ -138,6 +139,24 @@ export async function POST(request: Request, { params }: { params: Promise<{ dea
         workspaceId: wsId,
       },
     })
+
+    // 5. Reverse commissions for SERVICE_FEE refunds (align with PaymentService.processRefund)
+    if (paymentType === "SERVICE_FEE") {
+      try {
+        const supabase = getSupabase()
+        const now = new Date().toISOString()
+        await supabase
+          .from("Commission")
+          .update({ status: "REVERSED", updatedAt: now })
+          .or(`serviceFeePaymentId.eq.${paymentId},service_fee_payment_id.eq.${paymentId}`)
+      } catch (commErr) {
+        logger.error("[Admin Refund] Commission reversal failed (non-blocking):", {
+          error: (commErr as Error).message,
+          paymentId,
+          dealId,
+        })
+      }
+    }
 
     return NextResponse.json({ success: true, data: refund })
   } catch (error: unknown) {

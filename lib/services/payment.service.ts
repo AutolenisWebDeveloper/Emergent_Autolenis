@@ -1,6 +1,6 @@
 import { getSupabase } from "@/lib/db"
 import { stripe } from "@/lib/stripe"
-import { DEPOSIT_AMOUNT_CENTS, FEE_STRUCTURE_CENTS, PREMIUM_FEE_CENTS } from "@/lib/constants"
+import { DEPOSIT_AMOUNT_CENTS, PREMIUM_FEE_CENTS } from "@/lib/constants"
 import { PRICING, type PlanId, depositAppliesTo } from "@/src/config/pricingConfig"
 import {
   PaymentStatus,
@@ -15,18 +15,15 @@ export class PaymentService {
    * V2: Premium plan has a flat $499 fee regardless of vehicle price.
    * FREE plan has no concierge fee.
    *
-   * Legacy V1 (behind feature flag): tier-based fee by OTD threshold.
+   * The totalOtdCents parameter is retained for backward compatibility
+   * but is no longer used for fee calculation (V1 OTD-threshold pricing
+   * has been removed).
    */
-  static calculateBaseFee(totalOtdCents: number, plan?: PlanId): number {
-    // V2 plan-based pricing
-    if (plan !== undefined) {
-      return plan === "PREMIUM" ? PRICING.premiumFeeCents : 0
-    }
-    // Legacy V1 fallback for existing callers
-    if (totalOtdCents <= FEE_STRUCTURE_CENTS.LOW_TIER.threshold) {
-      return FEE_STRUCTURE_CENTS.LOW_TIER.fee
-    }
-    return FEE_STRUCTURE_CENTS.HIGH_TIER.fee
+  static calculateBaseFee(_totalOtdCents: number, plan?: PlanId): number {
+    // V2 flat plan-based pricing — no OTD-threshold tiers
+    if (plan === "FREE") return 0
+    // Default to PREMIUM fee ($499) when plan is PREMIUM or unspecified
+    return PRICING.premiumFeeCents
   }
 
   /**
@@ -171,7 +168,7 @@ export class PaymentService {
       .from("DepositPayment")
       .select("*")
       .eq("buyerId", deal.buyerId)
-      .eq("status", "PAID")
+      .in("status", ["PAID", "SUCCEEDED"])
       .order("createdAt", { ascending: false })
       .limit(1)
       .maybeSingle()
@@ -204,7 +201,7 @@ export class PaymentService {
     const supabase = getSupabase()
     const feeOptions = await this.getFeeOptions(dealId)
 
-    if (feeOptions.existingPayment?.status === "PAID") {
+    if (feeOptions.existingPayment?.status === "PAID" || feeOptions.existingPayment?.status === "SUCCEEDED") {
       return { payment: feeOptions.existingPayment, alreadyPaid: true }
     }
 
@@ -780,7 +777,7 @@ export class PaymentService {
       .select("id, status, amount")
       .eq("buyerId", buyerId)
       .eq("auctionId", auctionId)
-      .eq("status", "PAID")
+      .in("status", ["PAID", "SUCCEEDED"])
       .limit(1)
       .maybeSingle()
 
@@ -847,7 +844,7 @@ export class PaymentService {
       .from("DepositPayment")
       .select("id, amount, status, createdAt")
       .eq("buyerId", deal.buyerId)
-      .eq("status", "PAID")
+      .in("status", ["PAID", "SUCCEEDED"])
       .order("createdAt", { ascending: false })
       .limit(1)
       .maybeSingle()
@@ -862,7 +859,7 @@ export class PaymentService {
       .limit(1)
       .maybeSingle()
 
-    if (existingPayment?.status === "PAID") {
+    if (existingPayment?.status === "PAID" || existingPayment?.status === "SUCCEEDED") {
       return { payment: existingPayment, alreadyPaid: true }
     }
 
