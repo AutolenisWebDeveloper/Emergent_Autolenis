@@ -88,7 +88,7 @@ export default function DealEsignPage() {
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message,
+        description: (error instanceof Error ? error.message : String(error)),
       })
     } finally {
       setCreating(false)

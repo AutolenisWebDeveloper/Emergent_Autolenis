@@ -136,7 +136,7 @@ export async function POST(request: NextRequest) {
     }
   } catch (error: unknown) {
     console.error("[Buyer Insurance Action Error]", error)
-    const message = error?.message || "Insurance operation failed"
+    const message = (error instanceof Error ? error.message : undefined) || "Insurance operation failed"
     const status = message.includes("not found") || message.includes("unauthorized") ? 404 : 500
     return NextResponse.json({ error: message }, { status })
   }

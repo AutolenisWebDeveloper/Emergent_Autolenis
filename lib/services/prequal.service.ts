@@ -309,7 +309,7 @@ export class PreQualService {
     } catch (err) {
       // Consent artifact creation is best-effort during migration;
       // fall back to legacy raw SQL consent event recording
-      logger.warn("[PreQual] Consent artifact creation failed (migration fallback):", err instanceof Error ? err.message : err)
+      logger.warn("[PreQual] Consent artifact creation failed (migration fallback):", { error: err instanceof Error ? err.message : err })
     }
 
     // Legacy consent event recording (maintained for backward compatibility)
@@ -426,7 +426,7 @@ export class PreQualService {
       try {
         await consentArtifactService.linkToPreQualification(consentArtifactId, prequal.id)
       } catch (err) {
-        logger.warn("[PreQual] Consent artifact linking failed (migration fallback):", err instanceof Error ? err.message : err)
+        logger.warn("[PreQual] Consent artifact linking failed (migration fallback):", { error: err instanceof Error ? err.message : err })
       }
     }
 
@@ -446,7 +446,7 @@ export class PreQualService {
         },
       })
     } catch (err) {
-      logger.warn("[PreQual] Prisma provider event creation failed (migration fallback):", err instanceof Error ? err.message : err)
+      logger.warn("[PreQual] Prisma provider event creation failed (migration fallback):", { error: err instanceof Error ? err.message : err })
     }
 
     // Legacy provider event recording (maintained for backward compatibility)

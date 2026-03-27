@@ -126,7 +126,7 @@ export async function sendEmail({
       subject,
       status: "failed",
       userId,
-      metadata: { ...metadata, error: error.message },
+      metadata: { ...metadata, error: error instanceof Error ? error.message : String(error) },
       idempotencyKey,
     })
 

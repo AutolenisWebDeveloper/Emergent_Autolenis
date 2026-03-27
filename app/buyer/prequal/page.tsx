@@ -112,7 +112,7 @@ export default function BuyerPreQualPage() {
       toast({
         variant: "destructive",
         title: "Refresh failed",
-        description: error.message || "Unable to refresh pre-qualification",
+        description: (error instanceof Error ? error.message : String(error)) || "Unable to refresh pre-qualification",
       })
     } finally {
       setRefreshing(false)

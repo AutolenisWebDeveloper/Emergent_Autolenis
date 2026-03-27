@@ -57,8 +57,8 @@ function createSupabaseClient(): SupabaseClient | null {
     logger.info("Supabase client initialized successfully")
     return client
   } catch (error: unknown) {
-    _lastCreationError = `Supabase client creation failed: ${error.message}`
-    logger.error("Supabase client creation failed", { error: error.message })
+    _lastCreationError = `Supabase client creation failed: ${error instanceof Error ? error.message : String(error)}`
+    logger.error("Supabase client creation failed", { error: error instanceof Error ? error.message : String(error) })
     return null
   }
 }
@@ -122,9 +122,9 @@ export function getPrisma() {
       _prismaLoadError = null
       logger.info("Prisma client initialized successfully")
     } catch (error: unknown) {
-      _prismaLoadError = error.message
+      _prismaLoadError = error instanceof Error ? error.message : String(error)
       logger.warn("Prisma client not available - using Supabase exclusively", { 
-        error: error.message 
+        error: error instanceof Error ? error.message : String(error) 
       })
       // Don't throw - allow app to continue with Supabase
       return null

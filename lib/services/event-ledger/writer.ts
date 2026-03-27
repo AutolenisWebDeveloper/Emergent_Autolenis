@@ -204,7 +204,7 @@ export async function writeEventAsync(input: EventWriteInput): Promise<WriteEven
     return { success: true, event: mapDbRowToEvent(row), duplicate: false, error: null }
   } catch (err: unknown) {
     // Handle unique constraint violation (idempotency key collision)
-    if (err?.code === "P2002" && input.idempotencyKey) {
+    if ((err instanceof Error ? (err as NodeJS.ErrnoException).code : undefined) === "P2002" && input.idempotencyKey) {
       const existing = await db.platformEvent.findUnique({
         where: { idempotencyKey: input.idempotencyKey },
       })
@@ -217,7 +217,7 @@ export async function writeEventAsync(input: EventWriteInput): Promise<WriteEven
         }
       }
     }
-    return { success: false, event: null, duplicate: false, error: err?.message ?? "Unknown error" }
+    return { success: false, event: null, duplicate: false, error: err instanceof Error ? err.message : "Unknown error" }
   }
 }
 

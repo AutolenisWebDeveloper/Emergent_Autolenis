@@ -45,7 +45,7 @@ export default function BuyerReferralsPage() {
       toast({
         variant: "destructive",
         title: "Activation failed",
-        description: err?.message || "Please try again.",
+        description: (err instanceof Error ? err.message : String(err)) || "Please try again.",
       })
     } finally {
       setActivating(false)

@@ -63,7 +63,7 @@ export function FeePaymentModal({ open, onClose, dealId, onComplete }: FeePaymen
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message,
+        description: (error instanceof Error ? error.message : String(error)),
       })
     }
   }
@@ -116,7 +116,7 @@ export function FeePaymentModal({ open, onClose, dealId, onComplete }: FeePaymen
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message,
+        description: (error instanceof Error ? error.message : String(error)),
       })
     } finally {
       setLoading(false)

@@ -151,7 +151,7 @@ export async function POST(request: NextRequest) {
   } catch (error: unknown) {
     const correlationId = randomUUID()
     console.error("[Insurance Upload] Error:", { correlationId, error })
-    const message = error?.message || "Insurance upload failed"
+    const message = (error instanceof Error ? error.message : undefined) || "Insurance upload failed"
     const status = message.includes("not found") || message.includes("unauthorized") ? 404 : 500
     return NextResponse.json({ error: message, correlationId }, { status })
   }

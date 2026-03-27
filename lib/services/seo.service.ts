@@ -529,7 +529,7 @@ export class SEOService {
         .eq("indexable", true)
 
       if (error) {
-        logger.warn("[SEO] DB query failed during sitemap generation — using fallback:", error.message)
+        logger.warn("[SEO] DB query failed during sitemap generation — using fallback:", { error: error.message })
         return this.getFallbackSitemap()
       }
 
@@ -544,7 +544,7 @@ export class SEOService {
         priority: page.page_key === "home" ? "1.0" : "0.8",
       }))
     } catch (err) {
-      logger.warn("[SEO] Unexpected error generating sitemap — using fallback:", err)
+      logger.warn("[SEO] Unexpected error generating sitemap — using fallback:", { error: err })
       return this.getFallbackSitemap()
     }
   }

@@ -80,7 +80,7 @@ export async function verifySession(token: string): Promise<SessionUser> {
     if (session.mfa_verified === undefined) session.mfa_verified = false
     return session
   } catch (error: unknown) {
-    logger.error("Session verification failed", { error: error.message })
+    logger.error("Session verification failed", { error: error instanceof Error ? error.message : String(error) })
     throw error
   }
 }

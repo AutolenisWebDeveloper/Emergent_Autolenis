@@ -106,8 +106,9 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       complianceEvents: complianceEvents || [],
     })
   } catch (error: unknown) {
-    if (error?.statusCode === 401 || error?.statusCode === 403) {
-      return NextResponse.json({ error: error.statusCode === 403 ? "Forbidden" : "Unauthorized" }, { status: error.statusCode })
+    const statusCode = (error as { statusCode?: number }).statusCode
+    if (statusCode === 401 || statusCode === 403) {
+      return NextResponse.json({ error: statusCode === 403 ? "Forbidden" : "Unauthorized" }, { status: statusCode })
     }
     const correlationId = crypto.randomUUID()
     logger.error("[Admin Affiliate Detail API] Error:", error, { correlationId })

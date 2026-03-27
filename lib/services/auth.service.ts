@@ -237,7 +237,7 @@ export class AuthService {
         referral,
       }
     } catch (error: unknown) {
-      logger.error("Signup failed", { correlationId, error: error?.message })
+      logger.error("Signup failed", { correlationId, error: error instanceof Error ? error.message : String(error) })
       throw error
     }
   }
@@ -403,7 +403,7 @@ export class AuthService {
         token,
       }
     } catch (error: unknown) {
-      logger.error("Signin failed", { correlationId, error: error?.message })
+      logger.error("Signin failed", { correlationId, error: error instanceof Error ? error.message : String(error) })
       throw error
     }
   }

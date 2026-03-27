@@ -212,8 +212,8 @@ export function SignUpForm() {
         }
       }
     } catch (error: unknown) {
-      console.error("[SignUpForm] Error:", error.message)
-      setError(error.message || "An error occurred. Please try again.")
+      console.error("[SignUpForm] Error:", (error instanceof Error ? error.message : String(error)))
+      setError((error instanceof Error ? error.message : String(error)) || "An error occurred. Please try again.")
     } finally {
       setLoading(false)
     }

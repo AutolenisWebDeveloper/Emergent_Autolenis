@@ -115,7 +115,7 @@ export default function AdminPaymentsPage() {
       toast({
         variant: "destructive",
         title: "Refund failed",
-        description: error.message,
+        description: (error instanceof Error ? error.message : String(error)),
       })
     } finally {
       setProcessing(false)

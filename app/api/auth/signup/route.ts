@@ -128,12 +128,12 @@ export async function POST(request: Request) {
       },
     })
   } catch (error: unknown) {
-    if (error.message?.includes("already exists")) {
+    if ((error instanceof Error ? error.message : "").includes("already exists")) {
       return handleError(new ConflictError("An account with this email already exists"))
     }
     // Catch validation-like errors from AuthService (e.g. missing package tier)
-    if (error.message?.includes("Package tier is required") ||
-        error.message?.includes("Validation")) {
+    if ((error instanceof Error ? error.message : "").includes("Package tier is required") ||
+        (error instanceof Error ? error.message : "").includes("Validation")) {
       return handleError(new ValidationError("Registration validation failed. Please check your input."))
     }
     // All other errors — structured response, never expose internal details

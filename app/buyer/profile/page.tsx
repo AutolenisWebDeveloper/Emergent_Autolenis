@@ -67,7 +67,7 @@ export default function BuyerProfilePage() {
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message,
+        description: (error instanceof Error ? error.message : String(error)),
       })
     } finally {
       setSaving(false)

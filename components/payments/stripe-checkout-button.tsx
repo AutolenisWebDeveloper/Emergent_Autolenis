@@ -41,7 +41,7 @@ export function StripeCheckoutButton({ type, auctionId, dealId, amount, label, c
       }
     } catch (error: unknown) {
       console.error("Checkout error:", error)
-      alert(error.message || "Failed to start checkout")
+      alert((error instanceof Error ? error.message : String(error)) || "Failed to start checkout")
     } finally {
       setLoading(false)
     }

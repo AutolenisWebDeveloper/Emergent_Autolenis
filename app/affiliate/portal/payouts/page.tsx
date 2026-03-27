@@ -68,7 +68,7 @@ export default function PayoutSettingsPage() {
       setVoidedCheckFile(file.name)
       toast({ title: "Voided check uploaded", description: "Your voided check has been uploaded successfully." })
     } catch (err: unknown) {
-      toast({ variant: "destructive", title: "Upload failed", description: err.message || "Unable to upload voided check." })
+      toast({ variant: "destructive", title: "Upload failed", description: (err instanceof Error ? err.message : String(err)) || "Unable to upload voided check." })
     } finally {
       setUploadingCheck(false)
       if (checkFileRef.current) checkFileRef.current.value = ""
@@ -110,7 +110,7 @@ export default function PayoutSettingsPage() {
       toast({
         variant: "destructive",
         title: "Payout failed",
-        description: error.message,
+        description: (error instanceof Error ? error.message : String(error)),
       })
     } finally {
       setRequesting(false)

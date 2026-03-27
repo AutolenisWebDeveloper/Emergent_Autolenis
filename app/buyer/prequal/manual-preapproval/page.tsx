@@ -98,7 +98,7 @@ export default function ManualPreApprovalPage() {
       toast({
         variant: "destructive",
         title: "Submission failed",
-        description: error.message || "Unable to submit pre-approval",
+        description: (error instanceof Error ? error.message : String(error)) || "Unable to submit pre-approval",
       })
     } finally {
       setUploading(false)

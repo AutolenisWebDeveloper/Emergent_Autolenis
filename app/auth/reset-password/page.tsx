@@ -111,7 +111,7 @@ function ResetPasswordForm() {
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message || "Something went wrong. Please try again.",
+        description: (error instanceof Error ? error.message : String(error)) || "Something went wrong. Please try again.",
       })
     } finally {
       setLoading(false)

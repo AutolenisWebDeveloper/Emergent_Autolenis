@@ -150,7 +150,7 @@ export class EmailService {
 
       return result
     } catch (err: unknown) {
-      const errorMessage = err?.message || "Unknown send error"
+      const errorMessage = (err instanceof Error ? err.message : String(err)) || "Unknown send error"
       logger.error("[EmailService.send] failed", { to: resolvedTo, subject: options.subject, error: errorMessage })
 
       await this.logEmail({

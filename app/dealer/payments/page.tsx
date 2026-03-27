@@ -33,7 +33,7 @@ export default function DealerPaymentsPage() {
       toast({
         variant: "destructive",
         title: "Payment failed",
-        description: err.message || "Unable to initiate payment. Please try again.",
+        description: (err instanceof Error ? err.message : String(err)) || "Unable to initiate payment. Please try again.",
       })
     } finally {
       setPaying(false)

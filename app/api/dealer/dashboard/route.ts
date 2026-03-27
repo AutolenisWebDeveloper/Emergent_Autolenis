@@ -66,7 +66,8 @@ export async function GET(_req: NextRequest) {
     return NextResponse.json({ success: true, ...stats })
   } catch (error: unknown) {
     console.error("[Dealer Dashboard] Error:", error)
-    const status = error?.statusCode && Number.isInteger(error.statusCode) ? error.statusCode : 500
+    const errWithCode = error as { statusCode?: number }
+    const status = errWithCode.statusCode && Number.isInteger(errWithCode.statusCode) ? errWithCode.statusCode : 500
     return NextResponse.json({ error: status === 401 ? "Unauthorized" : "Failed to get dashboard" }, { status })
   }
 }

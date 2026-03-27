@@ -105,7 +105,7 @@ export default function DealerOnboardingPage() {
       toast({
         variant: "destructive",
         title: "Submission failed",
-        description: error.message,
+        description: (error instanceof Error ? error.message : String(error)),
       })
     } finally {
       setLoading(false)

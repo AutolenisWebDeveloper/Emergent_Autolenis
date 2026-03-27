@@ -112,7 +112,7 @@ export default function BuyerShortlistPage() {
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message,
+        description: (error instanceof Error ? error.message : String(error)),
       })
     }
   }
@@ -149,7 +149,7 @@ export default function BuyerShortlistPage() {
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message,
+        description: (error instanceof Error ? error.message : String(error)),
       })
     } finally {
       setCreatingAuction(false)

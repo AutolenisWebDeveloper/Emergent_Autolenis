@@ -84,7 +84,7 @@ export default function AffiliateSettingsPage() {
       toast({
         variant: "destructive",
         title: "Save failed",
-        description: error.message || "Unable to save settings.",
+        description: (error instanceof Error ? error.message : String(error)) || "Unable to save settings.",
       })
     } finally {
       setSaving(false)
@@ -123,7 +123,7 @@ export default function AffiliateSettingsPage() {
       toast({ title: "Password changed", description: "Your password has been updated successfully." })
       setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" })
     } catch (error: unknown) {
-      setPasswordError(error.message || "Failed to change password")
+      setPasswordError((error instanceof Error ? error.message : String(error)) || "Failed to change password")
     } finally {
       setChangingPassword(false)
     }

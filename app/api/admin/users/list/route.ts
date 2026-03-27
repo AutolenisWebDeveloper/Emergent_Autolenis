@@ -41,7 +41,7 @@ export async function GET() {
 
     return NextResponse.json({ success: true, users })
   } catch (error: unknown) {
-    console.error("[Admin Users List] Error:", error?.message || error)
+    console.error("[Admin Users List] Error:", (error instanceof Error ? error.message : String(error)))
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

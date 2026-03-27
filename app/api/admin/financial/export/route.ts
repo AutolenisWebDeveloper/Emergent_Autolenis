@@ -132,7 +132,7 @@ export async function GET(request: Request) {
       },
     })
   } catch (error: unknown) {
-    logger.error("[Financial Export] Export failed", { error: error.message })
+    logger.error("[Financial Export] Export failed", { error: (error instanceof Error ? error.message : String(error)) })
     return NextResponse.json(
       { error: "Export failed", correlationId: correlationId() },
       { status: 500 }

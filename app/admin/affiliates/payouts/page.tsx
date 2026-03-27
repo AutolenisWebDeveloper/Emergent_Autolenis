@@ -107,7 +107,7 @@ function AdminPayoutsPageContent() {
       setTransactionId("")
       mutate()
     } catch (error: unknown) {
-      alert(error.message)
+      alert((error instanceof Error ? error.message : String(error)))
     } finally {
       setProcessing(false)
     }

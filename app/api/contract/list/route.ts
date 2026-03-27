@@ -45,10 +45,11 @@ export async function GET(req: NextRequest) {
       data: { contracts: documents },
     })
   } catch (error: unknown) {
-    if (error?.statusCode === 403) {
+    const statusCode = (error as { statusCode?: number }).statusCode
+    if (statusCode === 403) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
-    if (error?.statusCode === 404) {
+    if (statusCode === 404) {
       return NextResponse.json({ error: "Not found" }, { status: 404 })
     }
     console.error("[v0] Contract list error:", error)

@@ -48,7 +48,7 @@ export const buyerService = {
 
       // If no profile found, return default data
       if (!profile) {
-        logger.warn("[BuyerService] No buyer profile found for user:", userId)
+        logger.warn("[BuyerService] No buyer profile found for user:", { userId })
         return getDefaultDashboardData()
       }
 

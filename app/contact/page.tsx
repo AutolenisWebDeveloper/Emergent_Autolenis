@@ -65,7 +65,7 @@ export default function ContactPage() {
 
       setIsSubmitted(true)
     } catch (err: unknown) {
-      setError(err.message || "Failed to send message. Please try again.")
+      setError((err instanceof Error ? err.message : String(err)) || "Failed to send message. Please try again.")
     } finally {
       setIsSubmitting(false)
     }

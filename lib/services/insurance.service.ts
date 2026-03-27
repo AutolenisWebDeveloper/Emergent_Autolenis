@@ -310,9 +310,9 @@ export class InsuranceService {
     } catch (error: unknown) {
       // Log failure
       await this.logEvent("QUOTE_FAILED", dealId, userId, null, {
-        error: error.message,
+        error: (error instanceof Error ? error.message : String(error)),
       })
-      throw new Error(`Failed to get insurance quotes: ${error.message}`)
+      throw new Error(`Failed to get insurance quotes: ${(error instanceof Error ? error.message : String(error))}`)
     }
   }
 
@@ -474,10 +474,10 @@ export class InsuranceService {
     } catch (error: unknown) {
       await this.logEvent("ERROR", dealId, userId, null, {
         action: "BIND_POLICY",
-        error: error.message,
+        error: (error instanceof Error ? error.message : String(error)),
         quoteId,
       })
-      throw new Error(`Failed to bind policy: ${error.message}`)
+      throw new Error(`Failed to bind policy: ${(error instanceof Error ? error.message : String(error))}`)
     }
   }
 

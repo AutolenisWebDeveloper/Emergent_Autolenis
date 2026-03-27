@@ -94,7 +94,7 @@ export default function AffiliateOnboardingPage() {
       toast({
         variant: "destructive",
         title: "Setup failed",
-        description: error.message,
+        description: (error instanceof Error ? error.message : String(error)),
       })
     } finally {
       setLoading(false)

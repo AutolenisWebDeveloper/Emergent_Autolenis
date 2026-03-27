@@ -118,7 +118,7 @@ export default function BuyerOnboardingPage() {
       toast({
         variant: "destructive",
         title: "Pre-qualification failed",
-        description: error.message || "Please try again or contact support.",
+        description: (error instanceof Error ? error.message : String(error)) || "Please try again or contact support.",
       })
     } finally {
       setLoading(false)

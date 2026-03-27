@@ -83,7 +83,7 @@ function BuyerTradeInPageContent() {
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message,
+        description: (error instanceof Error ? error.message : String(error)),
       })
     } finally {
       setSubmitting(false)
@@ -120,7 +120,7 @@ function BuyerTradeInPageContent() {
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message,
+        description: (error instanceof Error ? error.message : String(error)),
       })
     } finally {
       setSubmitting(false)

@@ -61,8 +61,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: false, error: "Invalid payment type" }, { status: 400 })
   } catch (error: unknown) {
-    if (error?.statusCode === 401 || error?.statusCode === 403) {
-      return NextResponse.json({ success: false, error: error.statusCode === 403 ? "Forbidden" : "Unauthorized" }, { status: error.statusCode })
+    const statusCode = (error as { statusCode?: number }).statusCode
+    if (statusCode === 401 || statusCode === 403) {
+      return NextResponse.json({ success: false, error: statusCode === 403 ? "Forbidden" : "Unauthorized" }, { status: statusCode })
     }
     if (error instanceof CheckoutError) {
       const status = error.code === "UNAUTHORIZED" ? 403 : 400

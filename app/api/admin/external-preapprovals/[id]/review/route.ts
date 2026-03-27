@@ -60,14 +60,14 @@ export async function POST(
   } catch (error: unknown) {
     console.error("[Admin External PreApproval Review API] POST error:", error)
 
-    if (error.message === "Submission not found") {
+    if ((error instanceof Error ? error.message : "") === "Submission not found") {
       return NextResponse.json(
         { success: false, error: "Submission not found" },
         { status: 404 },
       )
     }
 
-    if (error.message.startsWith("Cannot transition")) {
+    if ((error instanceof Error ? error.message : "").startsWith("Cannot transition")) {
       return NextResponse.json(
         { success: false, error: "Invalid state transition" },
         { status: 409 },

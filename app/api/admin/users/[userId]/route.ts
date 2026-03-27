@@ -21,7 +21,7 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
 
     return NextResponse.json({ success: true, message: "User soft-deleted" })
   } catch (error: unknown) {
-    if (error.message?.includes("active deal")) {
+    if ((error instanceof Error ? error.message : "").includes("active deal")) {
       return NextResponse.json({ error: "Cannot delete user with active deals in progress" }, { status: 409 })
     }
     console.error("[Admin Delete User]", error)

@@ -116,7 +116,7 @@ export default function BuyerSettingsPage() {
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message,
+        description: (error instanceof Error ? error.message : String(error)),
       })
     } finally {
       setSaving(false)
@@ -150,7 +150,7 @@ export default function BuyerSettingsPage() {
       setShowPasswordDialog(false)
       setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" })
     } catch (error: unknown) {
-      toast({ variant: "destructive", title: "Error", description: error.message })
+      toast({ variant: "destructive", title: "Error", description: (error instanceof Error ? error.message : String(error)) })
     } finally {
       setChangingPassword(false)
     }
@@ -169,7 +169,7 @@ export default function BuyerSettingsPage() {
       setMfaEnrollData(data.data)
       setShowMfaEnrollDialog(true)
     } catch (error: unknown) {
-      toast({ variant: "destructive", title: "Error", description: error.message })
+      toast({ variant: "destructive", title: "Error", description: (error instanceof Error ? error.message : String(error)) })
     } finally {
       setMfaProcessing(false)
     }
@@ -196,7 +196,7 @@ export default function BuyerSettingsPage() {
       setMfaEnrollData(null)
       setMfaEnabled(true)
     } catch (error: unknown) {
-      toast({ variant: "destructive", title: "Error", description: error.message })
+      toast({ variant: "destructive", title: "Error", description: (error instanceof Error ? error.message : String(error)) })
     } finally {
       setMfaProcessing(false)
     }
@@ -223,7 +223,7 @@ export default function BuyerSettingsPage() {
       setMfaDisableCode("")
       setMfaEnabled(false)
     } catch (error: unknown) {
-      toast({ variant: "destructive", title: "Error", description: error.message })
+      toast({ variant: "destructive", title: "Error", description: (error instanceof Error ? error.message : String(error)) })
     } finally {
       setMfaProcessing(false)
     }

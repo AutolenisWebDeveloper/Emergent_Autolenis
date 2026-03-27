@@ -98,7 +98,7 @@ export async function POST(request: Request) {
       },
     })
   } catch (error: unknown) {
-    if (error.code === "EMAIL_NOT_VERIFIED") {
+    if ((error as { code?: string }).code === "EMAIL_NOT_VERIFIED") {
       logger.info("Signin: email not verified", { correlationId })
       return NextResponse.json(
         {
@@ -111,14 +111,14 @@ export async function POST(request: Request) {
         { status: 403 },
       )
     }
-    if (error.message?.includes("Invalid") || error.message?.includes("not found")) {
+    if ((error instanceof Error ? error.message : "").includes("Invalid") || (error instanceof Error ? error.message : "").includes("not found")) {
       logger.warn("Signin: invalid credentials", { correlationId })
       return NextResponse.json(
         { success: false, error: "Invalid email or password" },
         { status: 401 },
       )
     }
-    logger.error("Signin: unhandled error", { correlationId, error: error?.message })
+    logger.error("Signin: unhandled error", { correlationId, error: (error instanceof Error ? error.message : String(error)) })
     return NextResponse.json(
       { success: false, error: "Sign-in failed. Please try again.", correlationId },
       { status: 500 },

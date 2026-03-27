@@ -67,7 +67,7 @@ export default function InsuranceQuoteRequestPage() {
       toast({ title: "Quotes Requested", description: "Your insurance quotes are being generated." })
       router.push("/buyer/deal/insurance/quotes")
     } catch (err: unknown) {
-      toast({ variant: "destructive", title: "Error", description: err.message })
+      toast({ variant: "destructive", title: "Error", description: (err instanceof Error ? err.message : String(err)) })
     } finally {
       setSubmitting(false)
     }

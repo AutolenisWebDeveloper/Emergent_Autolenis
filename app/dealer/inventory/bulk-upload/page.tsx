@@ -178,7 +178,7 @@ export default function BulkUploadPage() {
       toast({
         variant: "destructive",
         title: "Upload failed",
-        description: error.message,
+        description: (error instanceof Error ? error.message : String(error)),
       })
     } finally {
       setUploading(false)
@@ -220,7 +220,7 @@ export default function BulkUploadPage() {
       toast({
         variant: "destructive",
         title: "Import failed",
-        description: error.message,
+        description: (error instanceof Error ? error.message : String(error)),
       })
     } finally {
       setUploading(false)

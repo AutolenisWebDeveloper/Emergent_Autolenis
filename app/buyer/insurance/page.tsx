@@ -111,7 +111,7 @@ export default function BuyerInsurancePage() {
       toast({ title: "Insurance uploaded!", description: "Your proof has been submitted for review." })
       await loadStatus()
     } catch (error: unknown) {
-      toast({ variant: "destructive", title: "Error", description: error.message })
+      toast({ variant: "destructive", title: "Error", description: (error instanceof Error ? error.message : String(error)) })
     } finally {
       setSubmitting(false)
     }
@@ -131,7 +131,7 @@ export default function BuyerInsurancePage() {
       toast({ title: "Insurance marked as pending", description: "You can continue shopping. Insurance will be required before delivery." })
       await loadStatus()
     } catch (error: unknown) {
-      toast({ variant: "destructive", title: "Error", description: error.message })
+      toast({ variant: "destructive", title: "Error", description: (error instanceof Error ? error.message : String(error)) })
     } finally {
       setSubmitting(false)
     }
@@ -151,7 +151,7 @@ export default function BuyerInsurancePage() {
       toast({ title: "Help requested!", description: "Our team will contact you to assist with insurance." })
       await loadStatus()
     } catch (error: unknown) {
-      toast({ variant: "destructive", title: "Error", description: error.message })
+      toast({ variant: "destructive", title: "Error", description: (error instanceof Error ? error.message : String(error)) })
     } finally {
       setSubmitting(false)
     }

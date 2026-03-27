@@ -530,7 +530,7 @@ export class InventoryService {
         }
       } catch (error: unknown) {
         results.failed++
-        results.errors.push({ rowIndex: i, message: error.message })
+        results.errors.push({ rowIndex: i, message: (error instanceof Error ? error.message : String(error)) })
       }
     }
 

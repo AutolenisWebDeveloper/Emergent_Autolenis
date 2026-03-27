@@ -110,10 +110,10 @@ export default function DealerAuctionDetailPage() {
         }
       }
     } catch (err: unknown) {
-      console.error("Error fetching auction:", err.message || err)
+      console.error("Error fetching auction:", (err instanceof Error ? err.message : String(err)))
       toast({
         title: "Error",
-        description: err.message || "Failed to load auction details",
+        description: (err instanceof Error ? err.message : String(err)) || "Failed to load auction details",
         variant: "destructive",
       })
     } finally {
@@ -198,7 +198,7 @@ export default function DealerAuctionDetailPage() {
       toast({
         variant: "destructive",
         title: "Error",
-        description: err.message || "Failed to submit offer",
+        description: (err instanceof Error ? err.message : String(err)) || "Failed to submit offer",
       })
     } finally {
       setSubmitting(false)

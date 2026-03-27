@@ -21,7 +21,7 @@ export async function getSession(): Promise<SessionUser | null> {
     logger.debug("Session verified", { userId: session.userId })
     return session
   } catch (error: unknown) {
-    logger.error("Session verification failed", { error: error.message })
+    logger.error("Session verification failed", { error: error instanceof Error ? error.message : String(error) })
     return null
   }
 }
