@@ -363,7 +363,7 @@ export class AffiliateService {
     const commissions: any[] = []
 
     // Use transaction for atomicity
-    await prisma.$transaction(async (tx: any) => {
+    await prisma.$transaction(async (tx: typeof prisma) => {
       for (const referral of referrals) {
         const rate = this.COMMISSION_RATES[referral.level as 1 | 2 | 3] || 0
         const amountCents = Math.floor(baseFee * rate)
@@ -494,7 +494,7 @@ export class AffiliateService {
     })
 
     for (const commission of commissions) {
-      await prisma.$transaction(async (tx: any) => {
+      await prisma.$transaction(async (tx: typeof prisma) => {
         await tx.commission.update({
           where: { id: commission.id },
           data: {
@@ -842,7 +842,7 @@ export class AffiliateService {
 
     const totalCents = earnedCommissions.reduce((sum: any, c: any) => sum + (c.amount_cents || 0), 0)
 
-    const payout = await prisma.$transaction(async (tx: any) => {
+    const payout = await prisma.$transaction(async (tx: typeof prisma) => {
       const newPayout = await tx.payout.create({
         data: {
           affiliateId,
@@ -901,7 +901,7 @@ export class AffiliateService {
 
     if (!payout) throw new Error("Payout not found")
 
-    await prisma.$transaction(async (tx: any) => {
+    await prisma.$transaction(async (tx: typeof prisma) => {
       await tx.payout.update({
         where: { id: payoutId },
         data: {

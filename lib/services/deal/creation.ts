@@ -82,7 +82,7 @@ export async function createOrGetSelectedDealFromBestPrice(
     : offer.financingOptions[0]
 
   // Transaction: create deal + financing offer + decision + auction status + inventory reserve + compliance
-  const result = await prisma.$transaction(async (tx: any) => {
+  const result = await prisma.$transaction(async (tx: typeof prisma) => {
     // Create new deal
     const deal = await tx.selectedDeal.create({
       data: {

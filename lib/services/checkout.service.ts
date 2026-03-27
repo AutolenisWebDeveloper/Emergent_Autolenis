@@ -102,7 +102,7 @@ export class CheckoutService {
     })
 
     if (auction?.shortlistId) {
-      await prisma.$transaction(async (tx: any) => {
+      await prisma.$transaction(async (tx: typeof prisma) => {
         const shortlistItems = await tx.shortlistItem.findMany({
           where: { shortlistId: auction.shortlistId },
           select: { inventoryItemId: true },

@@ -43,7 +43,7 @@ export async function updateFinancingChoice(
 
   const { paymentType, primaryFinancingOfferId, externalPreApproval } = payload
 
-  let updateData: any = { payment_type: paymentType }
+  let updateData: Record<string, unknown> = { payment_type: paymentType }
 
   switch (paymentType) {
     case "CASH":
@@ -146,7 +146,7 @@ export async function updateFinancingChoice(
     await logStatusChange(
       dealId,
       previousStatus,
-      updateData.status,
+      updateData.status as string,
       userId,
       "BUYER",
       "Financing choice updated",

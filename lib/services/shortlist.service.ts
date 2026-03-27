@@ -393,7 +393,7 @@ export class ShortlistService {
     limit?: number
     offset?: number
   }) {
-    const where: any = {}
+    const where: Record<string, unknown> = {}
 
     if (filters?.userId) {
       where.buyerId = filters.userId

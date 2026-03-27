@@ -155,7 +155,7 @@ export class DealService {
       : offer.financingOptions[0]
 
     // Transaction: create deal + financing offer + decision + auction status + inventory reserve + compliance
-    const result = await prisma.$transaction(async (tx: any) => {
+    const result = await prisma.$transaction(async (tx: typeof prisma) => {
       // Create new deal
       const deal = await tx.selectedDeal.create({
         data: {
@@ -412,7 +412,7 @@ export class DealService {
 
     const { paymentType, primaryFinancingOfferId, externalPreApproval } = payload
 
-    let updateData: any = { payment_type: paymentType }
+    let updateData: Record<string, unknown> = { payment_type: paymentType }
 
     switch (paymentType) {
       case "CASH":
@@ -515,7 +515,7 @@ export class DealService {
       await this.logStatusChange(
         dealId,
         previousStatus,
-        updateData.status,
+        updateData.status as string,
         userId,
         "BUYER",
         "Financing choice updated",
@@ -821,7 +821,7 @@ export class DealService {
 
     if (newStatus && VALID_TRANSITIONS[currentStatus as DealStatus]?.includes(newStatus)) {
       // Transaction: update status + log status change
-      await prisma.$transaction(async (tx: any) => {
+      await prisma.$transaction(async (tx: typeof prisma) => {
         await tx.selectedDeal.update({
           where: { id: dealId },
           data: {
@@ -863,7 +863,7 @@ export class DealService {
     }
 
     // Transaction: update deal + release inventory + log status change + log compliance event
-    await prisma.$transaction(async (tx: any) => {
+    await prisma.$transaction(async (tx: typeof prisma) => {
       // Update deal
       await tx.selectedDeal.update({
         where: { id: dealId },
@@ -916,7 +916,7 @@ export class DealService {
     const currentStatus = normalizeDealStatus(deal.status) ?? deal.status
 
     // Transaction: update deal + log status change + log compliance event
-    await prisma.$transaction(async (tx: any) => {
+    await prisma.$transaction(async (tx: typeof prisma) => {
       // Update deal
       await tx.selectedDeal.update({
         where: { id: dealId },

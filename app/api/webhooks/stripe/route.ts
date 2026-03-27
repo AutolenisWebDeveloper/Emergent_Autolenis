@@ -118,7 +118,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
   if (type === "deposit") {
     // Transaction: update deposit status + log compliance event
-    const depositRecord = await prisma.$transaction(async (tx: any) => {
+    const depositRecord = await prisma.$transaction(async (tx: typeof prisma) => {
       await tx.depositPayment.updateMany({
         where: {
           buyerId: metadata['buyerId'],
@@ -196,7 +196,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
     if (payment) {
       // Transaction: update service fee + update deal status + log compliance event
-      await prisma.$transaction(async (tx: any) => {
+      await prisma.$transaction(async (tx: typeof prisma) => {
         await tx.serviceFeePayment.update({
           where: { id: payment.id },
           data: {
@@ -282,7 +282,7 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
   const metadata = paymentIntent.metadata || {}
 
   // Transaction: update payment status + mirror to Transaction ledger
-  await prisma.$transaction(async (tx: any) => {
+  await prisma.$transaction(async (tx: typeof prisma) => {
     if (metadata['type'] === "deposit") {
       await tx.depositPayment.updateMany({
         where: { stripePaymentIntentId: paymentIntent.id },
@@ -413,7 +413,7 @@ async function handleChargeRefunded(charge: Stripe.Charge) {
 
   if (depositPayment) {
     // Transaction: mark deposit refunded + log compliance event + ledger entry
-    await prisma.$transaction(async (tx: any) => {
+    await prisma.$transaction(async (tx: typeof prisma) => {
       await tx.depositPayment.update({
         where: { id: depositPayment.id },
         data: { refunded: true },
@@ -488,7 +488,7 @@ async function handleChargeRefunded(charge: Stripe.Charge) {
 
   if (serviceFeePayment) {
     // Transaction: mark service fee refunded + log compliance event + ledger entry
-    await prisma.$transaction(async (tx: any) => {
+    await prisma.$transaction(async (tx: typeof prisma) => {
       await tx.serviceFeePayment.update({
         where: { id: serviceFeePayment.id },
         data: { status: "REFUNDED" },
@@ -559,7 +559,7 @@ async function handleDisputeCreated(dispute: Stripe.Dispute) {
   const amount = (dispute.amount || 0) / 100
 
   // Transaction: create chargeback + mirror to Transaction ledger atomically
-  await prisma.$transaction(async (tx: any) => {
+  await prisma.$transaction(async (tx: typeof prisma) => {
     // Find parent transaction
     let transactionId: string | null = null
     if (piId) {

@@ -509,7 +509,7 @@ export class PickupService {
     dateFrom?: Date
     dateTo?: Date
   }) {
-    const where: any = {}
+    const where: Record<string, unknown> = {}
 
     if (filters.status) {
       where.status = filters.status
@@ -525,7 +525,7 @@ export class PickupService {
         where.scheduled_at = { gte: filters.dateFrom }
       }
       if (filters.dateTo) {
-        where.scheduled_at = { ...where.scheduled_at, lte: filters.dateTo }
+      where.scheduled_at = { ...(where.scheduled_at as Record<string, unknown> || {}), lte: filters.dateTo }
       }
     }
 
