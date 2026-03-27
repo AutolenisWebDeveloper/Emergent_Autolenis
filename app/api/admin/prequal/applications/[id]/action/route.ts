@@ -8,6 +8,9 @@ import { writePrequalAuditLog } from "@/lib/prequal/audit"
 import { calculateShoppingRange, getShoppingPassExpiry } from "@/lib/decision/shopping-power"
 import type { IpredictBand, IbvOutcome } from "@/lib/types/prequal"
 
+import type { FinalStatus, IpredictBand as IpredictBandEnum, IbvOutcome as IbvOutcomeEnum } from "@/lib/types/prequal"
+import type { ApplicationStatus } from "@/lib/types/prequal"
+
 export const dynamic = "force-dynamic"
 
 const actionSchema = z.object({
@@ -76,9 +79,9 @@ export async function POST(
           where: { applicationId: id },
           create: {
             applicationId: id,
-            finalStatus: finalStatus as any,
-            ipredictBand: (application.ipredictBand ?? "PASS") as any,
-            ibvOutcome: (application.ibvOutcome ?? "NOT_TRIGGERED") as any,
+            finalStatus: finalStatus as FinalStatus,
+            ipredictBand: (application.ipredictBand ?? "PASS") as IpredictBandEnum,
+            ibvOutcome: (application.ibvOutcome ?? "NOT_TRIGGERED") as IbvOutcomeEnum,
             shoppingRangeMinCents: shoppingMin ?? null,
             shoppingRangeMaxCents: shoppingMax ?? null,
             decisionReason: reason ?? "Manual admin approval",
@@ -88,7 +91,7 @@ export async function POST(
             overrideReason: reason ?? null,
           },
           update: {
-            finalStatus: finalStatus as any,
+            finalStatus: finalStatus as FinalStatus,
             shoppingRangeMinCents: shoppingMin ?? null,
             shoppingRangeMaxCents: shoppingMax ?? null,
             decisionReason: reason ?? "Manual admin approval",
@@ -102,8 +105,8 @@ export async function POST(
         await prisma.prequalApplication.update({
           where: { id },
           data: {
-            status: finalStatus as any,
-            finalStatus: finalStatus as any,
+            status: finalStatus as ApplicationStatus,
+            finalStatus: finalStatus as FinalStatus,
             shoppingRangeMinCents: shoppingMin ?? null,
             shoppingRangeMaxCents: shoppingMax ?? null,
             queueSegment: "COMPLETED",

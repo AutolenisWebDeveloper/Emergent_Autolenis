@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic"
 function safeErrorMessage(error: unknown): string {
   const msg =
     (error && typeof error === "object" && "message" in error
-      ? (error as any).message
+      ? (error as { message: unknown }).message
       : String(error ?? "Unknown error")) ?? ""
   return String(msg).replace(/[\r\n]+/g, " ")
 }

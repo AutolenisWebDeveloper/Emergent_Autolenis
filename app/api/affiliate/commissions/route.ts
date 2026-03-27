@@ -10,10 +10,12 @@ type CommissionRow = {
   id: string
   affiliateId: string
   referralId?: string | null
+  referral_id?: string | null
   level?: number | null
   status?: string | null
   createdAt?: string | null
   paidAt?: string | null
+  paid_at?: string | null
   amount_cents?: number | null
   amountCents?: number | null
   commissionAmount?: number | null // dollars
@@ -104,7 +106,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Failed to fetch commissions" }, { status: 500 })
     }
 
-    const commissionsData = (commissionRows || []) as any[]
+    const commissionsData = (commissionRows || []) as CommissionRow[]
     const normalized: CommissionRow[] = commissionsData.map((c) => ({
       id: c.id,
       affiliateId: c.affiliateId,
@@ -138,10 +140,10 @@ export async function GET(req: NextRequest) {
       const [usersRes, buyersRes] = await Promise.all([
         userIds.length
           ? supabase.from("User").select("id,first_name,last_name,email").in("id", userIds)
-          : Promise.resolve({ data: [] as any[] }),
+          : Promise.resolve({ data: [] as Record<string, unknown>[] }),
         buyerIds.length
           ? supabase.from("BuyerProfile").select("id,firstName,lastName,email").in("id", buyerIds)
-          : Promise.resolve({ data: [] as any[] }),
+          : Promise.resolve({ data: [] as Record<string, unknown>[] }),
       ])
 
       const userMap = new Map((usersRes.data || []).map((u: any) => [u.id, u]))
@@ -188,8 +190,9 @@ export async function GET(req: NextRequest) {
     const stats = { pending: 0, approved: 0, paid: 0 }
     if (allCommissions) {
       for (const c of allCommissions) {
-        const cents = (c as any).amount_cents || (c as any).amountCents
-        const a = typeof cents === "number" ? cents / 100 : typeof (c as any).commissionAmount === "number" ? (c as any).commissionAmount : 0
+        const cRec = c as Record<string, unknown>
+        const cents = (cRec["amount_cents"] as number | null) || (cRec["amountCents"] as number | null)
+        const a = typeof cents === "number" ? cents / 100 : typeof cRec["commissionAmount"] === "number" ? (cRec["commissionAmount"] as number) : 0
         if (c.status === "PAID") stats.paid += a
         else if (c.status === "APPROVED") stats.approved += a
         else stats.pending += a

@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server"
+import { type NextRequest, NextResponse } from "next/server"
 import { AuthService } from "@/lib/services/auth.service"
 import { signInSchema } from "@/lib/validators/auth"
 import { setSessionCookie } from "@/lib/auth-server"
@@ -68,7 +68,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const rateLimitResponse = await rateLimit(request as any, rateLimits.signin)
+    const rateLimitResponse = await rateLimit(request as NextRequest, rateLimits.signin)
     if (rateLimitResponse) {
       return rateLimitResponse
     }

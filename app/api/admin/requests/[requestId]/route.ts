@@ -79,8 +79,9 @@ export async function GET(_request: Request, { params }: { params: Promise<{ req
     return NextResponse.json({ success: false, error: `Request ${requestId} not found` }, { status: 404 })
   }
 
-  const buyer = Array.isArray((auction as any).buyer) ? (auction as any).buyer[0] : (auction as any).buyer
-  const shortlist = Array.isArray((auction as any).shortlist) ? (auction as any).shortlist[0] : (auction as any).shortlist
+  const auctionRec = auction as unknown as Record<string, unknown>
+  const buyer = Array.isArray(auctionRec["buyer"]) ? auctionRec["buyer"][0] : auctionRec["buyer"]
+  const shortlist = Array.isArray(auctionRec["shortlist"]) ? auctionRec["shortlist"][0] : auctionRec["shortlist"]
   const firstItem = shortlist?.items?.[0]
   const vehicle = firstItem?.inventoryItem
 
@@ -91,34 +92,34 @@ export async function GET(_request: Request, { params }: { params: Promise<{ req
     buyerEmail = u?.email || ""
   }
 
-  const uiStatus = mapAuctionStatusToUi((auction as any).status)
+  const uiStatus = mapAuctionStatusToUi(auctionRec["status"] as string)
   const vehicleLabel = vehicle ? `${vehicle.year} ${vehicle.make} ${vehicle.model}${vehicle.trim ? ` ${vehicle.trim}` : ""}` : "Vehicle not set"
   const budget = buyer?.preQualification?.maxOtd ?? 0
   const location = buyer ? `${buyer.city}, ${buyer.state}` : ""
 
   const timeline: any[] = [
-    { event: "Request created", user: "System", date: (auction as any).createdAt },
+    { event: "Request created", user: "System", date: auctionRec["createdAt"] as string },
   ]
-  if ((auction as any).startsAt) timeline.push({ event: "Auction scheduled", user: "Admin/System", date: (auction as any).startsAt })
-  if ((auction as any).endsAt) timeline.push({ event: "Auction end scheduled", user: "Admin/System", date: (auction as any).endsAt })
-  if (uiStatus === "ACTIVE") timeline.push({ event: "Auction activated", user: "Admin", date: (auction as any).startsAt || new Date().toISOString() })
+  if (auctionRec["startsAt"]) timeline.push({ event: "Auction scheduled", user: "Admin/System", date: auctionRec["startsAt"] as string })
+  if (auctionRec["endsAt"]) timeline.push({ event: "Auction end scheduled", user: "Admin/System", date: auctionRec["endsAt"] as string })
+  if (uiStatus === "ACTIVE") timeline.push({ event: "Auction activated", user: "Admin", date: (auctionRec["startsAt"] as string) || new Date().toISOString() })
   if (uiStatus === "MATCHED") timeline.push({ event: "Auction closed (matched)", user: "System", date: new Date().toISOString() })
 
   return NextResponse.json({
     success: true,
     data: {
-      id: (auction as any).id,
+      id: auctionRec["id"] as string,
       status: uiStatus,
-      buyerId: (auction as any).buyerId,
+      buyerId: auctionRec["buyerId"] as string,
       buyerName: buyer ? `${buyer.firstName} ${buyer.lastName}`.trim() : "",
       buyerEmail,
       vehicle: vehicleLabel,
       budget,
       location,
-      createdAt: (auction as any).createdAt,
+      createdAt: auctionRec["createdAt"] as string,
       tradeIn: null,
       timeline,
-      auctionId: (auction as any).id,
+      auctionId: auctionRec["id"] as string,
     },
   })
   } catch (error) {
@@ -160,7 +161,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ re
     if (!existing) return NextResponse.json({ error: "Request not found" }, { status: 404 })
 
     // Only activate if not already terminal
-    if (["CANCELLED", "COMPLETED"].includes((existing as any).status)) {
+    if (["CANCELLED", "COMPLETED"].includes((existing as Record<string, unknown>)["status"] as string)) {
       return NextResponse.json({ error: "Cannot activate a terminal request" }, { status: 409 })
     }
 

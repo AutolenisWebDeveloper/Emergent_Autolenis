@@ -92,7 +92,7 @@ async function getDealerDashboardStats(dealerId: string) {
     const openAuctionsResult =
       invitedAuctionIds.length > 0
         ? await supabase.from("Auction").select("id").in("id", invitedAuctionIds).eq("status", "OPEN")
-        : { data: [] as any[] }
+        : { data: [] as Record<string, unknown>[] }
 
     const openAuctionIds = (openAuctionsResult.data || []).map((a: any) => a.id)
     const activeAuctions = openAuctionIds.length
@@ -101,7 +101,7 @@ async function getDealerDashboardStats(dealerId: string) {
     const pendingOffersResult =
       participantIds.length > 0
         ? await supabase.from("AuctionOffer").select("id", { count: "exact", head: true }).in("participantId", participantIds)
-        : ({ count: 0 } as any)
+        : ({ count: 0 } as { count: number })
 
     // 4) Contracts pending: ContractShieldScan statuses (ContractDocument has no status)
     const pendingContractsResult = await supabase

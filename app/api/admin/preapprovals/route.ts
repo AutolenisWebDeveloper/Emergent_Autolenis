@@ -17,7 +17,7 @@ export async function GET(request: Request) {
     const statusParam = searchParams.get("status")
 
     const statuses = statusParam
-      ? (statusParam.split(",") as any[])
+      ? (statusParam.split(",") as string[])
       : ["SUBMITTED", "IN_REVIEW"]
 
     const submissions = await externalPreApprovalService.listByStatus(statuses)

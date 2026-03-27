@@ -104,7 +104,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ dea
     }
 
     // 3. Only persist DB record after Stripe confirms
-    const buyerId = (payment as any).buyerId
+    const buyerId = (payment as Record<string, unknown>)["buyerId"] as string | undefined
     if (!buyerId) {
       return NextResponse.json(
         { error: "Payment record is missing buyerId" },

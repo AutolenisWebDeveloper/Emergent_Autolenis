@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
     }
 
     // TEST workspace: return deterministic mock payout history + balances.
-    if (isTestWorkspace(user as any)) {
+    if (isTestWorkspace(user as { workspace_mode?: string })) {
       const affiliate = mockDb.affiliateProfiles.find((p: any) => p.userId === user.id)
       const affiliateId = affiliate?.id
       const payouts = (mockDb.payouts || []).filter((p: any) => p.affiliateId === affiliateId)
@@ -111,7 +111,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
-    if (isTestWorkspace(user as any)) {
+    if (isTestWorkspace(user as { workspace_mode?: string })) {
       return NextResponse.json({ success: true, payout: { id: `test_payout_${Date.now()}` } })
     }
 

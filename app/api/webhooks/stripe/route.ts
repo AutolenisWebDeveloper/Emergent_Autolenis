@@ -195,6 +195,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       .single()
 
     if (payment) {
+      const dealRec = (payment as Record<string, unknown>)["deal"] as Record<string, unknown> | null
       // Transaction: update service fee + update deal status + log compliance event
       await prisma.$transaction(async (tx: typeof prisma) => {
         await tx.serviceFeePayment.update({
@@ -213,7 +214,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         await tx.complianceEvent.create({
           data: {
             eventType: "SERVICE_FEE_PAYMENT",
-            buyerId: (payment.deal as any)?.buyerId,
+            buyerId: dealRec?.["buyerId"] as string | undefined,
             dealId: metadata['dealId'],
             action: "FEE_PAID_CARD",
             details: {
@@ -226,14 +227,14 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       })
 
       // Process affiliate commission (outside transaction — external service call)
-      if ((payment.deal as any)?.buyerId) {
+      if (dealRec?.["buyerId"]) {
         const buyer = await prisma.buyerProfile.findUnique({
-          where: { id: (payment.deal as any)?.buyerId },
+          where: { id: dealRec["buyerId"] as string },
           select: { userId: true, user: { select: { referredBy: true } } },
         })
 
-        if ((buyer?.user as any)?.referredBy) {
-          await affiliateService.processCommission((buyer?.user as any)?.referredBy, buyer!.userId, payment.finalAmount, "PURCHASE")
+        if ((buyer?.user as Record<string, unknown> | null)?.["referredBy"]) {
+          await affiliateService.processCommission((buyer?.user as Record<string, unknown>)["referredBy"] as string, buyer!.userId, payment.finalAmount, "PURCHASE")
         }
       }
 
@@ -262,10 +263,10 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       // Sync premium fee payment to canonical buyer_package_billing via RPC
       // This records the concierge fee payment for PREMIUM buyers and updates
       // the remaining balance in buyer_package_billing.
-      if ((payment.deal as any)?.buyerId) {
+      if (dealRec?.["buyerId"]) {
         try {
           await recordPremiumFeePayment(
-            (payment.deal as any).buyerId,
+            dealRec["buyerId"] as string,
             payment.finalAmount || 0,
             session.payment_intent as string,
             { sessionId: session.id, dealId: metadata['dealId'] },

@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server"
+import { type NextRequest, NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { hashPassword } from "@/lib/auth-server"
 import { rateLimit, rateLimits } from "@/lib/middleware/rate-limit"
@@ -20,7 +20,7 @@ export async function OPTIONS() {
 
 export async function POST(request: Request) {
   try {
-    const rateLimitResponse = await rateLimit(request as any, rateLimits.strict)
+    const rateLimitResponse = await rateLimit(request as NextRequest, rateLimits.strict)
     if (rateLimitResponse) {
       return rateLimitResponse
     }

@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server"
+import { type NextRequest, NextResponse } from "next/server"
 import { logAdminAction } from "@/lib/admin-auth"
 import { AuthService } from "@/lib/services/auth.service"
 import { setSessionCookie } from "@/lib/auth-server"
@@ -25,7 +25,7 @@ export async function OPTIONS() {
 export async function POST(request: Request) {
   const correlationId = crypto.randomUUID()
   try {
-    const rateLimitResponse = await rateLimit(request as any, rateLimits.strict)
+    const rateLimitResponse = await rateLimit(request as NextRequest, rateLimits.strict)
     if (rateLimitResponse) {
       return rateLimitResponse
     }
@@ -72,9 +72,9 @@ export async function POST(request: Request) {
       result.user.firstName || "there",
       result.user.id,
       {
-        ip: (request as any).headers?.get?.("x-forwarded-for")?.split(",")[0]?.trim() ||
-          (request as any).headers?.get?.("x-real-ip") || undefined,
-        userAgent: (request as any).headers?.get?.("user-agent") || undefined,
+        ip: request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+          request.headers.get("x-real-ip") || undefined,
+        userAgent: request.headers.get("user-agent") || undefined,
       }
     ).catch((err: unknown) => {
       logger.error("[Admin Signin] sendAdminNewDeviceEmail failed", { userId: result.user.id, error: err as Error })
