@@ -15,9 +15,10 @@ export class PaymentService {
    * V2: Premium plan has a flat $499 fee regardless of vehicle price.
    * FREE plan has no concierge fee.
    *
-   * The totalOtdCents parameter is retained for backward compatibility
-   * but is no longer used for fee calculation (V1 OTD-threshold pricing
-   * has been removed).
+   * @param _totalOtdCents - Retained for backward compatibility with existing
+   *   callers (e.g. getFeeOptions, getOrCreateServiceFeePayment) that pass OTD.
+   *   Not used for V2 fee calculation.
+   * @param plan - Plan identifier. Defaults to PREMIUM when omitted.
    */
   static calculateBaseFee(_totalOtdCents: number, plan?: PlanId): number {
     // V2 flat plan-based pricing — no OTD-threshold tiers

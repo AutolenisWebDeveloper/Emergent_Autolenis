@@ -145,10 +145,25 @@ export async function POST(request: Request, { params }: { params: Promise<{ dea
       try {
         const supabase = getSupabase()
         const now = new Date().toISOString()
-        await supabase
+        const { data: reversedCommissions, error: commError } = await supabase
           .from("Commission")
           .update({ status: "REVERSED", updatedAt: now })
           .or(`serviceFeePaymentId.eq.${paymentId},service_fee_payment_id.eq.${paymentId}`)
+          .select("id")
+
+        if (commError) {
+          logger.error("[Admin Refund] Commission reversal query failed:", {
+            error: commError.message,
+            paymentId,
+            dealId,
+          })
+        } else {
+          logger.info("[Admin Refund] Commissions reversed:", {
+            paymentId,
+            dealId,
+            reversedCount: reversedCommissions?.length ?? 0,
+          })
+        }
       } catch (commErr) {
         logger.error("[Admin Refund] Commission reversal failed (non-blocking):", {
           error: (commErr as Error).message,
