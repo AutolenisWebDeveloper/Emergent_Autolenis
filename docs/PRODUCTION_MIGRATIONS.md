@@ -133,6 +133,54 @@ Both `supabase db push` and `prisma migrate deploy` are **idempotent** — re-ru
 
 ---
 
+## Migration Reconciliation
+
+When `supabase db push` reports "remote migration versions not found locally", the remote `schema_migrations` table contains versions that no longer match local filenames. This typically happens after renaming or deleting migration files.
+
+### Diagnosis
+
+```bash
+# Link to the remote project (requires SUPABASE_ACCESS_TOKEN env var)
+pnpm supabase link --project-ref "$SUPABASE_PROJECT_ID"
+
+# List all remote vs local versions
+pnpm supabase migration list
+```
+
+### Automated Reconciliation Script
+
+```bash
+# Dry-run — reports mismatches without making changes
+bash scripts/reconcile-supabase-migrations.sh
+
+# Apply repairs
+bash scripts/reconcile-supabase-migrations.sh --apply
+```
+
+### Manual Repair
+
+For each remote-only version, decide whether to **revoke** it (remove from remote tracking) or **restore** it (add the missing local file):
+
+```bash
+# Remove a version from remote tracking (migration SQL stays in the database)
+pnpm supabase migration repair <version> --status reverted
+
+# Mark a local migration as already applied (skip it during db push)
+pnpm supabase migration repair <version> --status applied
+```
+
+### Known Historical Renames
+
+| Old Version | New Version | Reason |
+|---|---|---|
+| `20240101000025` | `20260325000001` | Timestamp corrected for ordering |
+| `20240101000020b` | `20240101000021` | Invalid suffix `b` in timestamp |
+| `202603280001` | `20260328000100` | 12-digit padded to 14-digit |
+
+If any of these old versions appear in remote history, repair them with `--status reverted`.
+
+---
+
 ## Operational Checklist Before Adding a New Migration
 
 - [ ] New Supabase SQL migration file follows the naming convention: `YYYYMMDDHHMMSS_description.sql`
