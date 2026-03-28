@@ -6,7 +6,7 @@
 #
 # Documentation: https://supabase.com/docs/guides/cli/config
 
-project_id = "env(SUPABASE_PROJECT_ID)"
+project_id = ""
 
 [api]
 enabled = true
