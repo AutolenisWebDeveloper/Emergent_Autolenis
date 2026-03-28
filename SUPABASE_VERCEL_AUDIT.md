@@ -1,6 +1,6 @@
 # Supabase RLS Audit — Access Matrix
 
-> **Date:** 2026-03-27  
+> **Date:** 2026-03-27 (updated 2026-03-28)  
 > **Scope:** All 31 tables requiring row-level security policies  
 > **Migration:** `scripts/add-missing-rls-policies.sql`  
 > **Rollback:** `scripts/rollback-rls-policies.sql`
@@ -21,11 +21,30 @@ This document provides a table-by-table access matrix for every table covered by
 
 1. **Type-safe comparisons**: All user ID comparisons use `public.current_user_id()` which returns the CUID `User.id`, not `auth.uid()` which returns a UUID. Direct UUID↔CUID comparisons never match.
 2. **BuyerProfile subquery**: Tables with `buyerId` referencing `BuyerProfile.id` (not `User.id`) use `buyerId IN (SELECT id FROM "BuyerProfile" WHERE "userId" = public.current_user_id())`.
-3. **Lookup-backed dealer access**: No policy depends on JWT `dealer_id` claims. All dealer access uses `public.current_dealer_ids()` which queries both `Dealer.userId` and `DealerUser.userId` tables.
+3. **Lookup-backed dealer access**: No policy depends on JWT `dealer_id` claims. All dealer access uses `public.current_dealer_ids()` which queries both `Dealer.userId` and `DealerUser.userId` tables. The previous JWT `dealer_id` claim dependency has been fully removed.
 4. **Lookup-backed affiliate access**: All affiliate access uses `public.current_affiliate_ids()` which queries `Affiliate.userId`.
 5. **Schema-qualified functions**: All helper functions are schema-qualified (`public.current_user_id()`, `public.is_admin()`, etc.) — never bare `current_user_id()`.
 6. **Idempotent migration**: Every policy uses `DROP POLICY IF EXISTS` before `CREATE POLICY` to support safe re-runs.
 7. **Explicit role targeting**: All policies specify `TO authenticated` to exclude the `anon` role.
+
+### Live-State Verification (2026-03-28)
+
+Helper-function resolution was verified via dependency graph analysis on the live Supabase instance. Although `pg_policies`' deparser may display unqualified function names in policy definitions, the actual runtime binding resolves to the correct `public`-schema-qualified functions:
+
+- **`public.current_user_id()`** — verified bound for all user-row ownership checks
+- **`public.current_workspace_id()`** — verified bound for workspace membership checks
+- **`public.is_admin()`** — verified bound for admin bypass checks across all 31 tables
+
+**One intentional exception**: The policy `"Buyers can view their own submissions"` on `public.external_preapproval_submissions` uses `private.is_admin()`. This is intentional and managed in a separate migration (`supabase/migrations/20240101000004_external_preapproval_rpc.sql`), not in this migration.
+
+### Tables Intentionally Excluded
+
+| Table | Reason |
+|-------|--------|
+| `public.user_workspaces` | Service-role-only by design. No authenticated-user RLS policies are required. Access is restricted to service-role connections only. |
+| `public.external_preapproval_submissions` | Policies managed in `supabase/migrations/20240101000004_external_preapproval_rpc.sql`. Not duplicated in this migration. |
+| `public.external_preapproval_status_history` | Policies managed in `supabase/migrations/20240101000004_external_preapproval_rpc.sql`. |
+| `public.external_preapproval_documents` | Policies managed in `supabase/migrations/20240101000004_external_preapproval_rpc.sql`. |
 
 ### Helper Functions (pre-existing, schema-qualified)
 
@@ -336,6 +355,8 @@ This document provides a table-by-table access matrix for every table covered by
 | **Existing initial_schema policies overlap** | Low | The migration uses `DROP IF EXISTS` before each `CREATE POLICY`, ensuring clean replacement. Old policies with the same name are safely removed. |
 | **DealerUser multi-org edge case** | Low | If a user is a DealerUser in multiple dealers across workspaces, `public.current_dealer_ids()` returns all. Workspace isolation should be enforced at the API layer in addition to RLS. |
 | **SEO/admin tables coverage** | Info | SEO tables (seo_pages, SeoPages, etc.) and admin tables (AdminUser, AdminAuditLog, AdminLoginAttempt) are covered by the existing `scripts/99-admin-rls-audit-fixes.sql` and are not duplicated here. |
+| **Security-definer view advisor findings** | Info | Remaining Supabase Dashboard advisor findings related to security-definer views are **deferred and out of scope** for this branch. These views do not affect RLS policy correctness and require a separate remediation effort. |
+| **`private.is_admin()` on external_preapproval_submissions** | Info | One policy intentionally uses `private.is_admin()` instead of `public.is_admin()`. This was verified as intentional in the live dependency graph. No action required. |
 
 ---
 
@@ -346,12 +367,17 @@ This document provides a table-by-table access matrix for every table covered by
 | All 31 tables covered | ✅ |
 | No policy references nonexistent helper functions | ✅ |
 | No policy relies on unverified JWT claims | ✅ |
+| No JWT dealer_id claim dependency | ✅ (fully removed; uses `public.current_dealer_ids()` lookup) |
 | No claimed rollback is merely commented text | ✅ (`scripts/rollback-rls-policies.sql` is executable) |
 | No table left with unproven access model | ✅ (every access pattern has code references) |
 | Helper functions are schema-qualified | ✅ (`public.current_user_id()`, `public.is_admin()`, etc.) |
+| Helper-function resolution verified via dependency graph | ✅ (runtime binding confirmed on live instance) |
+| `pg_policies` deparser unqualified text acknowledged | ✅ (display-only; runtime resolution is correct) |
 | Type-safe comparisons (no UUID↔CUID mismatch) | ✅ |
-| No JWT dealer_id dependency | ✅ (uses `public.current_dealer_ids()` lookup) |
 | Idempotent (safe to re-run) | ✅ (`DROP IF EXISTS` + `CREATE`) |
 | Transactional (atomic apply/rollback) | ✅ (`BEGIN` / `COMMIT`) |
+| `user_workspaces` remains service-role-only | ✅ (intentionally excluded from migration) |
+| `private.is_admin()` exception documented | ✅ (one policy on `external_preapproval_submissions`) |
+| Security-definer view findings deferred | ✅ (out of scope for this branch) |
 
-**Verdict: MERGE-READY** — pending standard code review.
+**Verdict: ✅ MERGE-READY** — All live DB-side RLS blockers resolved. Repo-to-live alignment verified. Pending standard code review.
