@@ -51,7 +51,7 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ success: true, message: "Upgraded to Premium" })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[Buyer Upgrade] Error:", error)
     return NextResponse.json(
       { error: "Failed to upgrade" },

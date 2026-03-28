@@ -567,7 +567,7 @@ export class ESignService {
     return {
       id: envelope.id,
       status: envelope.status,
-      completedAt: (envelope as any).completed_at || null,
+      completedAt: (envelope as Record<string, unknown>)["completed_at"] || null,
     }
   }
 }

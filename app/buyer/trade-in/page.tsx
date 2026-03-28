@@ -79,11 +79,11 @@ function BuyerTradeInPageContent() {
       })
 
       router.push("/buyer/shortlist")
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message,
+        description: (error instanceof Error ? error.message : String(error)),
       })
     } finally {
       setSubmitting(false)
@@ -116,11 +116,11 @@ function BuyerTradeInPageContent() {
       })
 
       router.push("/buyer/shortlist")
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message,
+        description: (error instanceof Error ? error.message : String(error)),
       })
     } finally {
       setSubmitting(false)

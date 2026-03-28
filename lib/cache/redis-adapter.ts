@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger"
 /**
  * Cache adapter abstraction for rate limiting and general caching.
  * Supports in-memory (default) and Redis-backed implementations.
@@ -145,7 +146,7 @@ export class RedisCacheAdapter implements CacheAdapter {
     try {
       const mod = await loadIoRedis()
       if (!mod) {
-        console.warn("[RedisCacheAdapter] ioredis is not installed. Falling back to in-memory cache.")
+        logger.warn("[RedisCacheAdapter] ioredis is not installed. Falling back to in-memory cache.")
         return
       }
       this.client = new mod.default(redisUrl, {
@@ -156,7 +157,7 @@ export class RedisCacheAdapter implements CacheAdapter {
       await this.client.connect()
       this.ready = true
     } catch {
-      console.warn("[RedisCacheAdapter] Failed to connect to Redis. Falling back to in-memory cache.")
+      logger.warn("[RedisCacheAdapter] Failed to connect to Redis. Falling back to in-memory cache.")
       this.ready = false
     }
   }
@@ -287,7 +288,7 @@ export function getCacheAdapter(): CacheAdapter {
   const redisUrl = process.env["REDIS_URL"]
 
   if (isProductionEnv() && !redisUrl) {
-    console.warn(
+    logger.warn(
       "[CacheAdapter] REDIS_URL is not set in production. " +
       "Security-critical operations will fail. In-memory adapter provided for non-critical use only."
     )

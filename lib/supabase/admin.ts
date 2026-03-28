@@ -1,4 +1,5 @@
 import { createClient as createSupabaseClient } from "@supabase/supabase-js"
+import { logger } from "@/lib/logger"
 
 /**
  * Creates a Supabase admin client that bypasses Row Level Security (RLS).
@@ -12,12 +13,12 @@ export function createAdminClient() {
   const supabaseServiceKey = process.env['SUPABASE_SERVICE_ROLE_KEY']
 
   if (!supabaseUrl) {
-    console.error("[createAdminClient] NEXT_PUBLIC_SUPABASE_URL is not configured")
+    logger.error("[createAdminClient] NEXT_PUBLIC_SUPABASE_URL is not configured")
     throw new Error("Database URL is not configured. Please check environment variables.")
   }
 
   if (!supabaseServiceKey) {
-    console.error("[createAdminClient] SUPABASE_SERVICE_ROLE_KEY is not configured")
+    logger.error("[createAdminClient] SUPABASE_SERVICE_ROLE_KEY is not configured")
     throw new Error("Database service key is not configured. Please check environment variables.")
   }
 

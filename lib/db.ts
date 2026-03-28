@@ -56,9 +56,9 @@ function createSupabaseClient(): SupabaseClient | null {
     _lastCreationError = null
     logger.info("Supabase client initialized successfully")
     return client
-  } catch (error: any) {
-    _lastCreationError = `Supabase client creation failed: ${error.message}`
-    logger.error("Supabase client creation failed", { error: error.message })
+  } catch (error: unknown) {
+    _lastCreationError = `Supabase client creation failed: ${error instanceof Error ? error.message : String(error)}`
+    logger.error("Supabase client creation failed", { error: error instanceof Error ? error.message : String(error) })
     return null
   }
 }
@@ -84,7 +84,7 @@ export const supabase: SupabaseClient = new Proxy({} as SupabaseClient, {
   get: (_, prop) => {
     if (prop === "then") return undefined // Allow await checks
     const client = getOrCreateSupabase()
-    return (client as any)[prop]
+    return (client as unknown as Record<string, unknown>)[prop as string]
   },
 })
 
@@ -121,10 +121,10 @@ export function getPrisma() {
       _prismaInstance = new PrismaClient()
       _prismaLoadError = null
       logger.info("Prisma client initialized successfully")
-    } catch (error: any) {
-      _prismaLoadError = error.message
+    } catch (error: unknown) {
+      _prismaLoadError = error instanceof Error ? error.message : String(error)
       logger.warn("Prisma client not available - using Supabase exclusively", { 
-        error: error.message 
+        error: error instanceof Error ? error.message : String(error) 
       })
       // Don't throw - allow app to continue with Supabase
       return null
@@ -144,7 +144,7 @@ export const prisma = new Proxy({} as any, {
         `Prisma client not available. The app uses Supabase for database operations. Error: ${_prismaLoadError || 'Prisma not installed'}`
       )
     }
-    return client[prop]
+    return (client as Record<string, unknown>)[prop as string]
   },
 })
 

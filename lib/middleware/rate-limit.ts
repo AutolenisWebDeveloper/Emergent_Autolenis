@@ -11,6 +11,7 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 import { getCacheAdapter, assertProductionCacheReady, InMemoryCacheAdapter } from "@/lib/cache/redis-adapter"
+import { logger } from "@/lib/logger"
 
 export interface RateLimitConfig {
   maxRequests: number
@@ -36,7 +37,7 @@ function extractClientIp(request: NextRequest): string {
     const first = xff.split(",")[0]?.trim()
     if (first) return first
   }
-  return (request as any).ip || "unknown"
+  return ("ip" in request ? (request as { ip?: string }).ip : undefined) || "unknown"
 }
 
 export async function rateLimit(request: NextRequest, config: RateLimitConfig): Promise<NextResponse | null> {
@@ -55,9 +56,9 @@ export async function rateLimit(request: NextRequest, config: RateLimitConfig): 
   } catch {
     if (isStrictProduction) {
       if (securityCritical) {
-        console.error("[RateLimit] CRITICAL: Redis unavailable in production for security-critical endpoint. Degrading to in-memory rate limiting. Configure REDIS_URL to restore full protection.")
+        logger.error("[RateLimit] CRITICAL: Redis unavailable in production for security-critical endpoint. Degrading to in-memory rate limiting. Configure REDIS_URL to restore full protection.")
       } else {
-        console.error("[RateLimit] Redis unavailable in production — rate limiting degraded to in-memory. Configure REDIS_URL to restore full protection.")
+        logger.error("[RateLimit] Redis unavailable in production — rate limiting degraded to in-memory. Configure REDIS_URL to restore full protection.")
       }
     }
   }
@@ -74,9 +75,9 @@ export async function rateLimit(request: NextRequest, config: RateLimitConfig): 
   // legitimately fall back to in-memory when Redis is not provisioned.
   if (isStrictProduction && cache instanceof InMemoryCacheAdapter) {
     if (securityCritical) {
-      console.error("[RateLimit] CRITICAL: In-memory limiter detected in production for security-critical endpoint. Rate limiting is per-instance only. Configure REDIS_URL for distributed protection.")
+      logger.error("[RateLimit] CRITICAL: In-memory limiter detected in production for security-critical endpoint. Rate limiting is per-instance only. Configure REDIS_URL for distributed protection.")
     } else {
-      console.error("[RateLimit] In-memory limiter detected in production. Rate limiting may be unreliable.")
+      logger.error("[RateLimit] In-memory limiter detected in production. Rate limiting may be unreliable.")
     }
   }
 

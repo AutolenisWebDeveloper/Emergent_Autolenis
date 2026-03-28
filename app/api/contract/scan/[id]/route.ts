@@ -60,7 +60,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
     // Ownership check: non-admin users must be associated with the deal
     if (!isAdminRole(user.role) && scan.selectedDeal) {
-      const dealDealerId = (scan.selectedDeal as any).dealerId
+      const dealDealerId = (scan.selectedDeal as Record<string, unknown>)["dealerId"] as string | undefined
       if (dealDealerId && dealDealerId !== user.workspace_id) {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 })
       }
@@ -101,7 +101,7 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
 
     // Ownership check: non-admin users must be associated with the deal
     if (!isAdminRole(user.role) && existingScan.selectedDeal) {
-      const dealDealerId = (existingScan.selectedDeal as any).dealerId
+      const dealDealerId = (existingScan.selectedDeal as Record<string, unknown>)["dealerId"] as string | undefined
       if (dealDealerId && dealDealerId !== user.workspace_id) {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 })
       }

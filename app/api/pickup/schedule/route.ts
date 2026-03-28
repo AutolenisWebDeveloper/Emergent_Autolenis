@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
     const pickup = await pickupService.schedulePickup(data.dealId, user.id, data.scheduledAt, data.notes)
 
     return NextResponse.json(pickup)
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[Pickup Schedule]", error)
     return NextResponse.json({ error: "Failed to schedule pickup" }, { status: 400 })
   }

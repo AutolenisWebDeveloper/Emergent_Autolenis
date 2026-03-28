@@ -90,11 +90,11 @@ export default function AffiliateOnboardingPage() {
       })
 
       setStep(3)
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         variant: "destructive",
         title: "Setup failed",
-        description: error.message,
+        description: (error instanceof Error ? error.message : String(error)),
       })
     } finally {
       setLoading(false)

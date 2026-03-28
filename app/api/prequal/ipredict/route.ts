@@ -5,6 +5,8 @@ import { decryptSsn, encrypt } from "@/lib/prequal/encryption"
 import { getPrequalSessionToken } from "@/lib/prequal/session"
 import { writePrequalAuditLog } from "@/lib/prequal/audit"
 import { callIpredict } from "@/lib/microbilt/ipredict-client"
+import type { ApplicationStatus } from "@/lib/types/prequal"
+
 import type { IpredictApplicationInput } from "@/lib/microbilt/ipredict-client"
 import { scoreIpredict } from "@/lib/decision/ipredict-scorer"
 import { MicroBiltTimeoutError } from "@/lib/microbilt/errors"
@@ -152,7 +154,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     await prisma.prequalApplication.update({
       where: { id: application.id },
       data: {
-        status: nextStatus as any,
+        status: nextStatus as ApplicationStatus,
         ipredictBand: scoringResult.band,
         ipredictScoreRaw: scoringResult.scoreRaw ?? null,
         queueSegment: nextStatus === "IBV_PENDING" ? "ACTION_REQUIRED" : "IN_PROGRESS",
@@ -187,9 +189,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         applicationId: application.id,
         eventType: "DECISION_MADE",
         actorType: "SYSTEM",
-        newState: "NOT_PREQUALIFIED",
         description: `Auto-declined: ${scoringResult.hardFailReason ?? "score below threshold"}`,
-      } as any)
+        metadata: { newState: "NOT_PREQUALIFIED" },
+      })
     }
 
     return NextResponse.json({

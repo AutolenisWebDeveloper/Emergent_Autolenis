@@ -41,11 +41,11 @@ export default function BuyerAuctionsPage() {
       })
 
       router.push("/buyer/deal")
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message,
+        description: (error instanceof Error ? error.message : String(error)),
       })
     }
   }

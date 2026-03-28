@@ -82,7 +82,7 @@ export async function createOrGetSelectedDealFromBestPrice(
     : offer.financingOptions[0]
 
   // Transaction: create deal + financing offer + decision + auction status + inventory reserve + compliance
-  const result = await prisma.$transaction(async (tx: any) => {
+  const result = await prisma.$transaction(async (tx: typeof prisma) => {
     // Create new deal
     const deal = await tx.selectedDeal.create({
       data: {
@@ -99,7 +99,7 @@ export async function createOrGetSelectedDealFromBestPrice(
         totalOtdAmountCents: otdCents,
         total_otd_amount_cents: otdCents,
         taxAmount: (offer.tax_amount_cents || offer.taxAmountCents || 0) / 100,
-        feesBreakdown: (offer.fee_breakdown_json || offer.feeBreakdownJson || offer.feesBreakdown) as any,
+        feesBreakdown: (offer.fee_breakdown_json || offer.feeBreakdownJson || offer.feesBreakdown) as object,
         payment_type: "FINANCED",
         concierge_fee_method: "UNDECIDED",
         concierge_fee_status: "PENDING",

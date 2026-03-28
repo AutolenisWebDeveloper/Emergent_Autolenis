@@ -44,8 +44,8 @@ export default function DealerPickupsPage() {
       } else {
         throw new Error(extractApiError(data.error, "Failed to process QR code"))
       }
-    } catch (error: any) {
-      toast({ variant: "destructive", title: error.message || "Invalid QR code" })
+    } catch (error: unknown) {
+      toast({ variant: "destructive", title: (error instanceof Error ? error.message : String(error)) || "Invalid QR code" })
     } finally {
       setScanning(false)
     }

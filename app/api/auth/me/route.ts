@@ -136,8 +136,8 @@ export async function GET() {
         },
       },
     })
-  } catch (error: any) {
-    logger.error("Error in /api/auth/me", { error: error.message })
+  } catch (error: unknown) {
+    logger.error("Error in /api/auth/me", { error: (error instanceof Error ? error.message : String(error)) })
     return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 })
   }
 }

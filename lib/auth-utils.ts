@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation"
 import { createAdminClient } from "@/lib/supabase/admin"
+import { logger } from "@/lib/logger"
 
 /**
  * Checks if a user's email is verified and redirects to verification page if not.
@@ -34,7 +35,7 @@ export async function requireEmailVerification(userId: string, context: string):
       redirect("/auth/verify-email?pending=true")
     }
   } catch (error) {
-    console.error(`[${context}] Failed to check email verification`, error)
+    logger.error(`[${context}] Failed to check email verification`, error)
     // Fail-open: Continue on error to maintain availability for verified users.
     // Primary email verification enforcement is at sign-in (fail-closed).
     // This is a defense-in-depth measure, not the primary security control.

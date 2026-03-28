@@ -52,9 +52,10 @@ export async function POST(request: Request) {
       success: true,
       data: result,
     })
-  } catch (error: any) {
-    if (error?.statusCode === 401 || error?.statusCode === 403) {
-      return NextResponse.json({ success: false, error: error.statusCode === 403 ? "Forbidden" : "Unauthorized" }, { status: error.statusCode })
+  } catch (error: unknown) {
+    const statusCode = (error as { statusCode?: number }).statusCode
+    if (statusCode === 401 || statusCode === 403) {
+      return NextResponse.json({ success: false, error: statusCode === 403 ? "Forbidden" : "Unauthorized" }, { status: statusCode })
     }
     console.error("[Payment Deposit] Error:", error)
     return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 })

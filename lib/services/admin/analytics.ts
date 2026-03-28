@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/db"
+import { logger } from "@/lib/logger"
 
 /**
  * Conditionally append .eq("workspaceId", wsId) when a workspaceId is provided.
@@ -132,7 +133,7 @@ export async function getTopDealers(limit = 10, workspaceId?: string) {
   const { data: dealers, error } = await dealerQuery
 
   if (error || !dealers) {
-    console.error("[AdminService] Error fetching top dealers:", error)
+    logger.error("[AdminService] Error fetching top dealers:", error)
     return []
   }
 
@@ -187,7 +188,7 @@ export async function getTopAffiliates(limit = 10, workspaceId?: string) {
   const { data: affiliates, error } = await affQuery
 
   if (error || !affiliates) {
-    console.error("[AdminService] Error fetching top affiliates:", error)
+    logger.error("[AdminService] Error fetching top affiliates:", error)
     return []
   }
 
@@ -233,7 +234,7 @@ export async function getDealerPerformance(workspaceId?: string) {
   const { data: dealers, error } = await perfQuery
 
   if (error || !dealers) {
-    console.error("[AdminService] Error fetching dealer performance:", error)
+    logger.error("[AdminService] Error fetching dealer performance:", error)
     return []
   }
 

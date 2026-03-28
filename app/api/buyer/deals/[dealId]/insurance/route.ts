@@ -15,9 +15,10 @@ export async function GET(_request: Request, { params }: { params: Promise<{ dea
       success: true,
       data,
     })
-  } catch (error: any) {
-    if (error?.statusCode === 401 || error?.statusCode === 403) {
-      return NextResponse.json({ success: false, error: error.statusCode === 403 ? "Forbidden" : "Unauthorized" }, { status: error.statusCode })
+  } catch (error: unknown) {
+    const statusCode = (error as { statusCode?: number }).statusCode
+    if (statusCode === 401 || statusCode === 403) {
+      return NextResponse.json({ success: false, error: statusCode === 403 ? "Forbidden" : "Unauthorized" }, { status: statusCode })
     }
     console.error("Error fetching insurance:", error)
     return NextResponse.json({ success: false, error: "Failed to fetch insurance" }, { status: 500 })

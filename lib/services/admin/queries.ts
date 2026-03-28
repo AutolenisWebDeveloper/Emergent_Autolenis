@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/db"
+import { logger } from "@/lib/logger"
 
 export async function getAllBuyers(filters?: {
   search?: string
@@ -44,7 +45,7 @@ export async function getAllBuyers(filters?: {
   const { data: buyers, count, error } = await query
 
   if (error) {
-    console.error("[AdminService] Error fetching buyers:", error)
+    logger.error("[AdminService] Error fetching buyers:", error)
     return { buyers: [], total: 0, page, totalPages: 0 }
   }
 
@@ -89,7 +90,7 @@ export async function getBuyerDetail(userId: string, workspaceId?: string) {
   const { data: user, error } = await query.single()
 
   if (error) {
-    console.error("[AdminService] Error fetching buyer detail:", error)
+    logger.error("[AdminService] Error fetching buyer detail:", error)
     return null
   }
 
@@ -136,7 +137,7 @@ export async function getAllDealers(filters?: {
   const { data: users, count, error } = await query.range(offset, offset + limit - 1)
 
   if (error) {
-    console.error("[AdminService] Error fetching dealers:", error)
+    logger.error("[AdminService] Error fetching dealers:", error)
     return { dealers: [], total: 0, page, totalPages: 0 }
   }
 
@@ -220,7 +221,7 @@ export async function getAllAuctions(filters?: { status?: string; page?: number;
   const { data: auctions, count, error } = await query
 
   if (error) {
-    console.error("[AdminService] Error fetching auctions:", error)
+    logger.error("[AdminService] Error fetching auctions:", error)
     return { auctions: [], total: 0, page, totalPages: 0 }
   }
 
@@ -256,7 +257,7 @@ export async function getAllAuctions(filters?: { status?: string; page?: number;
 
   return {
     auctions: (auctions || []).map((a) => {
-      const buyer = buyerMap[a.buyerId] || ({} as any)
+      const buyer = buyerMap[a.buyerId] || ({} as Record<string, string>)
       return {
         id: a.id,
         buyerName: `${buyer.firstName || ""} ${buyer.lastName || ""}`.trim() || "Unknown",
@@ -317,7 +318,7 @@ export async function getAllDeals(filters?: {
   const { data: deals, count, error } = await query
 
   if (error) {
-    console.error("[AdminService] Error fetching deals:", error)
+    logger.error("[AdminService] Error fetching deals:", error)
     return { deals: [], total: 0, page, totalPages: 0 }
   }
 
@@ -346,8 +347,8 @@ export async function getAllDeals(filters?: {
 
   return {
     deals: (deals || []).map((d) => {
-      const buyer = buyerMap[d.buyerId] || ({} as any)
-      const dealer = dealerMap[d.dealerId] || ({} as any)
+      const buyer = buyerMap[d.buyerId] || ({} as Record<string, string>)
+      const dealer = dealerMap[d.dealerId] || ({} as Record<string, string>)
       return {
         id: d.id,
         buyerName: `${buyer.firstName || ""} ${buyer.lastName || ""}`.trim() || "Unknown",
@@ -519,7 +520,7 @@ export async function getAllAffiliates(filters?: { search?: string; page?: numbe
   const { data: affiliates, count, error } = await query
 
   if (error) {
-    console.error("[AdminService] Error fetching affiliates:", error)
+    logger.error("[AdminService] Error fetching affiliates:", error)
     return { affiliates: [], total: 0, page, totalPages: 0 }
   }
 
@@ -613,7 +614,7 @@ export async function getComplianceEvents(filters?: {
   const { data: events, count, error } = await query
 
   if (error) {
-    console.error("[AdminService] Error fetching compliance events:", error)
+    logger.error("[AdminService] Error fetching compliance events:", error)
     return { events: [], total: 0, page, totalPages: 0 }
   }
 
@@ -661,7 +662,7 @@ export async function getContractShieldScans(filters?: { status?: string; page?:
   const { data: scans, count, error } = await query
 
   if (error) {
-    console.error("[AdminService] Error fetching contract shield scans:", error)
+    logger.error("[AdminService] Error fetching contract shield scans:", error)
     return { scans: [], total: 0, page, totalPages: 0 }
   }
 

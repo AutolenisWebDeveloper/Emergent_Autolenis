@@ -63,11 +63,11 @@ export default function BuyerProfilePage() {
         title: "Profile updated",
         description: "Your profile has been saved successfully",
       })
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message,
+        description: (error instanceof Error ? error.message : String(error)),
       })
     } finally {
       setSaving(false)

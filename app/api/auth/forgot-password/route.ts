@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server"
+import { type NextRequest, NextResponse } from "next/server"
 import { passwordResetService } from "@/lib/services/password-reset.service"
 import { z } from "zod"
 import { rateLimit, rateLimits } from "@/lib/middleware/rate-limit"
@@ -10,7 +10,7 @@ const forgotPasswordSchema = z.object({
 
 export async function POST(request: Request) {
   try {
-    const rateLimitResponse = await rateLimit(request as any, rateLimits.auth)
+    const rateLimitResponse = await rateLimit(request as NextRequest, rateLimits.auth)
     if (rateLimitResponse) {
       return rateLimitResponse
     }

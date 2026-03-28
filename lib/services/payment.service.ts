@@ -1,6 +1,6 @@
 import { getSupabase } from "@/lib/db"
 import { stripe } from "@/lib/stripe"
-import { DEPOSIT_AMOUNT_CENTS, FEE_STRUCTURE_CENTS, PREMIUM_FEE_CENTS } from "@/lib/constants"
+import { DEPOSIT_AMOUNT_CENTS, PREMIUM_FEE_CENTS } from "@/lib/constants"
 import { PRICING, type PlanId, depositAppliesTo } from "@/src/config/pricingConfig"
 import {
   PaymentStatus,
@@ -15,18 +15,16 @@ export class PaymentService {
    * V2: Premium plan has a flat $499 fee regardless of vehicle price.
    * FREE plan has no concierge fee.
    *
-   * Legacy V1 (behind feature flag): tier-based fee by OTD threshold.
+   * @param _totalOtdCents - Retained for backward compatibility with existing
+   *   callers (e.g. getFeeOptions, getOrCreateServiceFeePayment) that pass OTD.
+   *   Not used for V2 fee calculation.
+   * @param plan - Plan identifier. Defaults to PREMIUM when omitted.
    */
-  static calculateBaseFee(totalOtdCents: number, plan?: PlanId): number {
-    // V2 plan-based pricing
-    if (plan !== undefined) {
-      return plan === "PREMIUM" ? PRICING.premiumFeeCents : 0
-    }
-    // Legacy V1 fallback for existing callers
-    if (totalOtdCents <= FEE_STRUCTURE_CENTS.LOW_TIER.threshold) {
-      return FEE_STRUCTURE_CENTS.LOW_TIER.fee
-    }
-    return FEE_STRUCTURE_CENTS.HIGH_TIER.fee
+  static calculateBaseFee(_totalOtdCents: number, plan?: PlanId): number {
+    // V2 flat plan-based pricing — no OTD-threshold tiers
+    if (plan === "FREE") return 0
+    // Default to PREMIUM fee ($499) when plan is PREMIUM or unspecified
+    return PRICING.premiumFeeCents
   }
 
   /**
@@ -134,7 +132,7 @@ export class PaymentService {
       userId: payment.buyerId,
       buyerId: payment.buyerId,
       details: {
-        amountCents: (payment as any).amountCents || (payment as any).amount_cents || payment.amount,
+        amountCents: ((payment as Record<string, unknown>)["amountCents"] as number) || ((payment as Record<string, unknown>)["amount_cents"] as number) || payment.amount,
         paymentIntentId,
       },
     })
@@ -171,7 +169,7 @@ export class PaymentService {
       .from("DepositPayment")
       .select("*")
       .eq("buyerId", deal.buyerId)
-      .eq("status", "PAID")
+      .in("status", ["PAID", "SUCCEEDED"])
       .order("createdAt", { ascending: false })
       .limit(1)
       .maybeSingle()
@@ -204,7 +202,7 @@ export class PaymentService {
     const supabase = getSupabase()
     const feeOptions = await this.getFeeOptions(dealId)
 
-    if (feeOptions.existingPayment?.status === "PAID") {
+    if (feeOptions.existingPayment?.status === "PAID" || feeOptions.existingPayment?.status === "SUCCEEDED") {
       return { payment: feeOptions.existingPayment, alreadyPaid: true }
     }
 
@@ -298,7 +296,7 @@ export class PaymentService {
       // FIX 6 — FeeFinancingDisclosure consent gate (LOAN_INCLUSION only):
       // For loan-inclusion fee method, a disclosure consent record must exist
       // with buyerConsented=true before the deal can advance to FEE_PAID.
-      const feeMeth = (payment as any).method || (payment as any).paymentMethod
+      const feeMeth = ((payment as Record<string, unknown>)["method"] as string) || ((payment as Record<string, unknown>)["paymentMethod"] as string)
       if (feeMeth === "LOAN_INCLUSION") {
         const { prisma: prismaClient } = await import("@/lib/db")
         const feeDisclosure = await prismaClient.feeFinancingDisclosure.findFirst({
@@ -334,12 +332,12 @@ export class PaymentService {
       const { error: auditError } = await supabase.from("ComplianceEvent").insert({
         eventType: "SERVICE_FEE_PAYMENT",
         action: "FEE_PAID",
-        userId: (payment as any).user_id || deal?.buyerId,
+        userId: ((payment as Record<string, unknown>)["user_id"] as string) || deal?.buyerId,
         dealId: payment.dealId,
         details: {
           baseFeeCents: payment.baseFeeCents || payment.base_fee_cents,
-          depositAppliedCents: (payment as any).depositAppliedCents || (payment as any).deposit_applied_cents,
-          remainingCents: (payment as any).remainingCents || (payment as any).remaining_cents,
+          depositAppliedCents: ((payment as Record<string, unknown>)["depositAppliedCents"] as number) || ((payment as Record<string, unknown>)["deposit_applied_cents"] as number),
+          remainingCents: ((payment as Record<string, unknown>)["remainingCents"] as number) || ((payment as Record<string, unknown>)["remaining_cents"] as number),
           method: "CARD_DIRECT",
           paymentIntentId,
         },
@@ -532,7 +530,7 @@ export class PaymentService {
       .insert({
         id: crypto.randomUUID(),
         dealId,
-        amount_cents: (payment as any).remainingCents || (payment as any).remaining_cents || 0,
+        amount_cents: ((payment as Record<string, unknown>)["remainingCents"] as number) || ((payment as Record<string, unknown>)["remaining_cents"] as number) || 0,
         status: LenderDisbursementStatus.PENDING,
         requested_at_v2: now,
       })
@@ -614,7 +612,7 @@ export class PaymentService {
         userId: adminId,
         details: {
           paymentId,
-          amountCents: (payment as any).amountCents || (payment as any).amount_cents || payment.amount,
+          amountCents: ((payment as Record<string, unknown>)["amountCents"] as number) || ((payment as Record<string, unknown>)["amount_cents"] as number) || payment.amount,
           reason,
           refundId: refund.id,
         },
@@ -635,7 +633,7 @@ export class PaymentService {
         sourceModule: "payment.service",
         correlationId: crypto.randomUUID(),
         idempotencyKey: `refund-deposit-${paymentId}`,
-        payload: { type: "deposit", reason, amountCents: (payment as any).amountCents || (payment as any).amount_cents || payment.amount },
+        payload: { type: "deposit", reason, amountCents: ((payment as Record<string, unknown>)["amountCents"] as number) || ((payment as Record<string, unknown>)["amount_cents"] as number) || payment.amount },
       }).catch(() => { /* non-critical */ })
 
       return { success: true, refundId: refund.id }
@@ -679,7 +677,7 @@ export class PaymentService {
           userId: adminId,
           details: {
             paymentId,
-            amountCents: (payment as any).remainingCents || (payment as any).remaining_cents,
+            amountCents: ((payment as Record<string, unknown>)["remainingCents"] as number) || ((payment as Record<string, unknown>)["remaining_cents"] as number),
             reason,
             refundId: refund.id,
           },
@@ -700,7 +698,7 @@ export class PaymentService {
           sourceModule: "payment.service",
           correlationId: crypto.randomUUID(),
           idempotencyKey: `refund-fee-${paymentId}`,
-          payload: { type: "service_fee", reason, amountCents: (payment as any).remainingCents || (payment as any).remaining_cents },
+          payload: { type: "service_fee", reason, amountCents: ((payment as Record<string, unknown>)["remainingCents"] as number) || ((payment as Record<string, unknown>)["remaining_cents"] as number) },
         }).catch(() => { /* non-critical */ })
 
         return { success: true, refundId: refund.id }
@@ -780,7 +778,7 @@ export class PaymentService {
       .select("id, status, amount")
       .eq("buyerId", buyerId)
       .eq("auctionId", auctionId)
-      .eq("status", "PAID")
+      .in("status", ["PAID", "SUCCEEDED"])
       .limit(1)
       .maybeSingle()
 
@@ -811,7 +809,7 @@ export class PaymentService {
       userId: payment.buyerId,
       buyerId: payment.buyerId,
       details: {
-        amountCents: (payment as any).amountCents || (payment as any).amount_cents || payment.amount,
+        amountCents: ((payment as Record<string, unknown>)["amountCents"] as number) || ((payment as Record<string, unknown>)["amount_cents"] as number) || payment.amount,
         paymentIntentId,
       },
     })
@@ -847,7 +845,7 @@ export class PaymentService {
       .from("DepositPayment")
       .select("id, amount, status, createdAt")
       .eq("buyerId", deal.buyerId)
-      .eq("status", "PAID")
+      .in("status", ["PAID", "SUCCEEDED"])
       .order("createdAt", { ascending: false })
       .limit(1)
       .maybeSingle()
@@ -862,7 +860,7 @@ export class PaymentService {
       .limit(1)
       .maybeSingle()
 
-    if (existingPayment?.status === "PAID") {
+    if (existingPayment?.status === "PAID" || existingPayment?.status === "SUCCEEDED") {
       return { payment: existingPayment, alreadyPaid: true }
     }
 
@@ -969,12 +967,12 @@ export class PaymentService {
       const { error: auditError } = await supabase.from("ComplianceEvent").insert({
         eventType: "SERVICE_FEE_PAYMENT",
         action: "FEE_PAID",
-        userId: (payment as any).user_id || deal?.buyerId,
+        userId: ((payment as Record<string, unknown>)["user_id"] as string) || deal?.buyerId,
         dealId: payment.dealId,
         details: {
           baseFeeCents: payment.baseFeeCents || payment.base_fee_cents,
-          depositAppliedCents: (payment as any).depositAppliedCents || (payment as any).deposit_applied_cents,
-          remainingCents: (payment as any).remainingCents || (payment as any).remaining_cents,
+          depositAppliedCents: ((payment as Record<string, unknown>)["depositAppliedCents"] as number) || ((payment as Record<string, unknown>)["deposit_applied_cents"] as number),
+          remainingCents: ((payment as Record<string, unknown>)["remainingCents"] as number) || ((payment as Record<string, unknown>)["remaining_cents"] as number),
           method: "CARD_DIRECT",
           paymentIntentId,
         },

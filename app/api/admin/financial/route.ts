@@ -297,9 +297,9 @@ export async function GET(request: Request) {
         transactions,
       },
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     const cid = correlationId()
-    console.error(`[financial-api] ${cid}:`, error?.message || error)
+    console.error(`[financial-api] ${cid}:`, (error instanceof Error ? error.message : String(error)))
     return NextResponse.json(
       { error: "Internal server error", correlationId: cid },
       { status: 500 }

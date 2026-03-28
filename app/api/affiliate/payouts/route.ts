@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
     }
 
     // TEST workspace: return deterministic mock payout history + balances.
-    if (isTestWorkspace(user as any)) {
+    if (isTestWorkspace(user as { workspace_mode?: string })) {
       const affiliate = mockDb.affiliateProfiles.find((p: any) => p.userId === user.id)
       const affiliateId = affiliate?.id
       const payouts = (mockDb.payouts || []).filter((p: any) => p.affiliateId === affiliateId)
@@ -94,7 +94,7 @@ export async function GET(req: NextRequest) {
       availableBalance: (affiliate.available_balance_cents || (affiliate.pendingEarnings || 0) * 100 || 0) / 100,
       minimumPayout: 50,
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("[Affiliate Payouts] Error:", error)
     return NextResponse.json({ error: "Failed to get payouts" }, { status: 500 })
   }
@@ -111,7 +111,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
-    if (isTestWorkspace(user as any)) {
+    if (isTestWorkspace(user as { workspace_mode?: string })) {
       return NextResponse.json({ success: true, payout: { id: `test_payout_${Date.now()}` } })
     }
 
@@ -162,7 +162,7 @@ export async function POST(req: NextRequest) {
       success: true,
       payout,
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("[Affiliate Payouts] Error:", error)
     return NextResponse.json({ error: "Failed to request payout" }, { status: 500 })
   }

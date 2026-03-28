@@ -173,7 +173,7 @@ export async function uploadContract(dealId: string, dealerId: string, documentU
       documentType,
       workspaceId: deal.workspaceId,
       createdAt: new Date(),
-    } as any,
+    } as Record<string, unknown>,
   })
   return doc
 }

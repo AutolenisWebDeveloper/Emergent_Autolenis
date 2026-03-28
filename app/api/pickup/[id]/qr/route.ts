@@ -13,7 +13,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     const result = await pickupService.generateQRCode(id)
 
     return NextResponse.json(result)
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[Pickup QR]", error)
     return NextResponse.json({ error: "Failed to generate QR code" }, { status: 500 })
   }

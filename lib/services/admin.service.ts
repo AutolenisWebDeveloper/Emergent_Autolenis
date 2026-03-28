@@ -8,6 +8,7 @@ import {
   BuyerCaseStatus,
   ACTIVE_CASE_STATUSES,
 } from "@/lib/constants/statuses"
+import { logger } from "@/lib/logger"
 
 /**
  * Conditionally append .eq("workspaceId", wsId) when a workspaceId is provided.
@@ -154,7 +155,7 @@ export class AdminService {
     const { data: dealers, error } = await dealerQuery
 
     if (error || !dealers) {
-      console.error("[AdminService] Error fetching top dealers:", error)
+      logger.error("[AdminService] Error fetching top dealers:", error)
       return []
     }
 
@@ -209,7 +210,7 @@ export class AdminService {
     const { data: affiliates, error } = await affQuery
 
     if (error || !affiliates) {
-      console.error("[AdminService] Error fetching top affiliates:", error)
+      logger.error("[AdminService] Error fetching top affiliates:", error)
       return []
     }
 
@@ -289,7 +290,7 @@ export class AdminService {
     const { data: buyers, count, error } = await query
 
     if (error) {
-      console.error("[AdminService] Error fetching buyers:", error)
+      logger.error("[AdminService] Error fetching buyers:", error)
       return { buyers: [], total: 0, page, totalPages: 0 }
     }
 
@@ -334,7 +335,7 @@ export class AdminService {
     const { data: user, error } = await query.single()
 
     if (error) {
-      console.error("[AdminService] Error fetching buyer detail:", error)
+      logger.error("[AdminService] Error fetching buyer detail:", error)
       return null
     }
 
@@ -381,7 +382,7 @@ export class AdminService {
     const { data: users, count, error } = await query.range(offset, offset + limit - 1)
 
     if (error) {
-      console.error("[AdminService] Error fetching dealers:", error)
+      logger.error("[AdminService] Error fetching dealers:", error)
       return { dealers: [], total: 0, page, totalPages: 0 }
     }
 
@@ -465,7 +466,7 @@ export class AdminService {
     const { data: auctions, count, error } = await query
 
     if (error) {
-      console.error("[AdminService] Error fetching auctions:", error)
+      logger.error("[AdminService] Error fetching auctions:", error)
       return { auctions: [], total: 0, page, totalPages: 0 }
     }
 
@@ -501,7 +502,7 @@ export class AdminService {
 
     return {
       auctions: (auctions || []).map((a) => {
-        const buyer = buyerMap[a.buyerId] || ({} as any)
+        const buyer = buyerMap[a.buyerId] || ({} as Record<string, string>)
         return {
           id: a.id,
           buyerName: `${buyer.firstName || ""} ${buyer.lastName || ""}`.trim() || "Unknown",
@@ -562,7 +563,7 @@ export class AdminService {
     const { data: deals, count, error } = await query
 
     if (error) {
-      console.error("[AdminService] Error fetching deals:", error)
+      logger.error("[AdminService] Error fetching deals:", error)
       return { deals: [], total: 0, page, totalPages: 0 }
     }
 
@@ -591,8 +592,8 @@ export class AdminService {
 
     return {
       deals: (deals || []).map((d) => {
-        const buyer = buyerMap[d.buyerId] || ({} as any)
-        const dealer = dealerMap[d.dealerId] || ({} as any)
+        const buyer = buyerMap[d.buyerId] || ({} as Record<string, string>)
+        const dealer = dealerMap[d.dealerId] || ({} as Record<string, string>)
         return {
           id: d.id,
           buyerName: `${buyer.firstName || ""} ${buyer.lastName || ""}`.trim() || "Unknown",
@@ -764,7 +765,7 @@ export class AdminService {
     const { data: affiliates, count, error } = await query
 
     if (error) {
-      console.error("[AdminService] Error fetching affiliates:", error)
+      logger.error("[AdminService] Error fetching affiliates:", error)
       return { affiliates: [], total: 0, page, totalPages: 0 }
     }
 
@@ -858,7 +859,7 @@ export class AdminService {
     const { data: events, count, error } = await query
 
     if (error) {
-      console.error("[AdminService] Error fetching compliance events:", error)
+      logger.error("[AdminService] Error fetching compliance events:", error)
       return { events: [], total: 0, page, totalPages: 0 }
     }
 
@@ -906,7 +907,7 @@ export class AdminService {
     const { data: scans, count, error } = await query
 
     if (error) {
-      console.error("[AdminService] Error fetching contract shield scans:", error)
+      logger.error("[AdminService] Error fetching contract shield scans:", error)
       return { scans: [], total: 0, page, totalPages: 0 }
     }
 
@@ -1026,7 +1027,7 @@ export class AdminService {
     )
 
     if (upsertError) {
-      console.error("[AdminService] Error updating system settings:", upsertError)
+      logger.error("[AdminService] Error updating system settings:", upsertError)
       throw new Error("Failed to update settings")
     }
 
@@ -1162,7 +1163,7 @@ export class AdminService {
     const { data: dealers, error } = await perfQuery
 
     if (error || !dealers) {
-      console.error("[AdminService] Error fetching dealer performance:", error)
+      logger.error("[AdminService] Error fetching dealer performance:", error)
       return []
     }
 

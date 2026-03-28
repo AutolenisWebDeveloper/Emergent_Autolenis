@@ -17,7 +17,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ env
     }
 
     return NextResponse.json(envelope)
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[E-Sign Status]", error)
     return NextResponse.json({ error: "Failed to get envelope status" }, { status: 500 })
   }

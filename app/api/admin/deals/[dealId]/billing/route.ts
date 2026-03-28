@@ -26,7 +26,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ dea
       success: true,
       data: { dealId, ledger: [], paymentRequests: [], deposits: [] },
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[Admin Deal Billing API]", error)
     return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 })
   }

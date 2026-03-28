@@ -29,8 +29,8 @@ export async function GET(request: NextRequest) {
       data: jobs,
       total: jobs.length,
     })
-  } catch (error: any) {
-    console.error("[System Jobs API] Error:", error?.message)
+  } catch (error: unknown) {
+    console.error("[System Jobs API] Error:", error instanceof Error ? error.message : String(error))
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -58,8 +58,8 @@ export async function POST(request: NextRequest) {
     const run = await startJobRunAsync({ jobKey, runType, payload })
 
     return NextResponse.json({ success: true, data: run })
-  } catch (error: any) {
-    console.error("[System Jobs API] Error:", error?.message)
+  } catch (error: unknown) {
+    console.error("[System Jobs API] Error:", error instanceof Error ? error.message : String(error))
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -102,8 +102,8 @@ export async function PATCH(request: NextRequest) {
     }
 
     return NextResponse.json({ success: true, data: run })
-  } catch (error: any) {
-    console.error("[System Jobs API] Error:", error?.message)
+  } catch (error: unknown) {
+    console.error("[System Jobs API] Error:", error instanceof Error ? error.message : String(error))
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

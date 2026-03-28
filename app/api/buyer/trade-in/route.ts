@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
           : null,
       },
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[TradeIn API] GET error:", error)
     return NextResponse.json({ success: false, error: "Failed to fetch trade-in info" }, { status: 500 })
   }
@@ -132,7 +132,7 @@ export async function POST(request: NextRequest) {
         data: { tradeIn: created },
       })
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[TradeIn API] POST error:", error)
     return NextResponse.json({ success: false, error: "Failed to save trade-in info" }, { status: 500 })
   }

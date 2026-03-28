@@ -129,8 +129,8 @@ export async function GET() {
         reconciledAt: new Date().toISOString(),
       },
     })
-  } catch (error: any) {
-    logger.error("Reconciliation failed", { error: error.message })
+  } catch (error: unknown) {
+    logger.error("Reconciliation failed", { error: (error instanceof Error ? error.message : String(error)) })
     return NextResponse.json(
       { error: "Reconciliation failed", correlationId: correlationId() },
       { status: 500 }
@@ -229,8 +229,8 @@ export async function POST() {
     }
 
     return NextResponse.json({ success: true, synced })
-  } catch (error: any) {
-    logger.error("Stripe sync failed", { error: error.message })
+  } catch (error: unknown) {
+    logger.error("Stripe sync failed", { error: (error instanceof Error ? error.message : String(error)) })
     return NextResponse.json(
       { error: "Sync failed", correlationId: correlationId() },
       { status: 500 }

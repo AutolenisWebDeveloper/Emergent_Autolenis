@@ -9,7 +9,7 @@ const VALID_DOC_TYPES = Object.values(DealerDocumentType)
 const uploadSchema = z.object({
   applicationId: z.string().min(1, "Application ID is required"),
   docType: z.string().refine(
-    (val) => VALID_DOC_TYPES.includes(val as any),
+    (val) => (VALID_DOC_TYPES as string[]).includes(val),
     { message: `docType must be one of: ${VALID_DOC_TYPES.join(", ")}` },
   ),
 })

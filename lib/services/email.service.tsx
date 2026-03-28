@@ -81,7 +81,7 @@ export class EmailService {
     if (options.replyTo) payload.replyTo = options.replyTo
     if (options.tags) payload.tags = options.tags
 
-    const { data, error } = await resend.emails.send(payload as any)
+    const { data, error } = await resend.emails.send(payload as unknown as Parameters<typeof resend.emails.send>[0])
 
     if (error) {
       throw new Error(`Resend API error: ${error.message}`)
@@ -149,8 +149,8 @@ export class EmailService {
       })
 
       return result
-    } catch (err: any) {
-      const errorMessage = err?.message || "Unknown send error"
+    } catch (err: unknown) {
+      const errorMessage = (err instanceof Error ? err.message : String(err)) || "Unknown send error"
       logger.error("[EmailService.send] failed", { to: resolvedTo, subject: options.subject, error: errorMessage })
 
       await this.logEmail({

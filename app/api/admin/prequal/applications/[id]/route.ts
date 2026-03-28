@@ -56,7 +56,7 @@ export async function GET(
     }
 
     // Redact encrypted SSN — never expose
-    const { ssnEncrypted: _ssn, ...safeApp } = application as any
+    const { ssnEncrypted: _ssn, ...safeApp } = application as Record<string, unknown>
 
     return NextResponse.json({ success: true, data: safeApp })
   } catch (error: unknown) {

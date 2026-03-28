@@ -12,6 +12,7 @@
  */
 
 import { isDatabaseConfigured } from "@/lib/db"
+import { logger } from "@/lib/logger"
 
 const WS_LIVE_DEFAULT = "ws_live_default"
 const WS_TEST_DEFAULT = "ws_test_default"
@@ -34,7 +35,7 @@ export async function ensureDefaultWorkspacesExist(): Promise<void> {
 
     if (selectError) {
       // Table might not exist yet — safe to ignore
-      console.warn(
+      logger.warn(
         `[workspace-bootstrap] Cannot read Workspace table: ${selectError.message}`
       )
       return
@@ -71,12 +72,12 @@ export async function ensureDefaultWorkspacesExist(): Promise<void> {
       .insert(toInsert)
 
     if (insertError) {
-      console.warn(
+      logger.warn(
         `[workspace-bootstrap] Could not create default workspaces: ${insertError.message}`
       )
     }
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err)
-    console.warn(`[workspace-bootstrap] Bootstrap failed (non-fatal): ${message}`)
+    logger.warn(`[workspace-bootstrap] Bootstrap failed (non-fatal): ${message}`)
   }
 }

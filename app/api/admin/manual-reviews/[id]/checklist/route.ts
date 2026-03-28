@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getSession, isCmaApprover } from "@/lib/auth-server"
-import { submitChecklist, CMA_ROOT_CAUSE_CATEGORIES } from "@/lib/services/contract-shield"
+import { submitChecklist, CMA_ROOT_CAUSE_CATEGORIES, type CmaChecklistPayload } from "@/lib/services/contract-shield"
 import { z } from "zod"
 
 const checklistSchema = z.object({
@@ -44,7 +44,7 @@ export async function POST(
     const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown"
     const userAgent = request.headers.get("user-agent") || undefined
 
-    const result = await submitChecklist(id, parsed.data as any, {
+    const result = await submitChecklist(id, parsed.data as CmaChecklistPayload, {
       adminId: session.userId,
       adminRole: session.role,
       ipAddress: ip,

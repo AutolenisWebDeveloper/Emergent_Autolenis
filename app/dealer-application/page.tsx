@@ -119,11 +119,11 @@ export default function DealerApplicationPage() {
       })
 
       router.push("/dealer/onboarding?pending=true")
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         variant: "destructive",
         title: "Submission Failed",
-        description: error.message || "Please try again or contact support.",
+        description: (error instanceof Error ? error.message : String(error)) || "Please try again or contact support.",
       })
     } finally {
       setIsSubmitting(false)

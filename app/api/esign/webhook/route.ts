@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
     await esignService.handleWebhook(payload)
 
     return NextResponse.json({ success: true })
-  } catch (error: any) {
+  } catch (error: unknown) {
     const rawMessage = error && typeof error === "object" && "message" in error ? (error as Error).message : String(error)
     const safeMessage = rawMessage.replace(/[\r\n]/g, " ")
     console.error("[E-Sign Webhook] Error:", safeMessage)

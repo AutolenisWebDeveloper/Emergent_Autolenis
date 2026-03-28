@@ -113,12 +113,12 @@ export default function BuyerOnboardingPage() {
         title: "Pre-qualification complete",
         description: "You're approved! Start shopping for vehicles.",
       })
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("[v0] PreQual error:", error)
       toast({
         variant: "destructive",
         title: "Pre-qualification failed",
-        description: error.message || "Please try again or contact support.",
+        description: (error instanceof Error ? error.message : String(error)) || "Please try again or contact support.",
       })
     } finally {
       setLoading(false)

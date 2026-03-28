@@ -51,7 +51,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ dea
       success: true,
       data: result,
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error updating deal status:", error)
     return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 })
   }

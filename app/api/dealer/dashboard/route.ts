@@ -64,9 +64,10 @@ export async function GET(_req: NextRequest) {
 
     const stats = await getDealerDashboardStats(dealerUser.dealerId)
     return NextResponse.json({ success: true, ...stats })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[Dealer Dashboard] Error:", error)
-    const status = error?.statusCode && Number.isInteger(error.statusCode) ? error.statusCode : 500
+    const errWithCode = error as { statusCode?: number }
+    const status = errWithCode.statusCode && Number.isInteger(errWithCode.statusCode) ? errWithCode.statusCode : 500
     return NextResponse.json({ error: status === 401 ? "Unauthorized" : "Failed to get dashboard" }, { status })
   }
 }
@@ -91,7 +92,7 @@ async function getDealerDashboardStats(dealerId: string) {
     const openAuctionsResult =
       invitedAuctionIds.length > 0
         ? await supabase.from("Auction").select("id").in("id", invitedAuctionIds).eq("status", "OPEN")
-        : { data: [] as any[] }
+        : { data: [] as Record<string, unknown>[] }
 
     const openAuctionIds = (openAuctionsResult.data || []).map((a: any) => a.id)
     const activeAuctions = openAuctionIds.length
@@ -100,7 +101,7 @@ async function getDealerDashboardStats(dealerId: string) {
     const pendingOffersResult =
       participantIds.length > 0
         ? await supabase.from("AuctionOffer").select("id", { count: "exact", head: true }).in("participantId", participantIds)
-        : ({ count: 0 } as any)
+        : ({ count: 0 } as { count: number })
 
     // 4) Contracts pending: ContractShieldScan statuses (ContractDocument has no status)
     const pendingContractsResult = await supabase

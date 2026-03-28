@@ -5,6 +5,7 @@ import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 import { timingSafeEqual } from "node:crypto"
 import { getCacheAdapter } from "@/lib/cache/redis-adapter"
+import { logger } from "@/lib/logger"
 
 // Vercel Cron IP ranges (as of 2024)
 const VERCEL_CRON_IPS = [
@@ -41,7 +42,7 @@ export async function validateCronRequest(request: NextRequest): Promise<NextRes
   const cronSecret = process.env['CRON_SECRET']
 
   if (!cronSecret) {
-    console.error("[CronSecurity] CRON_SECRET not configured")
+    logger.error("[CronSecurity] CRON_SECRET not configured")
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
@@ -51,23 +52,23 @@ export async function validateCronRequest(request: NextRequest): Promise<NextRes
     authHeader.length !== expected.length ||
     !timingSafeEqual(Buffer.from(authHeader), Buffer.from(expected))
   ) {
-    console.warn("[CronSecurity] Invalid cron secret")
+    logger.warn("[CronSecurity] Invalid cron secret")
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
   // Verify IP address in production environments
   if (process.env.NODE_ENV === "production") {
-    const ip = (request as any).ip || request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip")
+    const ip = ("ip" in request ? (request as { ip?: string }).ip : undefined) || request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip")
 
     if (!ip) {
-      console.warn("[CronSecurity] No IP address found in request")
+      logger.warn("[CronSecurity] No IP address found in request")
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
     const isValidIp = VERCEL_CRON_IPS.some((range) => isIpInRange(ip, range))
 
     if (!isValidIp) {
-      console.warn("[CronSecurity] Request from unauthorized IP:", ip)
+      logger.warn("[CronSecurity] Request from unauthorized IP", { ip })
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
   }

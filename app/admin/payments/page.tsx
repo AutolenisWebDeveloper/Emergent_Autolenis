@@ -111,11 +111,11 @@ export default function AdminPaymentsPage() {
       setRefundDialog({ open: false, paymentId: "", type: "deposit", amount: 0 })
       setRefundReason("")
       mutate()
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         variant: "destructive",
         title: "Refund failed",
-        description: error.message,
+        description: (error instanceof Error ? error.message : String(error)),
       })
     } finally {
       setProcessing(false)

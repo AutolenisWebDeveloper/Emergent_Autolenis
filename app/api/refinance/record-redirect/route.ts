@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
     maxRequests: 30,
     windowMs: 10 * 60 * 1000,
     keyGenerator: (req) => {
-      const ip = (req as any).ip || req.headers.get("x-forwarded-for") || "unknown"
+      const ip = (req as unknown as { ip?: string }).ip || req.headers.get("x-forwarded-for") || "unknown"
       return `refi_redirect:${ip}`
     },
   })

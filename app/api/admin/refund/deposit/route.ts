@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
     const result = await adminService.refundDeposit(depositId, reason, user.userId)
 
     return NextResponse.json(result)
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[Admin Refund Deposit]", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }

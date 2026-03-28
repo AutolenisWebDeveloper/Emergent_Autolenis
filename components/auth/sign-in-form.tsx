@@ -145,9 +145,9 @@ export function SignInForm() {
           router.replace("/")
         }
       }
-    } catch (error: any) {
-      console.error("[SignInForm] Error:", error.message)
-      setError(error.message || "An error occurred. Please try again.")
+    } catch (error: unknown) {
+      console.error("[SignInForm] Error:", (error instanceof Error ? error.message : String(error)))
+      setError((error instanceof Error ? error.message : String(error)) || "An error occurred. Please try again.")
     } finally {
       setLoading(false)
     }

@@ -109,11 +109,11 @@ export default function DealerAuctionDetailPage() {
           setTradeIn(tradeInData.data.tradeIn)
         }
       }
-    } catch (err: any) {
-      console.error("Error fetching auction:", err.message || err)
+    } catch (err: unknown) {
+      console.error("Error fetching auction:", (err instanceof Error ? err.message : String(err)))
       toast({
         title: "Error",
-        description: err.message || "Failed to load auction details",
+        description: (err instanceof Error ? err.message : String(err)) || "Failed to load auction details",
         variant: "destructive",
       })
     } finally {
@@ -194,11 +194,11 @@ export default function DealerAuctionDetailPage() {
       } else {
         throw new Error(extractApiError(data.error, "Auction operation failed"))
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: err.message || "Failed to submit offer",
+        description: (err instanceof Error ? err.message : String(err)) || "Failed to submit offer",
       })
     } finally {
       setSubmitting(false)

@@ -2,9 +2,10 @@ import { NextResponse } from "next/server"
 import { requireAuth } from "@/lib/auth-server"
 import { isTestWorkspace } from "@/lib/app-mode"
 import { mockSelectors } from "@/lib/mocks/mockStore"
-import { prisma } from "@/lib/db"
+import { prisma, getSupabase } from "@/lib/db"
 import { stripe } from "@/lib/stripe"
 import type Stripe from "stripe"
+import { logger } from "@/lib/logger"
 
 export async function GET(_request: Request, { params }: { params: Promise<{ dealId: string }> }) {
   try {
@@ -22,7 +23,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ dea
     }
 
     return NextResponse.json({ success: true, data: { dealId, refunds: [] } })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[Admin Deal Refunds API]", error)
     return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 })
   }
@@ -104,7 +105,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ dea
     }
 
     // 3. Only persist DB record after Stripe confirms
-    const buyerId = (payment as any).buyerId
+    const buyerId = (payment as Record<string, unknown>)["buyerId"] as string | undefined
     if (!buyerId) {
       return NextResponse.json(
         { error: "Payment record is missing buyerId" },
@@ -139,8 +140,41 @@ export async function POST(request: Request, { params }: { params: Promise<{ dea
       },
     })
 
+    // 5. Reverse commissions for SERVICE_FEE refunds (align with PaymentService.processRefund)
+    if (paymentType === "SERVICE_FEE") {
+      try {
+        const supabase = getSupabase()
+        const now = new Date().toISOString()
+        const { data: reversedCommissions, error: commError } = await supabase
+          .from("Commission")
+          .update({ status: "REVERSED", updatedAt: now })
+          .or(`serviceFeePaymentId.eq.${paymentId},service_fee_payment_id.eq.${paymentId}`)
+          .select("id")
+
+        if (commError) {
+          logger.error("[Admin Refund] Commission reversal query failed:", {
+            error: commError.message,
+            paymentId,
+            dealId,
+          })
+        } else {
+          logger.info("[Admin Refund] Commissions reversed:", {
+            paymentId,
+            dealId,
+            reversedCount: reversedCommissions?.length ?? 0,
+          })
+        }
+      } catch (commErr) {
+        logger.error("[Admin Refund] Commission reversal failed (non-blocking):", {
+          error: (commErr as Error).message,
+          paymentId,
+          dealId,
+        })
+      }
+    }
+
     return NextResponse.json({ success: true, data: refund })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[Admin Deal Refunds POST]", error)
     return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 })
   }

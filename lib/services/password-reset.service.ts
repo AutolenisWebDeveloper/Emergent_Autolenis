@@ -2,6 +2,7 @@ import { supabase } from "@/lib/db"
 import { emailService } from "@/lib/services/email.service"
 import { hashPassword } from "@/lib/auth-server"
 import crypto from "crypto"
+import { logger } from "@/lib/logger"
 
 export class PasswordResetService {
   private generateToken(): string {
@@ -19,7 +20,7 @@ export class PasswordResetService {
       .maybeSingle()
 
     if (userError) {
-      console.error("[PasswordResetService] User lookup error:", userError.message)
+      logger.error("[PasswordResetService] User lookup error:", userError.message)
       return { success: true, message: genericMessage }
     }
 
@@ -53,14 +54,14 @@ export class PasswordResetService {
     })
 
     if (insertError) {
-      console.error("[PasswordResetService] Failed to insert reset token:", insertError.message)
+      logger.error("[PasswordResetService] Failed to insert reset token:", insertError.message)
       return { success: true, message: genericMessage }
     }
 
     try {
       await emailService.sendPasswordResetEmail(user.email, user.first_name || "there", token)
     } catch (error) {
-      console.error("[PasswordResetService] Failed to send reset email:", error)
+      logger.error("[PasswordResetService] Failed to send reset email:", error)
     }
 
     return { success: true, message: genericMessage }
@@ -104,7 +105,7 @@ export class PasswordResetService {
       .eq("id", validation.userId)
 
     if (updateError) {
-      console.error("[PasswordResetService] Failed to update password:", updateError.message)
+      logger.error("[PasswordResetService] Failed to update password:", updateError.message)
       return { success: false, message: "Failed to reset password. Please try again." }
     }
 
@@ -141,7 +142,7 @@ export class PasswordResetService {
         await emailService.sendPasswordChangedEmail(user.email, user.first_name || "there", validation.userId)
       }
     } catch (error) {
-      console.error("[PasswordResetService] Failed to send password changed confirmation:", error)
+      logger.error("[PasswordResetService] Failed to send password changed confirmation:", error)
     }
 
     return { success: true, message: "Password reset successfully! You can now sign in with your new password." }

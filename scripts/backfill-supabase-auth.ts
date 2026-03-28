@@ -176,9 +176,9 @@ async function backfill() {
       console.log(`[OK] ${user.email} → ${authUserId}`)
       results.push({ userId: user.id, email: user.email, status: "success", authUserId })
       successCount++
-    } catch (err: any) {
-      console.error(`[FAIL] ${user.email}: ${err.message}`)
-      results.push({ userId: user.id, email: user.email, status: "failed", error: err.message })
+    } catch (err: unknown) {
+      console.error(`[FAIL] ${user.email}: ${(err instanceof Error ? err.message : String(err))}`)
+      results.push({ userId: user.id, email: user.email, status: "failed", error: (err instanceof Error ? err.message : String(err)) })
       failCount++
     }
   }

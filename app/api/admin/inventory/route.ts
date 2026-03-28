@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
       search: searchParams.get("search") || undefined,
       page: searchParams.get("page") ? Number.parseInt(searchParams.get("page")!, 10) : 1,
       pageSize: searchParams.get("pageSize") ? Number.parseInt(searchParams.get("pageSize")!, 10) : 50,
-      sortBy: searchParams.get("sortBy") as any,
+      sortBy: (searchParams.get("sortBy") || undefined) as "price_asc" | "price_desc" | "year_desc" | "year_asc" | "mileage_asc" | "mileage_desc" | undefined,
     }
 
     const result = await InventoryService.search(filters)
@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
       success: true,
       ...result,
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[v0] Admin inventory error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }

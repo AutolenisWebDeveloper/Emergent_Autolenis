@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
 
     const searchParams = request.nextUrl.searchParams
     const search = searchParams.get("search") || undefined
-    const status = (searchParams.get("status") as any) || "all"
+    const status = (searchParams.get("status") || "all") as "all" | "active" | "pending" | "inactive"
     const page = Number.parseInt(searchParams.get("page") || "1")
 
     if (isTestWorkspace(user)) {

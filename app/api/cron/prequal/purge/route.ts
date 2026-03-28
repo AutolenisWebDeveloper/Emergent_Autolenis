@@ -5,6 +5,8 @@ import { writePrequalAuditLog } from "@/lib/prequal/audit"
 
 export const dynamic = "force-dynamic"
 
+import type { ApplicationStatus, QueueSegment } from "@/lib/types/prequal"
+
 // Retention periods
 const ABANDONED_PRE_CONSENT_HOURS = 72
 const ABANDONED_POST_CONSENT_DAYS = 30
@@ -86,8 +88,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           addressLine2: null,
           city: "[PURGED]",
           zipCode: "[PURGED]",
-          status: "EXPIRED" as any,
-          queueSegment: "EXPIRED" as any,
+          status: "EXPIRED" as ApplicationStatus,
+          queueSegment: "EXPIRED" as QueueSegment,
         },
       })
 

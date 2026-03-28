@@ -147,11 +147,11 @@ export default function BuyerSearchPage() {
         title: "Added to shortlist",
         description: "Vehicle added successfully",
       })
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message,
+        description: (error instanceof Error ? error.message : String(error)),
       })
     }
   }
