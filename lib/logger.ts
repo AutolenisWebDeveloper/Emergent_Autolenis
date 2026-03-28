@@ -50,18 +50,19 @@ class Logger {
   }
 
   error(message: string, error?: Error | unknown, context?: LogContext) {
-    const errorContext = {
-      ...context,
-      error:
+    const errorContext: LogContext = { ...context }
+    if (error !== undefined) {
+      errorContext.error =
         error instanceof Error
           ? {
               message: error.message,
               stack: error.stack,
               name: error.name,
             }
-          : error,
+          : error
     }
-    this.log("error", message, errorContext)
+    const hasContext = Object.keys(errorContext).length > 0
+    this.log("error", message, hasContext ? errorContext : undefined)
   }
 }
 
