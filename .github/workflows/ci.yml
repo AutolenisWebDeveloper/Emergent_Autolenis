@@ -71,8 +71,8 @@ jobs:
       - name: Build application
         run: pnpm build
 
-      # - name: Build safety scan
-      #   run: node scripts/verify-build-safety.mjs
+      - name: Build safety scan
+        run: node scripts/verify-build-safety.mjs
 
       - name: Verify security patches
         run: |
