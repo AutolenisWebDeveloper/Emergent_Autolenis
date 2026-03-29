@@ -137,6 +137,8 @@ Both `supabase db push` and `prisma migrate deploy` are **idempotent** — re-ru
 
 When `supabase db push` reports "remote migration versions not found locally", the remote `schema_migrations` table contains versions that no longer match local filenames. This typically happens after renaming or deleting migration files.
 
+> **CI handles this automatically.** The production workflow includes a "Reconcile migration history" step that auto-repairs known renames before running `db push`. See the full reconciliation report at [`docs/audits/MIGRATION_RECONCILIATION_REPORT.md`](audits/MIGRATION_RECONCILIATION_REPORT.md).
+
 ### Diagnosis
 
 ```bash
