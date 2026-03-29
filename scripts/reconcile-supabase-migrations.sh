@@ -107,9 +107,19 @@ echo ""
 # ── 4. Identify mismatches ─────────────────────────────────
 echo "═══ Step 4: Identify mismatches ═══"
 
-# Parse remote versions from migration list output.
-# Supabase CLI outputs a table; versions are 14-digit numbers.
-mapfile -t remote_versions < <(echo "$remote_output" | grep -oE '\b[0-9]{14}\b' | sort -u)
+# Parse remote versions from the Remote column ONLY.
+# Supabase CLI outputs a pipe-delimited table:
+#   Local          | Remote         | Time (UTC)
+# We must extract only the 2nd column (Remote) to avoid conflating local
+# versions that merely appear in the output text with truly remote ones.
+# The previous grep approach captured 14-digit numbers from ALL columns,
+# masking mismatches where versions existed locally but not remotely.
+mapfile -t remote_versions < <(echo "$remote_output" | awk -F'|' '
+  /\|/ && !/Local/ && !/---/ {
+    col = $2
+    gsub(/[[:space:]]/, "", col)
+    if (col ~ /^[0-9]{14}$/) print col
+  }' | sort -u)
 
 echo "  Remote versions:  ${#remote_versions[@]}"
 echo "  Local versions:   ${#unique_local[@]}"
@@ -223,9 +233,47 @@ if [[ ${#unknown_remote_only[@]} -gt 0 ]]; then
   exit 1
 fi
 
+# ── 6b. Baseline reconciliation ─────────────────────────────
+# If the baseline version 00000000000000 is local-only (missing from remote
+# history but present locally), this indicates the database was bootstrapped
+# by an older baseline migration (e.g., 20260119104146) that has since been
+# replaced. All local-only versions need to be marked as "applied" since
+# their schema objects already exist in the remote database.
+BASELINE_VERSION="00000000000000"
+baseline_needs_repair=false
+for lv in "${local_only[@]}"; do
+  if [[ "$lv" == "$BASELINE_VERSION" ]]; then
+    baseline_needs_repair=true
+    break
+  fi
+done
+
+if $baseline_needs_repair && [[ ${#local_only[@]} -gt 0 ]]; then
+  echo "═══ Step 6b: Baseline reconciliation ═══"
+  echo "  ⚠️  Baseline version $BASELINE_VERSION is local-only (not in remote history)."
+  echo "  This indicates a baseline replacement scenario — schema objects already exist."
+  echo "  All ${#local_only[@]} local-only versions will be marked as 'applied'."
+  echo ""
+  for lv in "${local_only[@]}"; do
+    if $APPLY; then
+      echo "  🔧 Repairing: pnpm supabase migration repair $lv --status applied"
+      pnpm supabase migration repair "$lv" --status applied || {
+        echo "  ❌ Repair failed for version $lv"
+        exit 1
+      }
+      echo "  ✅ Repaired: $lv → applied"
+    else
+      echo "  🔧 Would run: pnpm supabase migration repair $lv --status applied"
+    fi
+  done
+  echo ""
+  # Clear local_only since they've been handled by baseline reconciliation
+  local_only=()
+fi
+
 # ── 7. Execute repairs (if --apply) ────────────────────────
 if [[ ${#remote_only[@]} -gt 0 ]]; then
-  echo "═══ Step 6: Repair remote-only versions ═══"
+  echo "═══ Step 7: Repair remote-only versions ═══"
   for rv in "${remote_only[@]}"; do
     if $APPLY; then
       echo "  🔧 Repairing: pnpm supabase migration repair $rv --status reverted"
@@ -249,9 +297,10 @@ echo "  Remote versions:          ${#remote_versions[@]}"
 echo "  Remote-only (mismatch):   ${#remote_only[@]}"
 echo "  Local-only (pending):     ${#local_only[@]}"
 echo "  Unknown mismatches:       ${#unknown_remote_only[@]}"
+echo "  Baseline reconciled:      $baseline_needs_repair"
 echo ""
 
-if [[ ${#remote_only[@]} -eq 0 ]]; then
+if [[ ${#remote_only[@]} -eq 0 ]] && [[ ${#local_only[@]} -eq 0 ]]; then
   echo "  ✅ Migration history is reconciled. Safe to run: pnpm supabase db push"
   exit 0
 elif $APPLY; then
@@ -262,9 +311,17 @@ else
   echo "  ⚠️  Mismatches found. Run with --apply to repair:"
   echo "    bash scripts/reconcile-supabase-migrations.sh --apply"
   echo ""
-  echo "  Or manually repair each version:"
-  for rv in "${remote_only[@]}"; do
-    echo "    pnpm supabase migration repair $rv --status reverted"
-  done
+  if [[ ${#remote_only[@]} -gt 0 ]]; then
+    echo "  Remote-only versions to revert:"
+    for rv in "${remote_only[@]}"; do
+      echo "    pnpm supabase migration repair $rv --status reverted"
+    done
+  fi
+  if [[ ${#local_only[@]} -gt 0 ]]; then
+    echo "  Local-only versions to mark as applied:"
+    for lv in "${local_only[@]}"; do
+      echo "    pnpm supabase migration repair $lv --status applied"
+    done
+  fi
   exit 0
 fi
