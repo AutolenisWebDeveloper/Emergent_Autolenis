@@ -2,7 +2,8 @@
 
 > Generated: 2026-03-29  
 > Branch: `copilot/align-sql-to-supabase-rls`  
-> Status: **Local state validated — remote validation pending credentials**
+> Status: **Local state validated — remote validation pending credentials**  
+> See also: [MIGRATION_DEPLOYMENT_STATE_ANALYSIS.md](MIGRATION_DEPLOYMENT_STATE_ANALYSIS.md) for CI workflow run analysis
 
 ---
 
