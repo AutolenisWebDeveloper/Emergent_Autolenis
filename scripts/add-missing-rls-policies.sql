@@ -7,6 +7,12 @@
 --          uses lookup-backed dealer access (no JWT dealer_id dependency),
 --          and ensures idempotent (rerunnable) execution.
 --
+-- Verified live-state alignment (2026-03-28):
+--   This migration mirrors the final verified live Supabase RLS state.
+--   Helper-function resolution was confirmed via dependency graph analysis;
+--   pg_policies deparser may display unqualified names, but runtime binding
+--   resolves to the public-schema-qualified functions listed below.
+--
 -- Rollback: scripts/rollback-rls-policies.sql
 --
 -- Tables covered (31):
@@ -18,6 +24,15 @@
 --     ContractShieldScan, ESignEnvelope, Workspace, BuyerPreferences,
 --     Vehicle, Shortlist, ShortlistItem, ExternalPreApproval, Click,
 --     PaymentMethod, InsuranceUpload, DealerApplication
+--
+-- Tables intentionally NOT covered here:
+--   - public.user_workspaces — service-role-only by design; no
+--     authenticated-user RLS policies required.
+--   - public.external_preapproval_submissions — policies managed in
+--     supabase/migrations/20240101000004_external_preapproval_rpc.sql.
+--     Note: one live policy ("Buyers can view their own submissions")
+--     intentionally uses private.is_admin(); all other policies across
+--     the platform use public.is_admin().
 --
 -- Helper functions referenced (all schema-qualified, all pre-existing):
 --   public.current_user_id()       → TEXT  (maps auth.uid() → User.id CUID)
@@ -35,6 +50,7 @@
 --      subquery: buyerId IN (SELECT id FROM "BuyerProfile" WHERE "userId" = ...)
 --   3. Dealer access uses public.current_dealer_ids() which queries both
 --      Dealer.userId and DealerUser.userId — no JWT dealer_id claim.
+--      The previous JWT dealer_id claim dependency has been fully removed.
 --   4. Affiliate access uses public.current_affiliate_ids() which queries
 --      Affiliate.userId — no JWT affiliate_id claim.
 --   5. Every policy uses DROP IF EXISTS before CREATE for idempotency.
