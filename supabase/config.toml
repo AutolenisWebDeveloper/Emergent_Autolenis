@@ -6,7 +6,7 @@
 #
 # Documentation: https://supabase.com/docs/guides/cli/config
 
-project_id = ""
+project_id = "vpwnjibcrqujclqalkgy"
 
 [api]
 enabled = true

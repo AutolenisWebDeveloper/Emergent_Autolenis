@@ -28,8 +28,12 @@ const BASE = process.env.SMOKE_BASE_URL ?? "http://localhost:3000"
  * IntersectionObserver and triggers the entrance animation.
  */
 async function scrollToHeading(page: import("@playwright/test").Page) {
+  // Target the <h2> specifically — the same text also appears in a mobile-only
+  // <p> that is display:none at the test viewport (1280×900 → lg breakpoint).
+  // Using a generic text locator causes .first() to pick the hidden <p>,
+  // which can never become visible and times out.
   const heading = page.locator(
-    "text=Your Buyer Console — Every Offer, One Dashboard"
+    "h2:has-text('Your Buyer Console — Every Offer, One Dashboard')"
   )
   // Wait for the element to be attached to the DOM (even if opacity: 0)
   await heading.first().waitFor({ state: "attached", timeout: 10_000 })
@@ -49,7 +53,7 @@ test.describe("Buyer Console Demo", () => {
     await scrollToHeading(page)
 
     const heading = page.locator(
-      "text=Your Buyer Console — Every Offer, One Dashboard"
+      "h2:has-text('Your Buyer Console — Every Offer, One Dashboard')"
     )
     await expect(heading.first()).toBeVisible({ timeout: 10_000 })
   })
