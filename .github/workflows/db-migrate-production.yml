@@ -7,6 +7,8 @@ on:
       - 'prisma/migrations/**'
       - 'prisma/schema.prisma'
       - 'supabase/migrations/**'
+      - 'supabase/config.toml'
+      - '.github/workflows/db-migrate-production.yml'
   workflow_dispatch:
     inputs:
       force_run:
@@ -71,8 +73,13 @@ jobs:
       # Link the Supabase CLI to the remote project so that `supabase db push`
       # knows which project to target. The project ref is read from the secret
       # and never echoed to the log.
+      # Supabase CLI v2.82+ also requires project_id in config.toml for commands
+      # like `migration list`. We inject it from the secret so it is never
+      # hard-coded in the repository.
       - name: Link Supabase project
-        run: pnpm supabase link --project-ref "$SUPABASE_PROJECT_ID"
+        run: |
+          pnpm supabase link --project-ref "$SUPABASE_PROJECT_ID"
+          sed -i "s/^project_id = .*/project_id = \"$SUPABASE_PROJECT_ID\"/" supabase/config.toml
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}

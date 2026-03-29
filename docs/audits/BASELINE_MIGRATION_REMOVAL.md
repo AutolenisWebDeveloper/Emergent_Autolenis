@@ -18,17 +18,21 @@ No local deletion was required — the file was already absent at the time of th
 
 ---
 
-## B. Remote State: ❓ Unknown — Cannot Be Determined
+## B. Remote State: 🔄 Pending — Will Be Repaired Automatically
 
-Remote migration state (the `supabase_migrations.schema_migrations` table) is **unknown**
-because the production migration pipeline has never successfully connected:
+Secrets are now configured (as of 2026-03-29):
 
-- `SUPABASE_ACCESS_TOKEN` and `SUPABASE_PROJECT_ID` secrets are not configured in GitHub
-- The only production workflow run (ID: 23676749811, 2026-03-28) failed at the `supabase link` step
-- `supabase migration list` has never been executed against the remote project
+- `SUPABASE_ACCESS_TOKEN` — Production environment ✅
+- `SUPABASE_PROJECT_ID` — Production environment ✅
 
-**Implication:** We cannot confirm whether version `20260119104146` was ever recorded in the
-remote `schema_migrations` table. If it was applied remotely, it must be explicitly reverted.
+CI run 23701520078 (2026-03-29) confirmed secrets are present and `supabase link` succeeds,
+but `supabase migration list` failed because `project_id` was empty in `config.toml`.
+
+**Fix applied:** The CI workflow now injects `project_id` from the secret into `config.toml`
+at runtime (via `sed`). Also fixed `db.major_version` from 15 → 17 to match the linked project.
+
+When the workflow next runs on `main`, the reconciliation script will automatically detect
+version `20260119104146` (if present remotely) and repair it to `reverted`.
 
 ---
 
@@ -37,6 +41,8 @@ remote `schema_migrations` table. If it was applied remotely, it must be explici
 | File | Change | Reason |
 |------|--------|--------|
 | `scripts/reconcile-supabase-migrations.sh` | Added `20260119104146` to `KNOWN_REMOVED` array | If found remotely during reconciliation, the script will auto-revert it instead of flagging it as an unknown mismatch |
+| `supabase/config.toml` | Updated `db.major_version` from 15 → 17 | Matches the linked production database; eliminates CLI warning |
+| `.github/workflows/db-migrate-production.yml` | Inject `project_id` into config.toml from secret; add trigger paths | Fixes `Missing required field in config: project_id` error that blocked reconciliation |
 | `docs/audits/BASELINE_MIGRATION_REMOVAL.md` | Created (this file) | Documents the removal procedure, operator commands, and risk assessment |
 
 No migration files were created, modified, or moved. No unrelated migrations were touched.
@@ -84,7 +90,8 @@ detect and revert `20260119104146` if it appears in the remote migration history
 | Reconcile script updated | ✅ Version added to `KNOWN_REMOVED` array |
 | Documentation created | ✅ This file |
 | Remote repair automated | ✅ Reconcile script will auto-revert if found remotely |
-| Remote repair likely required | ❓ Unknown — depends on whether the migration was ever applied remotely |
+| CI config fixed for remote access | ✅ `project_id` injected at runtime; `db.major_version` corrected to 17 |
+| Remote repair likely required | 🔄 Pending — will be handled automatically on next CI run |
 | Unrelated migrations modified | ✅ None |
 | Repo is clean after removal | ✅ Yes — no traces of `20260119104146` remain in the codebase except the `KNOWN_REMOVED` entry for automated repair |
 
