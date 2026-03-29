@@ -72,7 +72,11 @@ jobs:
       # knows which project to target. The project ref is read from the secret
       # and never echoed to the log.
       - name: Link Supabase project
-        run: pnpm supabase link --project-ref "$SUPABASE_PROJECT_ID"
+        run: |
+          pnpm supabase link --project-ref "$SUPABASE_PROJECT_ID"
+          # Ensure config.toml has the correct project_id for commands
+          # that read it directly (e.g. supabase migration list).
+          sed -i "s/^project_id = .*/project_id = \"$SUPABASE_PROJECT_ID\"/" supabase/config.toml
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
