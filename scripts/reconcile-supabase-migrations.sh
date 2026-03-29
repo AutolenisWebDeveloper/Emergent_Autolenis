@@ -28,6 +28,14 @@ declare -A KNOWN_RENAMES=(
   ["20240101000020"]="20240101000021"   # canonical_inventory_tables (was 20b, invalid suffix)
 )
 
+# Known removed versions — baselines or migrations deleted from the repo.
+# If found in remote schema_migrations, they must be reverted.
+# Add entries here when a migration file is intentionally removed and
+# should be marked as reverted if it appears in the remote history.
+declare -A KNOWN_REMOVED=(
+  ["20260119104146"]="baseline_schema.sql — removed from repo"
+)
+
 # Invalid timestamps that Supabase CLI would have skipped entirely.
 # These should NEVER appear in the remote schema_migrations table.
 INVALID_TIMESTAMPS=("20240101000020b" "202603280001")
@@ -123,6 +131,9 @@ for rv in "${remote_versions[@]}"; do
     # Check if this is a known rename
     if [[ -n "${KNOWN_RENAMES[$rv]:-}" ]]; then
       echo "  ⚠️  $rv — KNOWN RENAME → ${KNOWN_RENAMES[$rv]} (will repair --status reverted)"
+    # Check if this is a known removed version
+    elif [[ -n "${KNOWN_REMOVED[$rv]:-}" ]]; then
+      echo "  🗑️  $rv — KNOWN REMOVED (will repair --status reverted)"
     else
       echo "  ❌ $rv — UNKNOWN remote-only version (needs investigation)"
     fi
@@ -154,7 +165,7 @@ if [[ ${#local_only[@]} -eq 0 ]]; then
 fi
 echo ""
 
-# ── 5. Known renames reference ─────────────────────────────
+# ── 5. Known renames & removed versions reference ──────────
 echo "═══ Step 5: Known renamed versions ═══"
 echo "  OLD VERSION       → NEW VERSION         IN REMOTE"
 echo "  ────────────────────────────────────────────────────────"
@@ -168,6 +179,15 @@ for old in "${!KNOWN_RENAMES[@]}"; do
   echo "  $old    → $new      $in_remote"
 done
 echo ""
+echo "  Known removed versions (deleted from repo):"
+for rem in "${!KNOWN_REMOVED[@]}"; do
+  in_remote="no"
+  for rv in "${remote_versions[@]}"; do
+    if [[ "$rv" == "$rem" ]]; then in_remote="YES — needs repair"; break; fi
+  done
+  echo "    $rem — ${KNOWN_REMOVED[$rem]}      $in_remote"
+done
+echo ""
 echo "  Invalid timestamps (never recorded by CLI):"
 for inv in "${INVALID_TIMESTAMPS[@]}"; do
   echo "    $inv — skipped by Supabase CLI (invalid format)"
@@ -177,9 +197,13 @@ echo ""
 # ── 6. Safety check ───────────────────────────────────────
 unknown_remote_only=()
 for rv in "${remote_only[@]}"; do
-  if [[ -z "${KNOWN_RENAMES[$rv]:-}" ]]; then
-    unknown_remote_only+=("$rv")
+  if [[ -n "${KNOWN_RENAMES[$rv]:-}" ]]; then
+    continue  # known rename — safe
   fi
+  if [[ -n "${KNOWN_REMOVED[$rv]:-}" ]]; then
+    continue  # known removed — safe
+  fi
+  unknown_remote_only+=("$rv")
 done
 
 if [[ ${#unknown_remote_only[@]} -gt 0 ]]; then
