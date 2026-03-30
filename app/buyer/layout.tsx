@@ -104,7 +104,7 @@ export default async function BuyerLayout({ children }: { children: React.ReactN
   return (
     <BuyerLayoutClient nav={nav} userEmail={user.email} portalLinks={portalLinks}>
       {children}
-      <ChatWidget />
+      <ChatWidget variant="buyer" />
     </BuyerLayoutClient>
   )
 }

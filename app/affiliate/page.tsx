@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { PageFaithBlock } from "@/components/marketing/page-faith-block"
+import ChatWidget from "@/components/ai/chat-widget"
 import {
   ArrowRight,
   DollarSign,
@@ -392,6 +393,7 @@ export default function AffiliateProgramPage() {
       <PageFaithBlock pathname="/affiliate" />
 
       <PublicFooter />
+      <ChatWidget variant="public" />
     </div>
   )
 }

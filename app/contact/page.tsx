@@ -4,6 +4,7 @@ import type React from "react"
 import { PublicNav } from "@/components/layout/public-nav"
 import { PublicFooter } from "@/components/layout/public-footer"
 import { PageFaithBlock } from "@/components/marketing/page-faith-block"
+import ChatWidget from "@/components/ai/chat-widget"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -368,6 +369,7 @@ export default function ContactPage() {
       <PageFaithBlock pathname="/contact" />
 
       <PublicFooter />
+      <ChatWidget variant="public" />
     </div>
   )
 }
