@@ -14,37 +14,24 @@ const viewFixListTool: CopilotTool = {
   description: "Show the fix list for an active deal (issue count and categories only — no buyer data).",
   requiresConfirmation: false,
   requiredRole: ["dealer"],
-  execute: async (
+  execute: (
     args: Record<string, string | number | boolean>,
     _context: CopilotContext,
-    sessionToken: string,
+    _sessionToken: string,
   ): Promise<ActionResult> => {
     const dealId = args["dealId"] as string | undefined
     if (!dealId) {
-      return {
+      return Promise.resolve({
         summary: "Please navigate to the deal and try again to view the fix list.",
         redirectTo: "/dealer/deals",
         redirectLabel: "Go to Deals",
-      }
+      })
     }
-    const res = await fetch(`/api/dealer/deals/${dealId}/fix-list`, {
-      headers: { Authorization: `Bearer ${sessionToken}` },
+    return Promise.resolve({
+      summary: "Navigate to the deal page to review the contract fix list.",
+      redirectTo: `/dealer/deals/${dealId}`,
+      redirectLabel: "View Deal →",
     })
-    if (!res.ok) {
-      throw new Error("Unable to load fix list. Please try again from your deal page.")
-    }
-    const data = (await res.json()) as { items?: { category: string }[] }
-    const items = data.items ?? []
-    const count = items.length
-    if (count === 0) {
-      return { summary: "No fix items found for this deal.", redirectTo: `/dealer/deals/${dealId}`, redirectLabel: "View Deal" }
-    }
-    const categories = [...new Set(items.map((i) => i.category))].join(", ")
-    return {
-      summary: `This deal has **${count} fix item${count === 1 ? "" : "s"}** in the following categories: ${categories}.`,
-      redirectTo: `/dealer/deals/${dealId}/fix-list`,
-      redirectLabel: "View Fix List →",
-    }
   },
 }
 

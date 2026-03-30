@@ -24,54 +24,25 @@ describe("view_fix_list", () => {
     expect(result.redirectTo).toBeTruthy()
   })
 
-  it("returns issue count and categories on success", async () => {
-    const mockFetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({
-        items: [
-          { category: "Mechanical" },
-          { category: "Mechanical" },
-          { category: "Cosmetic" },
-        ],
-      }),
-    })
+  it("returns redirect to deal page when dealId provided (no fetch call)", async () => {
+    const mockFetch = vi.fn()
     vi.stubGlobal("fetch", mockFetch)
 
     const tool = DEALER_TOOLS["view_fix_list"]
     const result = await tool.execute({ dealId: "deal-456" }, dealerContext, SESSION_TOKEN)
-    expect(result.summary).toMatch(/3 fix item/i)
-    expect(result.summary).toMatch(/Mechanical/i)
-    expect(result.summary).toMatch(/Cosmetic/i)
+
+    // Should NOT have made any fetch call — fix-list route was verified missing
+    expect(mockFetch).not.toHaveBeenCalled()
+    expect(result.redirectTo).toContain("deal-456")
+    expect(result.summary).toMatch(/fix list/i)
   })
 
   it("does not expose buyer personal data in summary", async () => {
-    const mockFetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({
-        items: [
-          { category: "Tire", buyerEmail: "buyer@test.com", buyerPhone: "555-1234" },
-        ],
-      }),
-    })
-    vi.stubGlobal("fetch", mockFetch)
-
     const tool = DEALER_TOOLS["view_fix_list"]
     const result = await tool.execute({ dealId: "deal-456" }, dealerContext, SESSION_TOKEN)
-    // Summary should not contain buyer email or phone
-    expect(result.summary).not.toContain("buyer@test.com")
-    expect(result.summary).not.toContain("555-1234")
-  })
-
-  it("returns zero items message when no fix items", async () => {
-    const mockFetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({ items: [] }),
-    })
-    vi.stubGlobal("fetch", mockFetch)
-
-    const tool = DEALER_TOOLS["view_fix_list"]
-    const result = await tool.execute({ dealId: "deal-456" }, dealerContext, SESSION_TOKEN)
-    expect(result.summary).toMatch(/no fix items/i)
+    // Summary should not contain any buyer PII
+    expect(result.summary).not.toMatch(/buyer@/i)
+    expect(result.summary).not.toMatch(/555-/i)
   })
 })
 

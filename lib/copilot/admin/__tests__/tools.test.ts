@@ -90,29 +90,17 @@ describe("operations_report stub", () => {
 })
 
 describe("stuck_deals", () => {
-  it("reports count of stuck deals", async () => {
-    const mockFetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({ count: 3 }),
-    })
+  it("returns redirect to deals dashboard (no fetch call)", async () => {
+    const mockFetch = vi.fn()
     vi.stubGlobal("fetch", mockFetch)
 
     const tool = ADMIN_TOOLS["stuck_deals"]
     const result = await tool.execute({}, adminContext, SESSION_TOKEN)
-    expect(result.summary).toMatch(/3 deal/i)
-    expect(result.summary).toMatch(/72 hours/i)
-  })
 
-  it("reports zero stuck deals gracefully", async () => {
-    const mockFetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({ count: 0 }),
-    })
-    vi.stubGlobal("fetch", mockFetch)
-
-    const tool = ADMIN_TOOLS["stuck_deals"]
-    const result = await tool.execute({}, adminContext, SESSION_TOKEN)
-    expect(result.summary).toMatch(/no deals.*stuck/i)
+    // Should NOT have made any fetch call — stuck param not supported by admin deals route
+    expect(mockFetch).not.toHaveBeenCalled()
+    expect(result.redirectTo).toBe("/admin/deals")
+    expect(result.summary).toMatch(/stuck deals/i)
   })
 })
 

@@ -45,27 +45,16 @@ const payDepositTool: CopilotTool = {
   description: "Initiate the $99 refundable deposit payment via Stripe.",
   requiresConfirmation: true,
   requiredRole: ["buyer"],
-  execute: async (
+  execute: (
     _args: Record<string, string | number | boolean>,
     _context: CopilotContext,
-    sessionToken: string,
+    _sessionToken: string,
   ): Promise<ActionResult> => {
-    const res = await fetch("/api/payments/deposit/checkout", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${sessionToken}`,
-      },
-    })
-    if (!res.ok) {
-      throw new Error("Unable to initiate deposit payment. Please try again or visit your buyer dashboard.")
-    }
-    const data = (await res.json()) as { checkoutUrl?: string }
-    return {
-      summary: "Your $99 refundable deposit checkout is ready.",
-      redirectTo: data.checkoutUrl,
+    return Promise.resolve({
+      summary: "To activate your auction, complete the deposit step on your dashboard.",
+      redirectTo: "/buyer/deposit",
       redirectLabel: "Pay Deposit →",
-    }
+    })
   },
 }
 
@@ -79,31 +68,19 @@ const payConciergeFee: CopilotTool = {
   requiresConfirmation: true,
   requiredRole: ["buyer"],
   requiredDealStage: ["FEE_PENDING"],
-  execute: async (
+  execute: (
     _args: Record<string, string | number | boolean>,
     context: CopilotContext,
-    sessionToken: string,
+    _sessionToken: string,
   ): Promise<ActionResult> => {
     if (!context.dealId) {
-      return { summary: "No active deal found. Please navigate to your deal to pay the concierge fee." }
+      return Promise.resolve({ summary: "No active deal found. Please navigate to your deal to pay the concierge fee." })
     }
-    const res = await fetch(`/api/payments/concierge-fee/checkout`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${sessionToken}`,
-      },
-      body: JSON.stringify({ dealId: context.dealId }),
-    })
-    if (!res.ok) {
-      throw new Error("Unable to initiate fee payment. Please try again from your deal page.")
-    }
-    const data = (await res.json()) as { checkoutUrl?: string }
-    return {
-      summary: "Your $499 concierge fee checkout is ready.",
-      redirectTo: data.checkoutUrl,
+    return Promise.resolve({
+      summary: "To pay your concierge fee, go to the fee page for your deal.",
+      redirectTo: `/buyer/deals/${context.dealId}/fee`,
       redirectLabel: "Pay Fee →",
-    }
+    })
   },
 }
 

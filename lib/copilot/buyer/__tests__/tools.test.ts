@@ -59,25 +59,17 @@ describe("pay_deposit", () => {
     expect(tool.requiresConfirmation).toBe(true)
   })
 
-  it("returns checkout URL on success", async () => {
-    const mockFetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({ checkoutUrl: "https://checkout.stripe.com/test" }),
-    })
+  it("returns redirect to deposit page (no fetch call)", async () => {
+    const mockFetch = vi.fn()
     vi.stubGlobal("fetch", mockFetch)
 
     const tool = BUYER_TOOLS["pay_deposit"]
     const result = await tool.execute({}, buyerContext, SESSION_TOKEN)
-    expect(result.redirectTo).toBe("https://checkout.stripe.com/test")
-    expect(result.summary).toMatch(/\$99/i)
-  })
 
-  it("throws on failed API call", async () => {
-    const mockFetch = vi.fn().mockResolvedValue({ ok: false, status: 500 })
-    vi.stubGlobal("fetch", mockFetch)
-
-    const tool = BUYER_TOOLS["pay_deposit"]
-    await expect(tool.execute({}, buyerContext, SESSION_TOKEN)).rejects.toThrow()
+    // Should NOT have made any fetch call — route was verified missing
+    expect(mockFetch).not.toHaveBeenCalled()
+    expect(result.redirectTo).toBe("/buyer/deposit")
+    expect(result.summary).toMatch(/deposit/i)
   })
 })
 
@@ -123,17 +115,18 @@ describe("pay_concierge_fee", () => {
     expect(result.summary).toMatch(/active deal/i)
   })
 
-  it("returns checkout on success", async () => {
+  it("returns redirect to deal fee page with dealId (no fetch call)", async () => {
     const contextWithDeal: CopilotContext = { ...buyerContext, dealId: "deal-123", dealStage: "FEE_PENDING" }
-    const mockFetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({ checkoutUrl: "https://checkout.stripe.com/fee" }),
-    })
+    const mockFetch = vi.fn()
     vi.stubGlobal("fetch", mockFetch)
 
     const tool = BUYER_TOOLS["pay_concierge_fee"]
     const result = await tool.execute({}, contextWithDeal, SESSION_TOKEN)
-    expect(result.redirectTo).toBe("https://checkout.stripe.com/fee")
+
+    // Should NOT have made any fetch call — route was verified missing
+    expect(mockFetch).not.toHaveBeenCalled()
+    expect(result.redirectTo).toContain("/buyer/deals/deal-123/fee")
+    expect(result.summary).toMatch(/fee/i)
   })
 })
 

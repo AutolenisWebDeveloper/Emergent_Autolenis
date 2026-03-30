@@ -105,31 +105,16 @@ const stuckDealsTool: CopilotTool = {
   description: "Find deals that have been in the same stage for more than 72 hours.",
   requiresConfirmation: false,
   requiredRole: ["admin"],
-  execute: async (
+  execute: (
     _args: Record<string, string | number | boolean>,
     _context: CopilotContext,
-    sessionToken: string,
+    _sessionToken: string,
   ): Promise<ActionResult> => {
-    const res = await fetch("/api/admin/deals?stuck=true&stuckHours=72", {
-      headers: { Authorization: `Bearer ${sessionToken}` },
+    return Promise.resolve({
+      summary: "Navigate to the deals dashboard and filter by status to identify stuck deals (over 72 hours in the same stage).",
+      redirectTo: "/admin/deals",
+      redirectLabel: "View Deals Dashboard →",
     })
-    if (!res.ok) {
-      return {
-        summary: "Unable to load stuck deals. Please check the deals dashboard.",
-        redirectTo: "/admin/deals",
-        redirectLabel: "Deals Dashboard",
-      }
-    }
-    const data = (await res.json()) as { count?: number }
-    const count = data.count ?? 0
-    return {
-      summary:
-        count === 0
-          ? "No deals are currently stuck (over 72 hours in the same stage)."
-          : `There are **${count} deal${count === 1 ? "" : "s"}** that have been in the same stage for over 72 hours.`,
-      redirectTo: "/admin/deals?filter=stuck",
-      redirectLabel: "View Stuck Deals →",
-    }
   },
 }
 

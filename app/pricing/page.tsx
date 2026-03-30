@@ -3,6 +3,7 @@
 import { PublicNav } from "@/components/layout/public-nav"
 import { PublicFooter } from "@/components/layout/public-footer"
 import { PageFaithBlock } from "@/components/marketing/page-faith-block"
+import ChatWidget from "@/components/ai/chat-widget"
 import Link from "next/link"
 import { ArrowRight, Check, DollarSign, ChevronRight, Shield, Star, Truck, FileSearch, Users } from "lucide-react"
 import {
@@ -408,6 +409,7 @@ export default function PricingPage() {
       <PageFaithBlock pathname="/pricing" />
 
       <PublicFooter />
+      <ChatWidget variant="public" />
     </div>
   )
 }
