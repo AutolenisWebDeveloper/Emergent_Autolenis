@@ -1,17 +1,16 @@
 "use client"
 
 /**
- * Lenis Concierge -- Elite Fortune 500-grade AI chat widget.
+ * Lenis Concierge -- Elite Fortune 500-grade chat widget.
  *
  * Features:
- *   - Real-time streaming responses with SSE
+ *   - Local FAQ/intent-based response engine (no external AI APIs)
  *   - Persistent conversation history
- *   - Advanced error handling with retry logic
- *   - Sophisticated typing indicators
- *   - Message actions (copy, regenerate, rate)
  *   - Context-aware quick prompt suggestions
+ *   - Quick reply chips for suggested follow-up topics
+ *   - Route-aware response prioritization
  *   - Premium fintech design with polished animations
- *   - Conversation management (clear history, export)
+ *   - Conversation management (clear history)
  *   - Auto-scroll optimization
  *   - Mobile-responsive with accessibility
  */
