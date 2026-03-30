@@ -63,7 +63,7 @@ test.describe("Buyer Console Demo", () => {
 
     await scrollToHeading(page)
 
-    // All three dealer cards should be present (use :visible to target the
+    // Dealer cards should be present (use :visible to target the
     // desktop BuyerConsole — the mobile duplicate is display:none at 1280 px)
     await expect(page.locator('[data-dealer-id="a"]:visible')).toBeVisible()
     await expect(page.locator('[data-dealer-id="b"]:visible')).toBeVisible()
