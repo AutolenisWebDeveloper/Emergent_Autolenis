@@ -16,9 +16,8 @@ export function isAIDisabled(): boolean {
  * Currently a stub implementation that always returns false.
  * Can be extended to check a database flag or admin configuration.
  *
- * @param userId - The user ID to check (will be used in future implementation)
+ * @param _userId - The user ID to check (will be used in future implementation)
  */
-export function isAIDisabledForUser(userId: string | null): boolean {
-  void userId // Explicitly mark as intentionally unused
+export function isAIDisabledForUser(_userId: string | null): boolean {
   return false
 }

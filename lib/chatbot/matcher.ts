@@ -108,6 +108,21 @@ const MATCH_THRESHOLD = 0.25
 /** Bonus applied when the intent category matches the current route. */
 const ROUTE_BOOST = 0.2
 
+/** Base score for an exact keyword phrase match. */
+const EXACT_MATCH_BASE_SCORE = 0.8
+
+/** Normaliser for keyword length bonus (longer phrases get higher scores). */
+const EXACT_MATCH_LENGTH_NORMALIZER = 50
+
+/** Maximum bonus added on top of the base score for long keyword matches. */
+const EXACT_MATCH_LENGTH_BONUS = 0.2
+
+/**
+ * Denominator factor for token overlap scoring.
+ * A lower value makes it easier to match (fewer tokens needed for a high score).
+ */
+const TOKEN_OVERLAP_DENOMINATOR_FACTOR = 0.3
+
 /**
  * Score a single intent against a user message.
  * Returns a value between 0 and 1 (before route boost).
@@ -121,8 +136,10 @@ function scoreIntent(intent: ChatbotIntent, messageLower: string, messageTokens:
     }
   }
   if (bestExactLength > 0) {
-    // Normalize: longer keyword matches score higher (min 0.8, max 1.0)
-    return Math.min(0.8 + (bestExactLength / 50) * 0.2, 1.0)
+    return Math.min(
+      EXACT_MATCH_BASE_SCORE + (bestExactLength / EXACT_MATCH_LENGTH_NORMALIZER) * EXACT_MATCH_LENGTH_BONUS,
+      1.0,
+    )
   }
 
   // 2. Token overlap: how many intent keyword tokens appear in the message?
@@ -136,8 +153,7 @@ function scoreIntent(intent: ChatbotIntent, messageLower: string, messageTokens:
     }
   }
 
-  // Return ratio of matched message tokens vs total intent tokens, capped at 1
-  return Math.min(hits / Math.max(intentTokens.size * 0.3, 1), 1.0)
+  return Math.min(hits / Math.max(intentTokens.size * TOKEN_OVERLAP_DENOMINATOR_FACTOR, 1), 1.0)
 }
 
 /**
