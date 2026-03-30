@@ -19,12 +19,16 @@ const REQUEST_TIMEOUT_MS = 15_000
 
 // ── Production sandbox guard ─────────────────────────────────────────
 if (process.env.NODE_ENV === "production") {
-  if (TOKEN_URL.includes("apitest.microbilt.com")) {
-    logger.warn("[MicroBilt iPredict] SANDBOX TOKEN_URL detected in production — set MICROBILT_TOKEN_URL to production endpoint")
-  }
-  if (IPREDICT_BASE_URL.includes("apitest.microbilt.com")) {
-    logger.warn("[MicroBilt iPredict] SANDBOX BASE_URL detected in production — set MICROBILT_IPREDICT_BASE_URL to production endpoint")
-  }
+  try {
+    if (new URL(TOKEN_URL).hostname === "apitest.microbilt.com") {
+      logger.warn("[MicroBilt iPredict] SANDBOX TOKEN_URL detected in production — set MICROBILT_TOKEN_URL to production endpoint")
+    }
+  } catch { /* malformed URL — will fail at runtime */ }
+  try {
+    if (new URL(IPREDICT_BASE_URL).hostname === "apitest.microbilt.com") {
+      logger.warn("[MicroBilt iPredict] SANDBOX BASE_URL detected in production — set MICROBILT_IPREDICT_BASE_URL to production endpoint")
+    }
+  } catch { /* malformed URL — will fail at runtime */ }
 }
 
 // ── Token cache ──────────────────────────────────────────────────────

@@ -11,12 +11,16 @@ const REQUEST_TIMEOUT_MS = 15_000
 
 // ── Production sandbox guard ─────────────────────────────────────────
 if (process.env.NODE_ENV === "production") {
-  if (IBV_BASE_URL.includes("apitest.microbilt.com")) {
-    logger.warn("[MicroBilt IBV] SANDBOX BASE_URL detected in production — set MICROBILT_IBV_BASE_URL to production endpoint")
-  }
-  if (TOKEN_URL.includes("apitest.microbilt.com")) {
-    logger.warn("[MicroBilt IBV] SANDBOX TOKEN_URL detected in production — set MICROBILT_TOKEN_URL to production endpoint")
-  }
+  try {
+    if (new URL(IBV_BASE_URL).hostname === "apitest.microbilt.com") {
+      logger.warn("[MicroBilt IBV] SANDBOX BASE_URL detected in production — set MICROBILT_IBV_BASE_URL to production endpoint")
+    }
+  } catch { /* malformed URL — will fail at runtime */ }
+  try {
+    if (new URL(TOKEN_URL).hostname === "apitest.microbilt.com") {
+      logger.warn("[MicroBilt IBV] SANDBOX TOKEN_URL detected in production — set MICROBILT_TOKEN_URL to production endpoint")
+    }
+  } catch { /* malformed URL — will fail at runtime */ }
 }
 
 // Shared token cache (module-level, lazy)

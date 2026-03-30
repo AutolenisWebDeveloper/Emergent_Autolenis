@@ -72,15 +72,19 @@ export function assertDocuSignConfig(): void {
 
   // Production sandbox guard — warn when demo/sandbox URLs detected in production
   if (process.env.NODE_ENV === "production") {
-    if (c.basePath.includes("demo.docusign.net")) {
-      logger.warn("[DocuSign] SANDBOX basePath detected in production — set DOCUSIGN_BASE_PATH to production endpoint (e.g. https://na4.docusign.net/restapi)")
+    try {
+      if (new URL(c.basePath).hostname === "demo.docusign.net") {
+        logger.warn("[DocuSign] SANDBOX basePath detected in production — set DOCUSIGN_BASE_PATH or DOCUSIGN_BASE_URL env var to production endpoint (e.g. https://na4.docusign.net/restapi)")
+      }
+    } catch { /* basePath may not be a full URL */ }
+    if (c.authServer === "account-d.docusign.com") {
+      logger.warn("[DocuSign] SANDBOX authServer detected in production — set DOCUSIGN_AUTH_SERVER env var to account.docusign.com")
     }
-    if (c.authServer.includes("account-d.docusign.com")) {
-      logger.warn("[DocuSign] SANDBOX authServer detected in production — set DOCUSIGN_AUTH_SERVER to account.docusign.com")
-    }
-    if (c.oauthBaseUrl.includes("account-d.docusign.com")) {
-      logger.warn("[DocuSign] SANDBOX oauthBaseUrl detected in production — set DOCUSIGN_OAUTH_BASE_URL to https://account.docusign.com")
-    }
+    try {
+      if (new URL(c.oauthBaseUrl).hostname === "account-d.docusign.com") {
+        logger.warn("[DocuSign] SANDBOX oauthBaseUrl detected in production — set DOCUSIGN_OAUTH_BASE_URL env var to https://account.docusign.com")
+      }
+    } catch { /* malformed URL — will fail at runtime */ }
   }
 }
 
