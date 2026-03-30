@@ -86,6 +86,8 @@ const STOP_WORDS = new Set([
   "i", "me", "my", "we", "our", "you", "your", "it", "its",
   "this", "that", "these", "those", "what", "which", "who",
   "how", "if", "then", "than", "when", "where", "why",
+  "tell", "know", "want", "need", "like", "just", "get",
+  "please", "thanks", "thank", "hi", "hello", "hey",
 ])
 
 function tokenize(text: string): string[] {
@@ -111,11 +113,16 @@ const ROUTE_BOOST = 0.2
  * Returns a value between 0 and 1 (before route boost).
  */
 function scoreIntent(intent: ChatbotIntent, messageLower: string, messageTokens: string[]): number {
-  // 1. Exact keyword phrase match (highest confidence)
+  // 1. Exact keyword phrase match — prefer longer (more specific) matches
+  let bestExactLength = 0
   for (const kw of intent.keywords) {
     if (messageLower.includes(kw.toLowerCase())) {
-      return 1.0
+      bestExactLength = Math.max(bestExactLength, kw.length)
     }
+  }
+  if (bestExactLength > 0) {
+    // Normalize: longer keyword matches score higher (min 0.8, max 1.0)
+    return Math.min(0.8 + (bestExactLength / 50) * 0.2, 1.0)
   }
 
   // 2. Token overlap: how many intent keyword tokens appear in the message?
