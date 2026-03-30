@@ -21,6 +21,8 @@ import { motion, AnimatePresence } from "framer-motion"
 import { getQuickPrompts, MORE_DETAILS_PROMPT, formatPromptMessage, type QuickPromptState } from "@/lib/lenis/quickPrompts"
 import type { AIRole } from "@/lib/ai/context-builder"
 import { processMessage, type SuggestedChip } from "@/lib/chatbot/faq"
+import type { CopilotVariant, CopilotResponse, ActionResult, QuickAction } from "@/lib/copilot/shared/types"
+import { useCopilotSession } from "@/lib/copilot/shared/conversation-state"
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -87,6 +89,9 @@ export default function ChatWidget({ variant = "public" }: ChatWidgetProps) {
   const pathname = usePathname()
   const { clearSession } = useCopilotSession()
 
+  const lastMessageIsAssistant =
+    messages.length > 0 && messages[messages.length - 1].sender === "assistant" && !loading
+
   // Auto-scroll
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -149,13 +154,16 @@ export default function ChatWidget({ variant = "public" }: ChatWidgetProps) {
     if (confirm("Clear conversation? This cannot be undone.")) {
       setMessages([])
       setSuggestedTopics([])
-      setConversationId(generateConversationId())
-      clearConversationHistory()
+      clearSession()
     }
   }
 
   const handleCopyMessage = (content: string) => {
     void navigator.clipboard?.writeText(content)
+  }
+
+  const handleChipClick = (chip: QuickAction) => {
+    void sendMessage(chip.message)
   }
 
   const label = VARIANT_LABELS[variant]
@@ -418,13 +426,13 @@ export default function ChatWidget({ variant = "public" }: ChatWidgetProps) {
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder="Ask anything..."
-                  disabled={loading || !!pendingConfirmation}
+                  disabled={loading}
                   className="flex-1 resize-none rounded-xl border border-input bg-background px-4 py-3 text-[13px] text-foreground placeholder:text-muted-foreground/50 focus:border-brand-purple focus:outline-none focus:ring-1 focus:ring-brand-purple transition-all duration-150 disabled:opacity-50"
                   style={{ maxHeight: "120px" }}
                 />
                 <motion.button
                   type="submit"
-                  disabled={loading || !input.trim() || !!pendingConfirmation}
+                  disabled={loading || !input.trim()}
                   whileHover={{ scale: 1.04 }}
                   whileTap={{ scale: 0.96 }}
                   className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-primary-foreground disabled:opacity-40 transition-all shadow-sm hover:shadow-md"
