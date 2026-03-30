@@ -20,8 +20,7 @@ import { useState, useRef, useEffect, useCallback, type FormEvent, type Keyboard
 import { motion, AnimatePresence } from "framer-motion"
 import { getQuickPrompts, MORE_DETAILS_PROMPT, formatPromptMessage, type QuickPromptState } from "@/lib/lenis/quickPrompts"
 import type { AIRole } from "@/lib/ai/context-builder"
-import { extractApiError } from "@/lib/utils/error-message"
-import { csrfHeaders } from "@/lib/csrf-client"
+import { processMessage, type SuggestedChip } from "@/lib/chatbot/faq"
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -124,7 +123,7 @@ export default function ChatWidget(props: ChatWidgetProps = {}) {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState("")
   const [loading, setLoading] = useState(false)
-  const [retryCount, setRetryCount] = useState(0)
+  const [suggestedTopics, setSuggestedTopics] = useState<readonly SuggestedChip[]>([])
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const [hasInitialized, setHasInitialized] = useState(false)
@@ -167,7 +166,7 @@ export default function ChatWidget(props: ChatWidgetProps = {}) {
   }, [input])
 
   const sendMessage = useCallback(
-    async (text: string, isRetry = false) => {
+    (text: string) => {
       if (!text.trim() || loading) return
 
       const userMsgId = generateId()
@@ -185,127 +184,21 @@ export default function ChatWidget(props: ChatWidgetProps = {}) {
       setInput("")
       setLoading(true)
 
-      // Add streaming placeholder
-      const streamingMsg: ChatMessage = {
+      // Process locally (deterministic — no network call)
+      const result = processMessage(text.trim(), pathname)
+
+      const assistantMsg: ChatMessage = {
         id: assistantMsgId,
         sender: "assistant",
-        content: "",
+        content: result.reply,
         timestamp: Date.now(),
-        isStreaming: true,
       }
-      setMessages((prev) => [...prev, streamingMsg])
 
-      try {
-        const traceId = `ct_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
-        const res = await fetch("/api/ai/chat", {
-          method: "POST",
-          headers: csrfHeaders({ "x-trace-id": traceId }),
-          body: JSON.stringify({ conversationId, message: text, stream: true, clientTraceId: traceId }),
-        })
-
-        if (!res.ok) {
-          // Parse structured error envelope from gateway or proxy
-          let userMessage = `Request failed (${res.status}).`
-          try {
-            const errBody = await res.json()
-            const extracted = errBody?.error?.userMessage ?? errBody?.error?.message
-            if (extracted) {
-              userMessage = extracted
-            }
-          } catch { /* non-JSON response */ }
-          const err = Object.assign(new Error(userMessage), { status: res.status })
-          throw err
-        }
-
-        // Handle streaming response
-        const reader = res.body?.getReader()
-        const decoder = new TextDecoder()
-
-        if (!reader) {
-          throw new Error("No response body")
-        }
-
-        let accumulatedContent = ""
-
-        while (true) {
-          const { done, value } = await reader.read()
-          if (done) break
-
-          const chunk = decoder.decode(value, { stream: true })
-          const lines = chunk.split("\n")
-
-          for (const line of lines) {
-            if (line.startsWith("data: ")) {
-              try {
-                const data = JSON.parse(line.slice(6))
-
-                if (data.type === "chunk") {
-                  accumulatedContent += data.content
-                  // Update message with accumulated content
-                  setMessages((prev) =>
-                    prev.map((m) =>
-                      m.id === assistantMsgId ? { ...m, content: accumulatedContent, isStreaming: true } : m,
-                    ),
-                  )
-                } else if (data.type === "done") {
-                  // Finalize streaming
-                  setMessages((prev) =>
-                    prev.map((m) =>
-                      m.id === assistantMsgId ? { ...m, isStreaming: false } : m,
-                    ),
-                  )
-                } else if (data.type === "error") {
-                  const errMsg = data.error?.userMessage ?? extractApiError(data.error, "Stream error")
-                  const classified = new Error(errMsg)
-                  classified.name = "AiStreamError"
-                  throw classified
-                }
-              } catch (parseError) {
-                // Re-throw classified errors; ignore JSON parse errors for incomplete chunks
-                if (parseError instanceof Error && parseError.name === "AiStreamError") throw parseError
-                console.warn("[v0] Parse warning:", parseError)
-              }
-            }
-          }
-        }
-
-        setRetryCount(0) // Reset retry count on success
-      } catch (error) {
-        console.warn("[v0] Chat error:", error)
-
-        const errorMessage = error instanceof Error ? error.message : "Something went wrong. Please try again."
-
-        // Update message with classified error
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === assistantMsgId
-              ? {
-                  ...m,
-                  content: errorMessage,
-                  isStreaming: false,
-                  error: true,
-                }
-              : m,
-          ),
-        )
-
-        // Auto-retry logic (max 2 retries, skip non-retryable errors)
-        const httpStatus = error && typeof error === "object" && "status" in error
-          ? (error as { status: number }).status
-          : undefined
-        const retryable = !httpStatus || httpStatus >= 500
-        if (retryable && !isRetry && retryCount < 2) {
-          setRetryCount((c) => c + 1)
-          setTimeout(() => {
-            setMessages((prev) => prev.filter((m) => m.id !== assistantMsgId))
-            sendMessage(text, true)
-          }, 2000)
-        }
-      } finally {
-        setLoading(false)
-      }
+      setMessages((prev) => [...prev, assistantMsg])
+      setSuggestedTopics(result.suggestedTopics)
+      setLoading(false)
     },
-    [conversationId, loading, retryCount],
+    [loading, pathname],
   )
 
   const handleSubmit = (e: FormEvent) => {
@@ -323,6 +216,7 @@ export default function ChatWidget(props: ChatWidgetProps = {}) {
   const handleClearHistory = () => {
     if (confirm("Clear all conversation history? This cannot be undone.")) {
       setMessages([])
+      setSuggestedTopics([])
       setConversationId(generateConversationId())
       clearConversationHistory()
     }
@@ -553,9 +447,24 @@ export default function ChatWidget(props: ChatWidgetProps = {}) {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* ---- "More details" strip ---- */}
+            {/* ---- Quick reply chips & "More details" strip ---- */}
             {lastMessageIsAssistant && (
-              <div className="border-t border-border px-3 py-2 bg-background">
+              <div className="border-t border-border px-3 py-2 bg-background space-y-2">
+                {suggestedTopics.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {suggestedTopics.map((chip) => (
+                      <button
+                        key={chip.label}
+                        type="button"
+                        onClick={() => sendMessage(chip.query)}
+                        disabled={loading}
+                        className="rounded-lg border border-brand-purple/15 bg-brand-purple/[0.05] px-2.5 py-1.5 text-[11px] font-medium text-brand-purple hover:bg-brand-purple/[0.1] hover:border-brand-purple/25 disabled:opacity-40 transition-all duration-150"
+                      >
+                        {chip.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 <button
                   type="button"
                   onClick={() => sendMessage(MORE_DETAILS_PROMPT)}
@@ -599,7 +508,7 @@ export default function ChatWidget(props: ChatWidgetProps = {}) {
               </div>
               <div className="flex items-center justify-between mt-2">
                 <p className="text-[10px] text-muted-foreground/50">
-                  Powered by AutoLenis AI
+                  Powered by AutoLenis
                 </p>
                 {messages.length > 0 && (
                   <p className="text-[10px] text-muted-foreground/50">
