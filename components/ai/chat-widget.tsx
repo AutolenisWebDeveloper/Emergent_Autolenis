@@ -1,22 +1,26 @@
 "use client"
 
 /**
- * AutoLenis Copilot Chat Widget
+ * Lenis Concierge -- Elite Fortune 500-grade chat widget.
  *
- * Five-variant copilot: public | buyer | dealer | affiliate | admin
- *
- * - No localStorage / sessionStorage — all state in component memory
- * - Calls /api/copilot/[variant] based on variant prop
- * - Renders: text_response, quick_actions, confirmation, action_result, loading, error
- * - Confirmation and action_result disabled for public variant
+ * Features:
+ *   - Local FAQ/intent-based response engine (no external AI APIs)
+ *   - Persistent conversation history
+ *   - Context-aware quick prompt suggestions
+ *   - Quick reply chips for suggested follow-up topics
+ *   - Route-aware response prioritization
+ *   - Premium fintech design with polished animations
+ *   - Conversation management (clear history)
+ *   - Auto-scroll optimization
+ *   - Mobile-responsive with accessibility
  */
 
 import { useState, useRef, useEffect, useCallback, type FormEvent, type KeyboardEvent } from "react"
 import { usePathname } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
-import { useCopilotSession } from "@/lib/copilot/shared/conversation-state"
-import { csrfHeaders } from "@/lib/csrf-client"
-import type { CopilotVariant, CopilotResponse, QuickAction, ConfirmationRequest, ActionResult } from "@/lib/copilot/shared/types"
+import { getQuickPrompts, MORE_DETAILS_PROMPT, formatPromptMessage, type QuickPromptState } from "@/lib/lenis/quickPrompts"
+import type { AIRole } from "@/lib/ai/context-builder"
+import { processMessage, type SuggestedChip } from "@/lib/chatbot/faq"
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -77,11 +81,7 @@ export default function ChatWidget({ variant = "public" }: ChatWidgetProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState("")
   const [loading, setLoading] = useState(false)
-  const [sessionId] = useState(() =>
-    typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : generateId(),
-  )
-  const [pendingConfirmation, setPendingConfirmation] = useState<ConfirmationRequest | null>(null)
-
+  const [suggestedTopics, setSuggestedTopics] = useState<readonly SuggestedChip[]>([])
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const pathname = usePathname()
@@ -101,9 +101,8 @@ export default function ChatWidget({ variant = "public" }: ChatWidgetProps) {
   }, [input])
 
   const sendMessage = useCallback(
-    async (text: string, confirmedTool?: CopilotResponse["confirmation"]) => {
-      if (loading) return
-      if (!text.trim() && !confirmedTool) return
+    (text: string) => {
+      if (!text.trim() || loading) return
 
       const userMsgId = generateId()
       const assistantMsgId = generateId()
@@ -116,138 +115,22 @@ export default function ChatWidget({ variant = "public" }: ChatWidgetProps) {
       }
       setInput("")
       setLoading(true)
-      setPendingConfirmation(null)
 
-      try {
-        const body: Record<string, unknown> = {
-          message: text || (confirmedTool ? `Confirm: ${confirmedTool.toolName}` : ""),
-          context: {
-            variant,
-            role: variant === "public" ? "anonymous" : variant,
-            route: pathname,
-            sessionId,
-          },
-          history: messages
-            .slice(-20)
-            .filter((m) => m.sender !== "assistant" || !m.error)
-            .slice(-10)
-            .map((m) => ({
-              role: m.sender as "user" | "assistant",
-              content: m.content,
-              timestamp: m.timestamp,
-            })),
-        }
+      // Process locally (deterministic — no network call)
+      const result = processMessage(text.trim(), pathname)
 
-        if (confirmedTool && variant !== "public") {
-          body.confirmedTool = {
-            toolName: confirmedTool.toolName,
-            toolArgs: confirmedTool.toolArgs,
-          }
-        }
-
-        const res = await fetch(`/api/copilot/${variant}`, {
-          method: "POST",
-          headers: csrfHeaders({ "Content-Type": "application/json" }),
-          body: JSON.stringify(body),
-        })
-
-        if (!res.ok) {
-          let errorMsg = `Request failed (${res.status}).`
-          try {
-            const errBody = (await res.json()) as { error?: { message?: string } }
-            if (errBody?.error?.message) errorMsg = errBody.error.message
-          } catch {
-            /* non-JSON */
-          }
-          throw new Error(errorMsg)
-        }
-
-        const data = (await res.json()) as { ok: boolean; response?: CopilotResponse }
-        const response = data.response
-
-        if (!response) throw new Error("No response received.")
-
-        // Handle confirmation state — store pending confirmation
-        if (response.renderState === "confirmation" && response.confirmation && variant !== "public") {
-          setPendingConfirmation(response.confirmation)
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: assistantMsgId,
-              sender: "assistant",
-              content: response.confirmation!.title,
-              timestamp: Date.now(),
-              response,
-            },
-          ])
-          return
-        }
-
-        const displayText =
-          response.text ??
-          response.errorMessage ??
-          response.actionResult?.summary ??
-          "I'm not sure how to help with that. Please try again."
-
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: assistantMsgId,
-            sender: "assistant",
-            content: displayText,
-            timestamp: Date.now(),
-            error: response.renderState === "error",
-            response,
-          },
-        ])
-      } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : "Something went wrong. Please try again."
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: assistantMsgId,
-            sender: "assistant",
-            content: errorMessage,
-            timestamp: Date.now(),
-            error: true,
-          },
-        ])
-      } finally {
-        setLoading(false)
-      }
-    },
-    [loading, messages, pathname, sessionId, variant],
-  )
-
-  const handleConfirm = useCallback(() => {
-    if (!pendingConfirmation) return
-    void sendMessage("", pendingConfirmation)
-  }, [pendingConfirmation, sendMessage])
-
-  const handleCancelConfirmation = useCallback(() => {
-    setPendingConfirmation(null)
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: generateId(),
+      const assistantMsg: ChatMessage = {
+        id: assistantMsgId,
         sender: "assistant",
-        content: "Action cancelled.",
+        content: result.reply,
         timestamp: Date.now(),
-      },
-    ])
-  }, [])
-
-  const handleChipClick = useCallback(
-    (chip: QuickAction) => {
-      if (chip.autoSubmit) {
-        void sendMessage(chip.message)
-      } else {
-        setInput(chip.message)
-        textareaRef.current?.focus()
       }
+
+      setMessages((prev) => [...prev, assistantMsg])
+      setSuggestedTopics(result.suggestedTopics)
+      setLoading(false)
     },
-    [sendMessage],
+    [loading, pathname],
   )
 
   const handleSubmit = (e: FormEvent) => {
@@ -265,8 +148,9 @@ export default function ChatWidget({ variant = "public" }: ChatWidgetProps) {
   const handleClearHistory = () => {
     if (confirm("Clear conversation? This cannot be undone.")) {
       setMessages([])
-      setPendingConfirmation(null)
-      clearSession()
+      setSuggestedTopics([])
+      setConversationId(generateConversationId())
+      clearConversationHistory()
     }
   }
 
@@ -492,29 +376,35 @@ export default function ChatWidget({ variant = "public" }: ChatWidgetProps) {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* ---- Confirmation banner (non-public only) ---- */}
-            {pendingConfirmation && variant !== "public" && (
-              <div className="border-t border-border px-4 py-3 bg-amber-50/50 dark:bg-amber-900/10">
-                <p className="text-[12px] font-medium text-foreground mb-1">{pendingConfirmation.title}</p>
-                <p className="text-[11px] text-muted-foreground mb-2">{pendingConfirmation.description}</p>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={handleConfirm}
-                    disabled={loading}
-                    className="flex-1 rounded-lg bg-brand-purple px-3 py-1.5 text-[12px] font-semibold text-white hover:bg-brand-purple/90 disabled:opacity-40 transition-colors"
-                  >
-                    {pendingConfirmation.confirmLabel ?? "Confirm"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleCancelConfirmation}
-                    disabled={loading}
-                    className="flex-1 rounded-lg border border-border px-3 py-1.5 text-[12px] font-medium text-muted-foreground hover:bg-accent disabled:opacity-40 transition-colors"
-                  >
-                    {pendingConfirmation.cancelLabel ?? "Cancel"}
-                  </button>
-                </div>
+            {/* ---- Quick reply chips & "More details" strip ---- */}
+            {lastMessageIsAssistant && (
+              <div className="border-t border-border px-3 py-2 bg-background space-y-2">
+                {suggestedTopics.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {suggestedTopics.map((chip) => (
+                      <button
+                        key={chip.label}
+                        type="button"
+                        onClick={() => sendMessage(chip.query)}
+                        disabled={loading}
+                        className="rounded-lg border border-brand-purple/15 bg-brand-purple/[0.05] px-2.5 py-1.5 text-[11px] font-medium text-brand-purple hover:bg-brand-purple/[0.1] hover:border-brand-purple/25 disabled:opacity-40 transition-all duration-150"
+                      >
+                        {chip.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={() => sendMessage(MORE_DETAILS_PROMPT)}
+                  disabled={loading}
+                  className="w-full flex items-center justify-center gap-2 rounded-xl border border-border px-3 py-2 text-[12px] font-medium text-muted-foreground hover:bg-accent hover:text-foreground hover:border-brand-purple/20 disabled:opacity-40 transition-all duration-150"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+                  </svg>
+                  More details
+                </button>
               </div>
             )}
 
@@ -545,7 +435,16 @@ export default function ChatWidget({ variant = "public" }: ChatWidgetProps) {
                   </svg>
                 </motion.button>
               </div>
-              <p className="mt-2 text-[10px] text-muted-foreground/50">Powered by AutoLenis</p>
+              <div className="flex items-center justify-between mt-2">
+                <p className="text-[10px] text-muted-foreground/50">
+                  Powered by AutoLenis
+                </p>
+                {messages.length > 0 && (
+                  <p className="text-[10px] text-muted-foreground/50">
+                    {messages.length} {messages.length === 1 ? "message" : "messages"}
+                  </p>
+                )}
+              </div>
             </form>
           </motion.div>
         )}

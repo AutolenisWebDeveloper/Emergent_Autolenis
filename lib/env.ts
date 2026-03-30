@@ -58,9 +58,6 @@ const envSchema = z.object({
   DOCUSIGN_BRAND_ID: z.string().min(1).optional(),
   DOCUSIGN_ENV: z.enum(["sandbox", "production"]).optional(),
 
-  // AI / Gemini (Optional)
-  GEMINI_API_KEY: z.string().min(1, "GEMINI_API_KEY must not be empty").optional(),
-
   // Optional but recommended
   NEXT_PUBLIC_APP_URL: z.string().url().optional(),
   ADMIN_NOTIFICATION_EMAIL: z.string().email().optional(),
