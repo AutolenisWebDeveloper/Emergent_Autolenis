@@ -165,7 +165,7 @@ export default async function AdminLayout({
   return (
     <AdminLayoutClient nav={nav} userEmail={user.email} userRole={user.role} portalLinks={portalLinks}>
       {children}
-      <ChatWidget />
+      <ChatWidget variant="admin" />
     </AdminLayoutClient>
   )
 }

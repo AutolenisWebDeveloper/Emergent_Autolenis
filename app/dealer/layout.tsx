@@ -73,7 +73,7 @@ export default async function DealerLayout({
   return (
     <DealerLayoutClient nav={nav} userEmail={user.email} portalLinks={portalLinks}>
       {children}
-      <ChatWidget />
+      <ChatWidget variant="dealer" />
     </DealerLayoutClient>
   )
 }
