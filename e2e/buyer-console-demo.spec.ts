@@ -63,9 +63,10 @@ test.describe("Buyer Console Demo", () => {
 
     await scrollToHeading(page)
 
-    // All three dealer cards should be present
-    await expect(page.locator("text=Dealer A").first()).toBeVisible()
-    await expect(page.locator("text=Dealer B").first()).toBeVisible()
+    // All three dealer cards should be present (use :visible to target the
+    // desktop BuyerConsole — the mobile duplicate is display:none at 1280 px)
+    await expect(page.locator('[data-dealer-id="a"]:visible')).toBeVisible()
+    await expect(page.locator('[data-dealer-id="b"]:visible')).toBeVisible()
   })
 
   test("manual click on dealer card changes selection", async ({ page }) => {
@@ -73,8 +74,10 @@ test.describe("Buyer Console Demo", () => {
 
     await scrollToHeading(page)
 
-    // Wait for cards to appear
-    const dealerA = page.locator('[data-dealer-id="a"] [role="button"]')
+    // Wait for cards to appear (use :visible to target the desktop instance —
+    // the mobile duplicate is display:none at 1280 px and causes strict-mode
+    // violations without the pseudo-selector)
+    const dealerA = page.locator('[data-dealer-id="a"]:visible [role="button"]')
     await expect(dealerA).toBeVisible({ timeout: 10_000 })
 
     // Click Dealer A
@@ -84,7 +87,7 @@ test.describe("Buyer Console Demo", () => {
     await expect(dealerA).toHaveClass(/border-brand-green/, { timeout: 5_000 })
 
     // Click Dealer B
-    const dealerB = page.locator('[data-dealer-id="b"] [role="button"]')
+    const dealerB = page.locator('[data-dealer-id="b"]:visible [role="button"]')
     await dealerB.click()
 
     // Dealer B should now be selected
