@@ -34,18 +34,22 @@ Every variable in `.env.example` or `env.d.ts` must be set in the production env
 | Stripe | `STRIPE_SECRET_KEY` | All payments | Test charge succeeds |
 | Stripe | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Embedded Checkout | Checkout renders |
 | Stripe | `STRIPE_WEBHOOK_SECRET` | Webhook signature verification | Webhook event passes |
-| Stripe | `DEPOSIT_AMOUNT_CENTS` | $99 deposit | Correct amount charged |
-| Stripe | `PREMIUM_FEE_CENTS` | $499 concierge fee | Correct amount charged |
+| Stripe | `DEPOSIT_AMOUNT_CENTS` | $99 deposit | Hardcoded constant in `lib/constants.ts` (9900) |
+| Stripe | `PREMIUM_FEE_CENTS` | $499 concierge fee | Hardcoded constant in `lib/constants.ts` (49900) |
 | Resend | `RESEND_API_KEY` | All transactional email | Email delivery |
-| Resend | `EMAIL_FROM` | Email sender identity | Correct from address |
+| Resend | `FROM_EMAIL` | Email sender identity | Correct from address (fallback: `RESEND_FROM_EMAIL`) |
 | DocuSign | `DOCUSIGN_INTEGRATION_KEY` | E-sign envelope creation | Envelope created |
 | DocuSign | `DOCUSIGN_USER_ID` | DocuSign auth | Auth succeeds |
 | DocuSign | `DOCUSIGN_ACCOUNT_ID` | DocuSign API calls | API calls succeed |
-| DocuSign | `DOCUSIGN_PRIVATE_KEY` | JWT auth flow | Token issued |
-| DocuSign | `DOCUSIGN_BASE_URL` | API base path | Set to production (not sandbox) |
+| DocuSign | `DOCUSIGN_PRIVATE_KEY_BASE64` | JWT auth flow (base64-encoded RSA key) | Token issued |
+| DocuSign | `DOCUSIGN_BASE_PATH` | REST API base path | Set to production (not sandbox `demo.docusign.net`) |
+| DocuSign | `DOCUSIGN_AUTH_SERVER` | OAuth auth server | Set to `account.docusign.com` (not sandbox `account-d.docusign.com`) |
+| DocuSign | `DOCUSIGN_OAUTH_BASE_URL` | OAuth base URL | Set to `https://account.docusign.com` (not sandbox) |
 | MicroBilt | `MICROBILT_CLIENT_ID` | Prequal soft pull | OAuth2 token issued |
 | MicroBilt | `MICROBILT_CLIENT_SECRET` | Prequal soft pull | OAuth2 token issued |
-| MicroBilt | `MICROBILT_BASE_URL` | API base path | Set to production (not sandbox) |
+| MicroBilt | `MICROBILT_TOKEN_URL` | OAuth2 token endpoint | Set to production (not sandbox `apitest.microbilt.com`) |
+| MicroBilt | `MICROBILT_IPREDICT_BASE_URL` | iPredict API base path | Set to production (not sandbox `apitest.microbilt.com`) |
+| MicroBilt | `MICROBILT_IBV_BASE_URL` | IBV API base path | Set to production (not sandbox `apitest.microbilt.com`) |
 | App | `NEXT_PUBLIC_APP_URL` | Absolute URL generation | Set to `https://autolenis.com` |
 | App | `NODE_ENV` | Environment branching | Set to `production` |
 | Admin | Admin MFA seed / TOTP config | Admin auth | Admin login succeeds with TOTP |
