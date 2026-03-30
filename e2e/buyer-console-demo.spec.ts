@@ -70,6 +70,10 @@ test.describe("Buyer Console Demo", () => {
   })
 
   test("manual click on dealer card changes selection", async ({ page }) => {
+    // Disable animations so the HeroDeviceRotator stops cycling (prevents DOM
+    // detachment) and BuyerConsole auto-demo pauses (prevents "not stable").
+    await page.emulateMedia({ reducedMotion: "reduce" })
+
     await page.goto(BASE, { waitUntil: "domcontentloaded" })
 
     await scrollToHeading(page)
@@ -80,15 +84,15 @@ test.describe("Buyer Console Demo", () => {
     const dealerA = page.locator('[data-dealer-id="a"]:visible [role="button"]')
     await expect(dealerA).toBeVisible({ timeout: 10_000 })
 
-    // Click Dealer A
-    await dealerA.click()
+    // Click Dealer A — use force to bypass any residual animation instability
+    await dealerA.click({ force: true })
 
     // Dealer A should now have the selected styling (green border)
     await expect(dealerA).toHaveClass(/border-brand-green/, { timeout: 5_000 })
 
     // Click Dealer B
     const dealerB = page.locator('[data-dealer-id="b"]:visible [role="button"]')
-    await dealerB.click()
+    await dealerB.click({ force: true })
 
     // Dealer B should now be selected
     await expect(dealerB).toHaveClass(/border-brand-green/, { timeout: 5_000 })
