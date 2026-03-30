@@ -1,6 +1,6 @@
 /**
- * Tests for AI subsystem — Gemini provider, security, persistence,
- * confirmation flow, and schema validation.
+ * Tests for AI subsystem — security, persistence,
+ * confirmation flow, schema validation, and RBAC.
  */
 
 import { describe, expect, it, vi, beforeEach } from "vitest"
@@ -165,60 +165,6 @@ describe("security – AI kill switch", () => {
     process.env.AI_ACTIONS_DISABLED = "false"
     expect(isAiDisabled()).toBe(false)
     delete process.env.AI_ACTIONS_DISABLED
-  })
-})
-
-// ---------------------------------------------------------------------------
-// Gemini Provider
-// ---------------------------------------------------------------------------
-
-import {
-  isGeminiAvailable,
-  callGemini,
-} from "@/lib/ai/providers/gemini"
-
-describe("gemini provider", () => {
-  it("isGeminiAvailable returns false when no API key", () => {
-    delete process.env.GEMINI_API_KEY
-    expect(isGeminiAvailable()).toBe(false)
-  })
-
-  it("callGemini returns fallback when no API key", async () => {
-    delete process.env.GEMINI_API_KEY
-    const result = await callGemini({
-      system: "You are a test assistant.",
-      messages: [{ role: "user", content: "Hello" }],
-    })
-    expect(result.fromFallback).toBe(true)
-    expect(result.finishReason).toBe("FALLBACK")
-    expect(result.text).toContain("unavailable")
-    expect(result.toolCalls).toHaveLength(0)
-    expect(result.correlationId).toBeTruthy()
-    expect(result.latencyMs).toBeGreaterThanOrEqual(0)
-  })
-
-  it("callGemini uses provided correlationId", async () => {
-    delete process.env.GEMINI_API_KEY
-    const result = await callGemini({
-      system: "Test",
-      messages: [{ role: "user", content: "Hi" }],
-      correlationId: "test-correlation-123",
-    })
-    expect(result.correlationId).toBe("test-correlation-123")
-  })
-
-  it("callGemini response has correct shape", async () => {
-    delete process.env.GEMINI_API_KEY
-    const result = await callGemini({
-      system: "Test",
-      messages: [{ role: "user", content: "Hi" }],
-    })
-    expect(result).toHaveProperty("text")
-    expect(result).toHaveProperty("toolCalls")
-    expect(result).toHaveProperty("finishReason")
-    expect(result).toHaveProperty("correlationId")
-    expect(result).toHaveProperty("latencyMs")
-    expect(result).toHaveProperty("fromFallback")
   })
 })
 

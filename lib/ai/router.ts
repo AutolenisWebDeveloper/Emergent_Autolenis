@@ -1,8 +1,8 @@
 /**
  * Router – deterministic agent routing by role and intent.
  *
- * Primary path: Gemini-based classification (via gemini-client).
- * Fallback: keyword-based deterministic classifier.
+ * Uses keyword-based deterministic classifier to route messages
+ * to the appropriate specialist agent.
  *
  * Primary routing is by viewer role; intent-based overrides are applied
  * when the classified intent matches a specialised domain (SEO, contract).
@@ -17,7 +17,6 @@ import { affiliateGrowthAgent } from "./agents/affiliate-growth.agent"
 import { adminOpsAgent } from "./agents/admin-ops.agent"
 import { seoAgent } from "./agents/seo.agent"
 import { contractAgent } from "./agents/contract.agent"
-import { classifyWithGemini, type GeminiClassification } from "./gemini-client"
 import { matchIntent } from "./faq"
 
 /** Minimal agent shape consumed by the orchestrator. */
@@ -92,16 +91,6 @@ export function classifyIntent(message: string): ClassifiedIntent {
 // Agent routing
 // ---------------------------------------------------------------------------
 
-const AGENT_MAP: Record<string, AgentSpec> = {
-  SalesAgent: salesAgent,
-  BuyerConciergeAgent: buyerConciergeAgent,
-  DealerLiaisonAgent: dealerLiaisonAgent,
-  AffiliateGrowthAgent: affiliateGrowthAgent,
-  AdminOpsAgent: adminOpsAgent,
-  SEOAgent: seoAgent,
-  ContractAgent: contractAgent,
-}
-
 /** Resolve the primary agent for a given role. */
 function agentForRole(role: AIRole): AgentSpec {
   switch (role) {
@@ -156,51 +145,13 @@ function buildClassificationSchema(
 
 /**
  * Route a user message to the appropriate specialist agent.
- * Attempts Gemini classification first, falls back to keyword-based.
+ * Uses deterministic keyword-based classification.
  *
  * @param role    - The viewer's AI role.
  * @param message - The raw user message.
  */
 export async function routeToAgent(role: AIRole, message: string): Promise<RoutingResult> {
-  // Attempt Gemini-based classification first
-  let geminiResult: GeminiClassification | null = null
-  try {
-    geminiResult = await classifyWithGemini(message, role)
-  } catch {
-    // Gemini unavailable; use fallback
-  }
-
-  let agent: AgentSpec
-  let classified: ClassifiedIntent
-  let classificationSchema: ClassificationSchema
-
-  if (geminiResult && AGENT_MAP[geminiResult.agent]) {
-    // Use Gemini classification
-    agent = AGENT_MAP[geminiResult.agent]
-    classified = {
-      intent: geminiResult.intent,
-      domain: geminiResult.agent.includes("SEO") ? "marketing" : geminiResult.agent.includes("Contract") ? "legal" : "platform",
-      riskLevel: geminiResult.risk_level,
-    }
-    classificationSchema = {
-      agent: geminiResult.agent,
-      intent: geminiResult.intent,
-      risk_level: geminiResult.risk_level,
-      requires_confirmation: geminiResult.requires_confirmation,
-      tool_plan: geminiResult.tool_plan ?? [],
-    }
-  } else {
-    // Deterministic fallback
-    classified = classifyIntent(message)
-    const override = intentOverride(classified.intent, role)
-    agent = override ?? agentForRole(role)
-    classificationSchema = buildClassificationSchema(agent, classified)
-  }
-
-  // High-risk disclosure
-  const disclosure = classified.riskLevel === "high" ? FINANCIAL_LEGAL_DISCLOSURE : null
-
-  return { agent, classified, classificationSchema, disclosure }
+  return routeToAgentSync(role, message)
 }
 
 /**

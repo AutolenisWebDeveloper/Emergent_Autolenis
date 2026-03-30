@@ -16,7 +16,7 @@ import { buildViewerContext, type AIRole, type SessionLike, type ViewerContext }
 import { routeToAgent, routeToAgentSync, type RoutingResult, type ClassificationSchema } from "./router"
 import { getToolsForAgent, validateToolAccess, getTool, type ToolDefinition } from "./tools/registry"
 import { sessionStore, type ChatMessage } from "./memory/session-store"
-import { isAIDisabled, isAIDisabledForUser } from "./gemini-client"
+import { isAIDisabled, isAIDisabledForUser } from "./kill-switch"
 import { retrieveKnowledge, formatRetrievalContext, getCorpusBuildId } from "./knowledge"
 
 // ---------------------------------------------------------------------------
