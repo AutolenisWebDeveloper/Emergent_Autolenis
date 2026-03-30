@@ -43,7 +43,7 @@ const viewReferralsTool: CopilotTool = {
     })
     if (!res.ok) {
       return {
-        summary: "Navigate to your referrals page for the full list.",
+        summary: "Unable to retrieve referral count. View your referrals page for the full list.",
         redirectTo: "/affiliate/referrals",
         redirectLabel: "View Referrals →",
       }

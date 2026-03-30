@@ -56,7 +56,16 @@ describe("lookup_deal", () => {
 
     const tool = ADMIN_TOOLS["lookup_deal"]
     const result = await tool.execute({ dealId: "bad-id" }, adminContext, SESSION_TOKEN)
-    expect(result.summary).toMatch(/could not be found/i)
+    expect(result.summary).toMatch(/not found/i)
+  })
+
+  it("returns access denied on 403", async () => {
+    const mockFetch = vi.fn().mockResolvedValue({ ok: false, status: 403 })
+    vi.stubGlobal("fetch", mockFetch)
+
+    const tool = ADMIN_TOOLS["lookup_deal"]
+    const result = await tool.execute({ dealId: "forbidden-id" }, adminContext, SESSION_TOKEN)
+    expect(result.summary).toMatch(/access denied/i)
   })
 })
 

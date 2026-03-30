@@ -50,8 +50,9 @@ const lookupDealTool: CopilotTool = {
       headers: { Authorization: `Bearer ${sessionToken}` },
     })
     if (!res.ok) {
+      const label = res.status === 404 ? "not found" : res.status === 403 ? "access denied" : "could not be loaded"
       return {
-        summary: `Deal ${dealId} could not be found.`,
+        summary: `Deal ${dealId} ${label}.`,
         redirectTo: "/admin/deals",
         redirectLabel: "Search Deals",
       }
