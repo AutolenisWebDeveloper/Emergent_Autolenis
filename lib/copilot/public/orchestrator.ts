@@ -1,7 +1,7 @@
 /**
  * Public copilot orchestrator.
  *
- * Pipeline: detect intent → select knowledge → compose response → chips → compliance scrub → fallback
+ * Pipeline: greeting → detect intent → select knowledge → compose response → chips → compliance scrub → LLM fallback → deterministic fallback
  *
  * Hybrid path: deterministic intent scoring first; when score < threshold AND LLM is
  * available, falls back to hybridChat() for intelligent open-ended responses.
@@ -13,8 +13,8 @@
  */
 
 import { scoreIntents, ACTION_THRESHOLD } from "../shared/intent-scorer"
-import { runComplianceScrub } from "../shared/base-orchestrator"
-import type { CopilotContext, CopilotResponse, QuickAction } from "../shared/types"
+import { runComplianceScrub, detectGreeting } from "../shared/base-orchestrator"
+import type { CopilotContext, CopilotResponse, QuickAction, ConversationTurn } from "../shared/types"
 import { PUBLIC_INTENT_PATTERNS } from "./intents"
 import { PUBLIC_KNOWLEDGE } from "./knowledge"
 import { isLLMAvailable } from "@/lib/ai/llm-provider"
@@ -22,10 +22,28 @@ import { hybridChat } from "@/lib/ai/hybrid-chat"
 
 const PUBLIC_FALLBACK_THRESHOLD = 0.4
 
+const PUBLIC_GREETING_ACTIONS = [
+  { label: "How does it work?", message: "How does AutoLenis work?", autoSubmit: true },
+  { label: "What does it cost?", message: "What does it cost?", autoSubmit: true },
+  { label: "Get started", message: "How do I get started?", autoSubmit: true },
+]
+
 export async function runPublicOrchestrator(
   message: string,
   context: CopilotContext,
+  history: ConversationTurn[] = [],
 ): Promise<CopilotResponse> {
+  // Greeting detection — respond naturally to greetings
+  const greetingReply = detectGreeting(message, "public")
+  if (greetingReply) {
+    return {
+      renderState: "quick_actions",
+      text: greetingReply,
+      quickActions: PUBLIC_GREETING_ACTIONS,
+      intent: "GREETING",
+    }
+  }
+
   // Score all intents
   const scored = scoreIntents(message, context, PUBLIC_INTENT_PATTERNS)
   const top = scored[0]
@@ -60,6 +78,7 @@ export async function runPublicOrchestrator(
         message,
         variant: "public",
         context,
+        history,
         route: context.route,
       })
       // hybridChat already applies compliance scrub to LLM output

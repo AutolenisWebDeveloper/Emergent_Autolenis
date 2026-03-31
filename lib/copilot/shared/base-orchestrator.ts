@@ -25,15 +25,81 @@ export function translateDealStage(stage: DealStage): string {
 }
 
 // ---------------------------------------------------------------------------
+// Context-aware next-step suggestions
+// ---------------------------------------------------------------------------
+
+/** Return stage-aware quick actions for the buyer variant. */
+export function getBuyerStageActions(stage: DealStage | undefined): QuickAction[] {
+  if (!stage) {
+    return [
+      { label: "Start prequalification", message: "How do I prequalify?", autoSubmit: true },
+      { label: "View my deals", message: "Show my deals", autoSubmit: true },
+    ]
+  }
+
+  const stageActions: Partial<Record<DealStage, QuickAction[]>> = {
+    SELECTED: [
+      { label: "Pay deposit", message: "I want to pay my deposit", autoSubmit: true },
+      { label: "View deal details", message: "What is my deal status?", autoSubmit: true },
+    ],
+    FINANCING_PENDING: [
+      { label: "Check financing", message: "What are my financing options?", autoSubmit: true },
+      { label: "View deal status", message: "What is my deal status?", autoSubmit: true },
+    ],
+    FINANCING_APPROVED: [
+      { label: "View approved terms", message: "Show my financing details", autoSubmit: true },
+      { label: "Next step", message: "What's my next step?", autoSubmit: true },
+    ],
+    FEE_PENDING: [
+      { label: "Pay concierge fee", message: "How do I pay my concierge fee?", autoSubmit: true },
+      { label: "Include in financing", message: "Can I include the fee in my loan?", autoSubmit: true },
+    ],
+    FEE_PAID: [
+      { label: "Next step", message: "What happens next?", autoSubmit: true },
+      { label: "View deal status", message: "What is my deal status?", autoSubmit: true },
+    ],
+    INSURANCE_PENDING: [
+      { label: "Get insurance", message: "How do I get insurance?", autoSubmit: true },
+      { label: "View deal status", message: "What is my deal status?", autoSubmit: true },
+    ],
+    CONTRACT_REVIEW: [
+      { label: "Review contract", message: "Show my contract", autoSubmit: true },
+      { label: "Contract Shield scan", message: "Run Contract Shield on my contract", autoSubmit: true },
+    ],
+    CONTRACT_APPROVED: [
+      { label: "Sign contract", message: "How do I sign?", autoSubmit: true },
+      { label: "View contract", message: "Review my contract", autoSubmit: true },
+    ],
+    SIGNING_PENDING: [
+      { label: "Sign now", message: "I'm ready to sign", autoSubmit: true },
+      { label: "View contract", message: "Review my contract", autoSubmit: true },
+    ],
+    SIGNED: [
+      { label: "Schedule pickup", message: "Schedule my vehicle pickup", autoSubmit: true },
+      { label: "View deal details", message: "What is my deal status?", autoSubmit: true },
+    ],
+    PICKUP_SCHEDULED: [
+      { label: "View pickup details", message: "When is my pickup?", autoSubmit: true },
+      { label: "Contact support", message: "I need help with my pickup", autoSubmit: true },
+    ],
+  }
+
+  return stageActions[stage] ?? [
+    { label: "Check deal status", message: "What is my deal status?", autoSubmit: true },
+    { label: "Contact support", message: "I need help", autoSubmit: true },
+  ]
+}
+
+// ---------------------------------------------------------------------------
 // Fallback response builder
 // ---------------------------------------------------------------------------
 
 const VARIANT_FALLBACKS: Record<CopilotVariant, string> = {
-  public: "I'm here to help you learn about AutoLenis. Could you tell me a bit more about what you're looking for?",
-  buyer: "I'm your buyer assistant. I can help you check your deal status, pay fees, or understand next steps. What can I help you with?",
-  dealer: "I'm your dealer assistant. I can help with offers, inventory, and fix lists. What do you need?",
-  affiliate: "I'm your affiliate assistant. I can help with commissions, referrals, and payouts. What can I help with?",
-  admin: "I'm the admin assistant. I can help look up deals, buyers, or platform reports. What would you like to do?",
+  public: "I'm here to help you learn about AutoLenis — your concierge car-buying platform. Could you tell me a bit more about what you're looking for?",
+  buyer: "I'm your buyer assistant. I can help you check your deal status, pay fees, review your contract, or understand your next steps. What can I help you with?",
+  dealer: "I'm your dealer assistant. I can help with viewing auctions, submitting offers, managing inventory, and understanding fix lists. What do you need?",
+  affiliate: "I'm your affiliate assistant. I can help with commissions, referral links, team management, and payouts. What can I help with?",
+  admin: "I'm the admin assistant. I can help look up deals, review compliance events, manage users, or check platform health. What would you like to do?",
 }
 
 /**
@@ -99,6 +165,10 @@ const FRUSTRATION_SIGNALS = [
   "why isn't",
   "why won't",
   "nothing works",
+  "this sucks",
+  "waste of time",
+  "give up",
+  "scam",
 ]
 
 /**
@@ -123,4 +193,52 @@ export function detectFrustration(message: string, history: ConversationTurn[]):
   }
 
   return false
+}
+
+// ---------------------------------------------------------------------------
+// Greeting detection
+// ---------------------------------------------------------------------------
+
+const GREETING_PATTERNS = [
+  "hello",
+  "hi",
+  "hey",
+  "good morning",
+  "good afternoon",
+  "good evening",
+  "howdy",
+  "sup",
+  "what's up",
+  "greetings",
+  "yo",
+]
+
+/**
+ * Detect if a message is a greeting and return an appropriate response.
+ * Returns null if the message is not a greeting.
+ */
+export function detectGreeting(message: string, variant: CopilotVariant): string | null {
+  const lower = message.toLowerCase().trim()
+
+  // Only match if the message is short (likely just a greeting)
+  if (lower.split(/\s+/).length > 5) return null
+
+  // Use word-boundary matching to avoid false positives (e.g. "shield" matching "hi")
+  // Escape special regex characters in patterns before interpolation
+  const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+  const isGreeting = GREETING_PATTERNS.some((g) => {
+    const regex = new RegExp(`\\b${escapeRegex(g)}\\b`, "i")
+    return regex.test(lower)
+  })
+  if (!isGreeting) return null
+
+  const greetings: Record<CopilotVariant, string> = {
+    public: "Hello! Welcome to AutoLenis. I'm your AI copilot — I can help you learn about our concierge car-buying platform, pricing, prequalification, and more. What would you like to know?",
+    buyer: "Hello! I'm your buyer assistant. I can help you check your deal status, navigate next steps, pay fees, review your contract, or answer any questions about the process. How can I help?",
+    dealer: "Hello! I'm your dealer assistant. I can help you view active auctions, manage your inventory, submit offers, and track your deals. What would you like to do?",
+    affiliate: "Hello! I'm your affiliate assistant. I can help with your referral links, commissions, team management, and payout history. What can I help with?",
+    admin: "Hello! I'm the admin assistant. I can help you look up deals, manage users, review compliance events, and check platform health. What would you like to do?",
+  }
+
+  return greetings[variant]
 }
