@@ -106,7 +106,7 @@ export default function ChatWidget({ variant = "public" }: ChatWidgetProps) {
   }, [input])
 
   const sendMessage = useCallback(
-    (text: string) => {
+    async (text: string) => {
       if (!text.trim() || loading) return
 
       const userMsgId = generateId()
@@ -121,19 +121,69 @@ export default function ChatWidget({ variant = "public" }: ChatWidgetProps) {
       setInput("")
       setLoading(true)
 
-      // Process locally (deterministic — no network call)
+      // Process locally first (deterministic — 0ms, $0)
       const result = processMessage(text.trim(), pathname)
 
-      const assistantMsg: ChatMessage = {
-        id: assistantMsgId,
-        sender: "assistant",
-        content: result.reply,
-        timestamp: Date.now(),
+      // If FAQ matched an intent, use the local result immediately
+      if (result.intentId !== null) {
+        const assistantMsg: ChatMessage = {
+          id: assistantMsgId,
+          sender: "assistant",
+          content: result.reply,
+          timestamp: Date.now(),
+        }
+        setMessages((prev) => [...prev, assistantMsg])
+        setSuggestedTopics(result.suggestedTopics)
+        setLoading(false)
+        return
       }
 
-      setMessages((prev) => [...prev, assistantMsg])
-      setSuggestedTopics(result.suggestedTopics)
-      setLoading(false)
+      // FAQ returned no match — call the API for LLM-enhanced response
+      try {
+        const apiResponse = await fetch("/api/copilot/public", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message: text.trim(),
+            context: {
+              variant,
+              role: "anonymous",
+              route: pathname ?? "/",
+              sessionId: assistantMsgId,
+            },
+            history: [],
+          }),
+        })
+
+        let reply = result.reply // fall back to FAQ reply if API fails
+        if (apiResponse.ok) {
+          const data = (await apiResponse.json()) as { response?: { text?: string } }
+          if (data?.response?.text) {
+            reply = data.response.text
+          }
+        }
+
+        const assistantMsg: ChatMessage = {
+          id: assistantMsgId,
+          sender: "assistant",
+          content: reply,
+          timestamp: Date.now(),
+        }
+        setMessages((prev) => [...prev, assistantMsg])
+        setSuggestedTopics(result.suggestedTopics)
+      } catch {
+        // Network error — fall back to local FAQ reply
+        const assistantMsg: ChatMessage = {
+          id: assistantMsgId,
+          sender: "assistant",
+          content: result.reply,
+          timestamp: Date.now(),
+        }
+        setMessages((prev) => [...prev, assistantMsg])
+        setSuggestedTopics(result.suggestedTopics)
+      } finally {
+        setLoading(false)
+      }
     },
     [loading, pathname],
   )

@@ -73,7 +73,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     isTestWorkspace: rawContext.isTestWorkspace,
   }
 
-  const response = runPublicOrchestrator(message, context)
+  const response = await runPublicOrchestrator(message, context)
 
   return NextResponse.json({ ok: true, response })
 }

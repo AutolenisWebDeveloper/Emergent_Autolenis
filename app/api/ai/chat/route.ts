@@ -1,24 +1,26 @@
 /**
- * AI Chat API Route — lightweight local handler for ALL portals.
+ * AI Chat API Route — hybrid FAQ + LLM handler for ALL portals.
  *
- * Uses the deterministic chatbot FAQ engine instead of an external AI provider.
- * Responds with a structured envelope compatible with existing consumers
- * (admin AI panel, ConciergeDock).
+ * Uses hybridChat(): FAQ fast-path (0ms, $0) → Groq LLM fallback → compliance scrub.
+ * Gracefully degrades to FAQ-only when GROQ_API_KEY is absent or kill switch is active.
  *
  * Returns:
  *   Streaming:     SSE events { type: "metadata"|"chunk"|"done" }
  *   Non-streaming: { ok: true, conversationId, reply, agent, intent }
  *   Error:         { ok: false, error: { code, userMessage, debugId } }
+ *
+ * Observability header: x-copilot-source: "faq" | "llm"
  */
 
 import { NextRequest } from "next/server"
 import { getSession } from "@/lib/auth-server"
-import { processMessage } from "@/lib/chatbot/faq"
 import {
   generateDebugId,
   buildErrorResponse,
 } from "@/lib/ai/error-classifier"
 import { isAIDisabled } from "@/lib/ai/kill-switch"
+import { hybridChat } from "@/lib/ai/hybrid-chat"
+import type { CopilotContext } from "@/lib/copilot/shared/types"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -29,6 +31,8 @@ interface ChatRequestBody {
   adminOverride?: boolean
   stream?: boolean
   clientTraceId?: string
+  variant?: CopilotContext["variant"]
+  route?: string
 }
 
 export async function POST(request: NextRequest) {
@@ -44,7 +48,7 @@ export async function POST(request: NextRequest) {
       return buildErrorResponse("VALIDATION_ERROR", debugId, "Invalid JSON in request body.")
     }
 
-    const { conversationId, message, adminOverride, stream = true } = body
+    const { conversationId, message, adminOverride, stream = true, variant = "public", route } = body
 
     if (body.clientTraceId) {
       debugId = generateDebugId(body.clientTraceId)
@@ -78,8 +82,29 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Process message with the local FAQ engine
-    const result = processMessage(message.trim())
+    const VALID_USER_ROLES: CopilotContext["role"][] = ["anonymous", "buyer", "dealer", "affiliate", "admin"]
+
+    // Build a minimal context for the hybrid chat engine
+    // Map session role to a valid CopilotContext UserRole
+    const rawRole = session?.role?.toLowerCase() ?? "anonymous"
+    const mappedRole = (VALID_USER_ROLES.includes(rawRole as CopilotContext["role"])
+      ? rawRole
+      : "anonymous") as CopilotContext["role"]
+
+    const context: CopilotContext = {
+      variant,
+      role: mappedRole,
+      route: route ?? "/",
+      sessionId: conversationId,
+    }
+
+    // Run hybrid chat: FAQ fast-path → LLM fallback → compliance scrub
+    const result = await hybridChat({
+      message: message.trim(),
+      variant,
+      context,
+      route: route ?? "/",
+    })
 
     if (stream) {
       const encoder = new TextEncoder()
@@ -90,7 +115,8 @@ export async function POST(request: NextRequest) {
             type: "metadata",
             conversationId,
             agent: "LenisConcierge",
-            intent: result.intentId ?? "general",
+            intent: result.intent ?? "general",
+            source: result.source,
             riskLevel: "low",
             disclosure: null,
             debugId,
@@ -112,20 +138,30 @@ export async function POST(request: NextRequest) {
           "Content-Type": "text/event-stream",
           "Cache-Control": "no-cache",
           Connection: "keep-alive",
+          "x-copilot-source": result.source,
         },
       })
     }
 
-    return Response.json({
-      ok: true,
-      reply: result.reply,
-      conversationId,
-      agent: "LenisConcierge",
-      intent: result.intentId ?? "general",
-      riskLevel: "low",
-      disclosure: null,
-      debugId,
-    })
+    return new Response(
+      JSON.stringify({
+        ok: true,
+        reply: result.reply,
+        conversationId,
+        agent: "LenisConcierge",
+        intent: result.intent ?? "general",
+        source: result.source,
+        riskLevel: "low",
+        disclosure: null,
+        debugId,
+      }),
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "x-copilot-source": result.source,
+        },
+      },
+    )
   } catch (error) {
     console.error("[AI Chat Error] debugId=%s", debugId, error)
     return buildErrorResponse("INTERNAL_ERROR", debugId)
