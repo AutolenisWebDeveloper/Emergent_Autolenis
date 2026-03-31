@@ -18,8 +18,7 @@
 import { useState, useRef, useEffect, useCallback, type FormEvent, type KeyboardEvent } from "react"
 import { usePathname } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
-import { getQuickPrompts, MORE_DETAILS_PROMPT, formatPromptMessage, type QuickPromptState } from "@/lib/lenis/quickPrompts"
-import type { AIRole } from "@/lib/ai/context-builder"
+import { MORE_DETAILS_PROMPT } from "@/lib/lenis/quickPrompts"
 import { processMessage, type SuggestedChip } from "@/lib/chatbot/faq"
 import type { CopilotVariant, CopilotResponse, ActionResult, QuickAction } from "@/lib/copilot/shared/types"
 import { useCopilotSession } from "@/lib/copilot/shared/conversation-state"
@@ -84,9 +83,11 @@ export default function ChatWidget({ variant = "public" }: ChatWidgetProps) {
   const [input, setInput] = useState("")
   const [loading, setLoading] = useState(false)
   const [suggestedTopics, setSuggestedTopics] = useState<readonly SuggestedChip[]>([])
+  const [pendingConfirmation, setPendingConfirmation] = useState<CopilotResponse | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const pathname = usePathname()
+  const sessionIdRef = useRef(generateId())
   const { clearSession } = useCopilotSession()
 
   const lastMessageIsAssistant =
@@ -105,9 +106,164 @@ export default function ChatWidget({ variant = "public" }: ChatWidgetProps) {
     }
   }, [input])
 
+  /** Build conversation history from recent messages (last 20 turns) */
+  const buildHistory = useCallback(() => {
+    return messages
+      .slice(-20)
+      .map((m) => ({
+        role: m.sender === "user" ? ("user" as const) : ("assistant" as const),
+        content: m.content,
+        timestamp: m.timestamp,
+      }))
+  }, [messages])
+
+  /** Determine the correct API endpoint for the variant */
+  const getApiEndpoint = useCallback(() => {
+    const endpoints: Record<CopilotVariant, string> = {
+      public: "/api/copilot/public",
+      buyer: "/api/copilot/buyer",
+      dealer: "/api/copilot/dealer",
+      affiliate: "/api/copilot/affiliate",
+      admin: "/api/copilot/admin",
+    }
+    return endpoints[variant]
+  }, [variant])
+
+  /** Determine the role for the variant */
+  const getRole = useCallback(() => {
+    const roles: Record<CopilotVariant, string> = {
+      public: "anonymous",
+      buyer: "buyer",
+      dealer: "dealer",
+      affiliate: "affiliate",
+      admin: "admin",
+    }
+    return roles[variant]
+  }, [variant])
+
+  /** Process the CopilotResponse from the API and add it as a message */
+  const handleCopilotResponse = useCallback((response: CopilotResponse, msgId: string) => {
+    // Handle confirmation requests
+    if (response.renderState === "confirmation" && response.confirmation) {
+      setPendingConfirmation(response)
+      const assistantMsg: ChatMessage = {
+        id: msgId,
+        sender: "assistant",
+        content: response.confirmation.description,
+        timestamp: Date.now(),
+        response,
+      }
+      setMessages((prev) => [...prev, assistantMsg])
+      return
+    }
+
+    // Handle action results
+    if (response.renderState === "action_result" && response.actionResult) {
+      const assistantMsg: ChatMessage = {
+        id: msgId,
+        sender: "assistant",
+        content: response.actionResult.summary,
+        timestamp: Date.now(),
+        response,
+      }
+      setMessages((prev) => [...prev, assistantMsg])
+      return
+    }
+
+    // Handle error responses
+    if (response.renderState === "error") {
+      const assistantMsg: ChatMessage = {
+        id: msgId,
+        sender: "assistant",
+        content: response.errorMessage ?? "Something went wrong. Please try again.",
+        timestamp: Date.now(),
+        error: true,
+        response,
+      }
+      setMessages((prev) => [...prev, assistantMsg])
+      return
+    }
+
+    // Default: text or quick_actions response
+    const assistantMsg: ChatMessage = {
+      id: msgId,
+      sender: "assistant",
+      content: response.text ?? "",
+      timestamp: Date.now(),
+      response,
+    }
+    setMessages((prev) => [...prev, assistantMsg])
+  }, [])
+
+  /** Handle confirmation acceptance from the user */
+  const handleConfirm = useCallback(async () => {
+    if (!pendingConfirmation?.confirmation) return
+    const { toolName, toolArgs } = pendingConfirmation.confirmation
+
+    setPendingConfirmation(null)
+    setLoading(true)
+
+    const confirmMsgId = generateId()
+    setMessages((prev) => [
+      ...prev,
+      { id: generateId(), sender: "user", content: "Yes, proceed", timestamp: Date.now() },
+    ])
+
+    try {
+      const apiResponse = await fetch(getApiEndpoint(), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: "confirm",
+          context: {
+            variant,
+            role: getRole(),
+            route: pathname ?? "/",
+            sessionId: sessionIdRef.current,
+          },
+          history: buildHistory(),
+          confirmedTool: { toolName, toolArgs },
+        }),
+      })
+
+      if (apiResponse.ok) {
+        const data = (await apiResponse.json()) as { response?: CopilotResponse }
+        if (data?.response) {
+          handleCopilotResponse(data.response, confirmMsgId)
+        }
+      } else {
+        setMessages((prev) => [
+          ...prev,
+          { id: confirmMsgId, sender: "assistant", content: "Something went wrong. Please try again.", timestamp: Date.now(), error: true },
+        ])
+      }
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        { id: confirmMsgId, sender: "assistant", content: "Connection error. Please try again.", timestamp: Date.now(), error: true },
+      ])
+    } finally {
+      setLoading(false)
+    }
+  }, [pendingConfirmation, getApiEndpoint, variant, getRole, pathname, buildHistory, handleCopilotResponse])
+
+  /** Handle confirmation cancellation */
+  const handleCancelConfirm = useCallback(() => {
+    setPendingConfirmation(null)
+    const cancelMsgId = generateId()
+    setMessages((prev) => [
+      ...prev,
+      { id: generateId(), sender: "user", content: "Cancel", timestamp: Date.now() },
+      { id: cancelMsgId, sender: "assistant", content: "No problem — cancelled. What else can I help you with?", timestamp: Date.now() },
+    ])
+  }, [])
+
   const sendMessage = useCallback(
     async (text: string) => {
       if (!text.trim() || loading) return
+
+      // Clear any pending confirmation when sending a new message
+      setPendingConfirmation(null)
 
       const userMsgId = generateId()
       const assistantMsgId = generateId()
@@ -138,39 +294,57 @@ export default function ChatWidget({ variant = "public" }: ChatWidgetProps) {
         return
       }
 
-      // FAQ returned no match — call the API for LLM-enhanced response
+      // FAQ returned no match — call the variant-specific API for orchestrated response
       try {
-        const apiResponse = await fetch("/api/copilot/public", {
+        const apiResponse = await fetch(getApiEndpoint(), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             message: text.trim(),
             context: {
               variant,
-              role: "anonymous",
+              role: getRole(),
               route: pathname ?? "/",
-              sessionId: assistantMsgId,
+              sessionId: sessionIdRef.current,
             },
-            history: [],
+            history: buildHistory(),
           }),
         })
 
-        let reply = result.reply // fall back to FAQ reply if API fails
         if (apiResponse.ok) {
-          const data = (await apiResponse.json()) as { response?: { text?: string } }
-          if (data?.response?.text) {
-            reply = data.response.text
+          const data = (await apiResponse.json()) as { response?: CopilotResponse; ok?: boolean }
+          if (data?.response) {
+            handleCopilotResponse(data.response, assistantMsgId)
+            // Update suggested topics from quick actions if available
+            if (data.response.quickActions && data.response.quickActions.length > 0) {
+              setSuggestedTopics(
+                data.response.quickActions.map((qa) => ({ label: qa.label, query: qa.message })),
+              )
+            } else {
+              setSuggestedTopics(result.suggestedTopics)
+            }
+          } else {
+            // API returned ok but no response object — use FAQ fallback
+            const assistantMsg: ChatMessage = {
+              id: assistantMsgId,
+              sender: "assistant",
+              content: result.reply,
+              timestamp: Date.now(),
+            }
+            setMessages((prev) => [...prev, assistantMsg])
+            setSuggestedTopics(result.suggestedTopics)
           }
+        } else {
+          // API error — fall back to FAQ reply
+          const assistantMsg: ChatMessage = {
+            id: assistantMsgId,
+            sender: "assistant",
+            content: result.reply,
+            timestamp: Date.now(),
+          }
+          setMessages((prev) => [...prev, assistantMsg])
+          setSuggestedTopics(result.suggestedTopics)
         }
-
-        const assistantMsg: ChatMessage = {
-          id: assistantMsgId,
-          sender: "assistant",
-          content: reply,
-          timestamp: Date.now(),
-        }
-        setMessages((prev) => [...prev, assistantMsg])
-        setSuggestedTopics(result.suggestedTopics)
       } catch {
         // Network error — fall back to local FAQ reply
         const assistantMsg: ChatMessage = {
@@ -185,7 +359,7 @@ export default function ChatWidget({ variant = "public" }: ChatWidgetProps) {
         setLoading(false)
       }
     },
-    [loading, pathname],
+    [loading, pathname, variant, getApiEndpoint, getRole, buildHistory, handleCopilotResponse],
   )
 
   const handleSubmit = (e: FormEvent) => {
@@ -204,6 +378,7 @@ export default function ChatWidget({ variant = "public" }: ChatWidgetProps) {
     if (confirm("Clear conversation? This cannot be undone.")) {
       setMessages([])
       setSuggestedTopics([])
+      setPendingConfirmation(null)
       clearSession()
     }
   }
@@ -434,8 +609,34 @@ export default function ChatWidget({ variant = "public" }: ChatWidgetProps) {
               <div ref={messagesEndRef} />
             </div>
 
+            {/* ---- Confirmation dialog ---- */}
+            {pendingConfirmation?.confirmation && !loading && (
+              <div className="border-t border-border px-3 py-3 bg-background">
+                <div className="rounded-xl border border-brand-purple/20 bg-brand-purple/[0.04] p-3 space-y-2">
+                  <p className="text-[12px] font-semibold text-foreground">{pendingConfirmation.confirmation.title}</p>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={handleConfirm}
+                      className="flex-1 rounded-lg px-3 py-2 text-[12px] font-semibold text-white transition-colors"
+                      style={{ background: "linear-gradient(135deg, var(--brand-purple) 0%, var(--brand-blue) 100%)" }}
+                    >
+                      {pendingConfirmation.confirmation.confirmLabel ?? "Confirm"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleCancelConfirm}
+                      className="flex-1 rounded-lg border border-border px-3 py-2 text-[12px] font-semibold text-muted-foreground hover:bg-accent transition-colors"
+                    >
+                      {pendingConfirmation.confirmation.cancelLabel ?? "Cancel"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* ---- Quick reply chips & "More details" strip ---- */}
-            {lastMessageIsAssistant && (
+            {lastMessageIsAssistant && !pendingConfirmation && (
               <div className="border-t border-border px-3 py-2 bg-background space-y-2">
                 {suggestedTopics.length > 0 && (
                   <div className="flex flex-wrap gap-1.5">

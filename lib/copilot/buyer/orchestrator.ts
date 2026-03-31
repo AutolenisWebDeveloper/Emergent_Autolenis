@@ -3,17 +3,22 @@
  *
  * Pipeline:
  * 1. Authenticate buyer role
- * 2. Score intents
- * 3. If tool requires confirmation → return confirmation render state
- * 4. If confirmed tool → execute
- * 5. Compliance scrub all text
+ * 2. Greeting detection
+ * 3. Frustration detection
+ * 4. Score intents
+ * 5. If tool requires confirmation → return confirmation render state
+ * 6. If confirmed tool → execute
+ * 7. LLM fallback for unrecognized queries
+ * 8. Compliance scrub all text
  */
 
 import { topIntent } from "../shared/intent-scorer"
-import { runComplianceScrub, buildFallbackResponse, validateToolAccess, detectFrustration } from "../shared/base-orchestrator"
+import { runComplianceScrub, buildFallbackResponse, validateToolAccess, detectFrustration, detectGreeting, getBuyerStageActions } from "../shared/base-orchestrator"
 import type { CopilotContext, CopilotResponse, CopilotRequest } from "../shared/types"
 import { BUYER_INTENT_PATTERNS } from "./intents"
 import { BUYER_TOOLS, INTENT_TO_TOOL } from "./tools"
+import { isLLMAvailable } from "@/lib/ai/llm-provider"
+import { hybridChat } from "@/lib/ai/hybrid-chat"
 
 const BUYER_QUICK_ACTIONS = [
   { label: "Check deal status", message: "What is my deal status?", autoSubmit: true },
@@ -25,7 +30,7 @@ export async function runBuyerOrchestrator(
   req: CopilotRequest,
   sessionToken: string,
 ): Promise<CopilotResponse> {
-  const { message, context, confirmedTool } = req
+  const { message, context, confirmedTool, history } = req
 
   // Handle confirmed tool execution
   if (confirmedTool) {
@@ -50,12 +55,27 @@ export async function runBuyerOrchestrator(
     }
   }
 
+  // Greeting detection — respond with stage-aware context
+  const greetingReply = detectGreeting(message, "buyer")
+  if (greetingReply) {
+    const stageActions = getBuyerStageActions(context.dealStage)
+    return {
+      renderState: "quick_actions",
+      text: greetingReply,
+      quickActions: stageActions.slice(0, 3),
+      intent: "GREETING",
+    }
+  }
+
   // Check for frustration → route to support
-  if (detectFrustration(message, req.history)) {
+  if (detectFrustration(message, history)) {
     return {
       renderState: "text_response",
-      text: "I'm sorry you're having trouble. Our support team can help resolve this quickly.",
-      quickActions: [{ label: "Contact support", message: "Contact support", autoSubmit: true }],
+      text: "I'm sorry you're having trouble. Our support team can help resolve this quickly. Would you like me to connect you with support?",
+      quickActions: [
+        { label: "Contact support", message: "Contact support", autoSubmit: true },
+        { label: "Try again", message: "Let me try again", autoSubmit: true },
+      ],
       intent: "FRUSTRATION",
     }
   }
@@ -64,17 +84,37 @@ export async function runBuyerOrchestrator(
   const matched = topIntent(message, context, BUYER_INTENT_PATTERNS)
 
   if (!matched) {
+    // Try LLM fallback for unrecognized queries
+    if (isLLMAvailable()) {
+      try {
+        const llmResult = await hybridChat({
+          message,
+          variant: "buyer",
+          context,
+          history,
+          route: context.route,
+        })
+        return {
+          renderState: "text_response",
+          text: llmResult.reply,
+          intent: llmResult.intent ?? "FALLBACK",
+        }
+      } catch {
+        // LLM errors — degrade to deterministic fallback
+      }
+    }
     return buildFallbackResponse("buyer", undefined, BUYER_QUICK_ACTIONS)
   }
 
   // Find associated tool
   const toolName = INTENT_TO_TOOL[matched.name]
   if (!toolName) {
-    // Information-only intent
+    // Information-only intent — provide contextual response
+    const stageActions = getBuyerStageActions(context.dealStage)
     return {
       renderState: "quick_actions",
       text: runComplianceScrub(`I can help you with that. Here are some related actions:`),
-      quickActions: BUYER_QUICK_ACTIONS,
+      quickActions: stageActions.slice(0, 3),
       intent: matched.name,
     }
   }

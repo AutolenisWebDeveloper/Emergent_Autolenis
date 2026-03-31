@@ -63,7 +63,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     )
   }
 
-  const { message, context: rawContext } = parsed.data
+  const { message, context: rawContext, history } = parsed.data
 
   const context: CopilotContext = {
     variant: "public",
@@ -73,7 +73,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     isTestWorkspace: rawContext.isTestWorkspace,
   }
 
-  const response = await runPublicOrchestrator(message, context)
+  const response = await runPublicOrchestrator(message, context, history ?? [])
 
   return NextResponse.json({ ok: true, response })
 }
