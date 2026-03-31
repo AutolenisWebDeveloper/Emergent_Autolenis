@@ -224,8 +224,10 @@ export function detectGreeting(message: string, variant: CopilotVariant): string
   if (lower.split(/\s+/).length > 5) return null
 
   // Use word-boundary matching to avoid false positives (e.g. "shield" matching "hi")
+  // Escape special regex characters in patterns before interpolation
+  const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
   const isGreeting = GREETING_PATTERNS.some((g) => {
-    const regex = new RegExp(`\\b${g}\\b`, "i")
+    const regex = new RegExp(`\\b${escapeRegex(g)}\\b`, "i")
     return regex.test(lower)
   })
   if (!isGreeting) return null

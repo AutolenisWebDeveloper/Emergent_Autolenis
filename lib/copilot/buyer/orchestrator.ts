@@ -99,8 +99,9 @@ export async function runBuyerOrchestrator(
           text: llmResult.reply,
           intent: llmResult.intent ?? "FALLBACK",
         }
-      } catch {
-        // LLM errors — degrade to deterministic fallback
+      } catch (err) {
+        // LLM errors — log and degrade to deterministic fallback
+        console.error("[buyerOrchestrator] LLM fallback error:", err)
       }
     }
     return buildFallbackResponse("buyer", undefined, BUYER_QUICK_ACTIONS)

@@ -22,6 +22,12 @@ import { hybridChat } from "@/lib/ai/hybrid-chat"
 
 const PUBLIC_FALLBACK_THRESHOLD = 0.4
 
+const PUBLIC_GREETING_ACTIONS = [
+  { label: "How does it work?", message: "How does AutoLenis work?", autoSubmit: true },
+  { label: "What does it cost?", message: "What does it cost?", autoSubmit: true },
+  { label: "Get started", message: "How do I get started?", autoSubmit: true },
+]
+
 export async function runPublicOrchestrator(
   message: string,
   context: CopilotContext,
@@ -33,11 +39,7 @@ export async function runPublicOrchestrator(
     return {
       renderState: "quick_actions",
       text: greetingReply,
-      quickActions: [
-        { label: "How does it work?", message: "How does AutoLenis work?", autoSubmit: true },
-        { label: "What does it cost?", message: "What does it cost?", autoSubmit: true },
-        { label: "Get started", message: "How do I get started?", autoSubmit: true },
-      ],
+      quickActions: PUBLIC_GREETING_ACTIONS,
       intent: "GREETING",
     }
   }

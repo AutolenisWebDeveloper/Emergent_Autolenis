@@ -199,6 +199,7 @@ export default function ChatWidget({ variant = "public" }: ChatWidgetProps) {
   const handleConfirm = useCallback(async () => {
     if (!pendingConfirmation?.confirmation) return
     const { toolName, toolArgs } = pendingConfirmation.confirmation
+    const savedConfirmation = pendingConfirmation
 
     setPendingConfirmation(null)
     setLoading(true)
@@ -232,15 +233,19 @@ export default function ChatWidget({ variant = "public" }: ChatWidgetProps) {
           handleCopilotResponse(data.response, confirmMsgId)
         }
       } else {
+        // Restore confirmation so user can retry
+        setPendingConfirmation(savedConfirmation)
         setMessages((prev) => [
           ...prev,
-          { id: confirmMsgId, sender: "assistant", content: "Something went wrong. Please try again.", timestamp: Date.now(), error: true },
+          { id: confirmMsgId, sender: "assistant", content: "Something went wrong. Please try again or cancel.", timestamp: Date.now(), error: true },
         ])
       }
     } catch {
+      // Restore confirmation so user can retry
+      setPendingConfirmation(savedConfirmation)
       setMessages((prev) => [
         ...prev,
-        { id: confirmMsgId, sender: "assistant", content: "Connection error. Please try again.", timestamp: Date.now(), error: true },
+        { id: confirmMsgId, sender: "assistant", content: "Connection error. Please try again or cancel.", timestamp: Date.now(), error: true },
       ])
     } finally {
       setLoading(false)
