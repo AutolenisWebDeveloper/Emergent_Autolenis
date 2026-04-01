@@ -204,6 +204,7 @@ export class InventoryService {
     transmission?: string
     exteriorColor?: string
     interiorColor?: string
+    mileage?: number
     doors?: number
     seats?: number
     msrpCents?: number
@@ -217,26 +218,29 @@ export class InventoryService {
       throw new Error(`Invalid year: ${data.year}. Must be between 1990 and ${currentYear + 1}`)
     }
 
-    // If VIN provided, try to find existing vehicle
-    if (data.vin) {
-      const existing = await prisma.vehicle.findFirst({
-        where: { vin: data.vin },
+    // Vehicle.vin is required; skip Vehicle record creation when VIN is absent
+    if (!data.vin) {
+      // Try to find by make/model/year/trim combination
+      const existingBySpec = await prisma.vehicle.findFirst({
+        where: {
+          make: { equals: normalizedMake, mode: "insensitive" },
+          model: { equals: data.model, mode: "insensitive" },
+          year: data.year,
+          trim: data.trim ? { equals: data.trim, mode: "insensitive" } : undefined,
+        },
       })
-      if (existing) return existing
+      if (existingBySpec) return existingBySpec
+      // Cannot create Vehicle without a VIN — return null
+      return null
     }
 
-    // Try to find by make/model/year/trim combination
-    const existingBySpec = await prisma.vehicle.findFirst({
-      where: {
-        make: { equals: normalizedMake, mode: "insensitive" },
-        model: { equals: data.model, mode: "insensitive" },
-        year: data.year,
-        trim: data.trim ? { equals: data.trim, mode: "insensitive" } : undefined,
-      },
+    // If VIN provided, try to find existing vehicle
+    const existing = await prisma.vehicle.findFirst({
+      where: { vin: data.vin },
     })
-    if (existingBySpec && !data.vin) return existingBySpec
+    if (existing) return existing
 
-    // Create new vehicle
+    // Create new vehicle (VIN is guaranteed non-empty here)
     return prisma.vehicle.create({
       data: {
         vin: data.vin,
@@ -244,7 +248,8 @@ export class InventoryService {
         model: data.model,
         year: data.year,
         trim: data.trim,
-        bodyStyle: normalizedBodyStyle,
+        bodyStyle: normalizedBodyStyle || "Other",
+        mileage: data.mileage ?? 0,
         drivetrain: data.drivetrain,
         engine: data.engine,
         fuelType: data.fuelType,
@@ -322,8 +327,8 @@ export class InventoryService {
       }
     }
 
-    // Find or create normalized vehicle
-    const vehicle = await this.findOrCreateVehicle({
+    // Find or create normalized vehicle record (best-effort; InventoryItem stores data inline)
+    await this.findOrCreateVehicle({
       vin: data.vin,
       make: data.make,
       model: data.model,
@@ -336,6 +341,7 @@ export class InventoryService {
       transmission: data.transmission,
       exteriorColor: data.exteriorColor,
       interiorColor: data.interiorColor,
+      mileage: data.mileage,
     })
 
     // Create inventory item with inline vehicle data
@@ -576,33 +582,38 @@ export class InventoryService {
     return prisma.inventoryItem.findUnique({ where: { id: inventoryItemId } })
   }
 
-  // Existing methods preserved
+  // Filter options derived from actual available inventory
   static async getAvailableMakes() {
-    const vehicles = await prisma.vehicle.findMany({
+    const items = await prisma.inventoryItem.findMany({
+      where: { status: InventoryStatus.AVAILABLE },
       distinct: ["make"],
       select: { make: true },
       orderBy: { make: "asc" },
     })
-    return vehicles.map((v: any) => v.make).filter(Boolean)
+    return items.map((v: { make: string | null }) => v.make).filter(Boolean)
   }
 
   static async getAvailableBodyStyles() {
-    const vehicles = await prisma.vehicle.findMany({
+    const items = await prisma.inventoryItem.findMany({
+      where: { status: InventoryStatus.AVAILABLE },
       distinct: ["bodyStyle"],
       select: { bodyStyle: true },
       orderBy: { bodyStyle: "asc" },
     })
-    return vehicles.map((v: any) => v.bodyStyle).filter(Boolean)
+    return items.map((v: { bodyStyle: string | null }) => v.bodyStyle).filter(Boolean)
   }
 
   static async getModelsForMake(make: string) {
-    const vehicles = await prisma.vehicle.findMany({
-      where: { make: { equals: make, mode: "insensitive" } },
+    const items = await prisma.inventoryItem.findMany({
+      where: {
+        status: InventoryStatus.AVAILABLE,
+        make: { equals: make, mode: "insensitive" },
+      },
       distinct: ["model"],
       select: { model: true },
       orderBy: { model: "asc" },
     })
-    return vehicles.map((v: any) => v.model).filter(Boolean)
+    return items.map((v: { model: string | null }) => v.model).filter(Boolean)
   }
 }
 

@@ -201,3 +201,156 @@ describe("InventoryService - changeStatus enum types", () => {
     ).resolves.not.toThrow()
   })
 })
+
+describe("InventoryService - findOrCreateVehicle", () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it("returns null when VIN is not provided and no spec match exists", async () => {
+    vi.mocked(prisma.vehicle.findFirst).mockResolvedValueOnce(null)
+
+    const result = await InventoryService.findOrCreateVehicle({
+      make: "Honda",
+      model: "Civic",
+      year: 2021,
+    })
+    expect(result).toBeNull()
+    expect(prisma.vehicle.create).not.toHaveBeenCalled()
+  })
+
+  it("returns existing vehicle when VIN matches", async () => {
+    vi.mocked(prisma.vehicle.findFirst).mockResolvedValueOnce({
+      id: "v-1",
+      vin: "1HGBH41JXMN109186",
+      make: "Honda",
+      model: "Civic",
+      year: 2021,
+    } as any)
+
+    const result = await InventoryService.findOrCreateVehicle({
+      vin: "1HGBH41JXMN109186",
+      make: "Honda",
+      model: "Civic",
+      year: 2021,
+    })
+    expect(result).toMatchObject({ id: "v-1" })
+  })
+
+  it("creates new Vehicle when VIN is provided but not found", async () => {
+    vi.mocked(prisma.vehicle.findFirst).mockResolvedValue(null)
+    vi.mocked(prisma.vehicle.create).mockResolvedValue({
+      id: "v-new",
+      vin: "1HGBH41JXMN109186",
+      make: "Honda",
+      model: "Civic",
+      year: 2021,
+      bodyStyle: "Sedan",
+      mileage: 5000,
+    } as any)
+
+    const result = await InventoryService.findOrCreateVehicle({
+      vin: "1HGBH41JXMN109186",
+      make: "Honda",
+      model: "Civic",
+      year: 2021,
+      bodyStyle: "Sedan",
+      mileage: 5000,
+    })
+    expect(result).toMatchObject({ id: "v-new" })
+    expect(prisma.vehicle.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          vin: "1HGBH41JXMN109186",
+          bodyStyle: "Sedan",
+          mileage: 5000,
+        }),
+      }),
+    )
+  })
+
+  it("defaults bodyStyle to 'Other' and mileage to 0 when not provided", async () => {
+    vi.mocked(prisma.vehicle.findFirst).mockResolvedValue(null)
+    vi.mocked(prisma.vehicle.create).mockResolvedValue({
+      id: "v-new",
+      vin: "1HGBH41JXMN109186",
+      make: "Honda",
+      model: "Civic",
+      year: 2021,
+      bodyStyle: "Other",
+      mileage: 0,
+    } as any)
+
+    await InventoryService.findOrCreateVehicle({
+      vin: "1HGBH41JXMN109186",
+      make: "Honda",
+      model: "Civic",
+      year: 2021,
+    })
+    expect(prisma.vehicle.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          bodyStyle: "Other",
+          mileage: 0,
+        }),
+      }),
+    )
+  })
+})
+
+describe("InventoryService - filter methods query inventoryItem", () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it("getAvailableMakes queries inventoryItem with AVAILABLE status", async () => {
+    vi.mocked(prisma.inventoryItem.findMany).mockResolvedValue([
+      { make: "Honda" },
+      { make: "Toyota" },
+    ] as any)
+
+    const makes = await InventoryService.getAvailableMakes()
+    expect(makes).toEqual(["Honda", "Toyota"])
+    expect(prisma.inventoryItem.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { status: "AVAILABLE" },
+        distinct: ["make"],
+      }),
+    )
+  })
+
+  it("getAvailableBodyStyles queries inventoryItem with AVAILABLE status", async () => {
+    vi.mocked(prisma.inventoryItem.findMany).mockResolvedValue([
+      { bodyStyle: "Sedan" },
+      { bodyStyle: "SUV" },
+    ] as any)
+
+    const styles = await InventoryService.getAvailableBodyStyles()
+    expect(styles).toEqual(["Sedan", "SUV"])
+    expect(prisma.inventoryItem.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { status: "AVAILABLE" },
+        distinct: ["bodyStyle"],
+      }),
+    )
+  })
+
+  it("getModelsForMake queries inventoryItem scoped by make", async () => {
+    vi.mocked(prisma.inventoryItem.findMany).mockResolvedValue([
+      { model: "Civic" },
+      { model: "Accord" },
+    ] as any)
+
+    const models = await InventoryService.getModelsForMake("Honda")
+    expect(models).toEqual(["Civic", "Accord"])
+    expect(prisma.inventoryItem.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          status: "AVAILABLE",
+          make: { equals: "Honda", mode: "insensitive" },
+        }),
+        distinct: ["model"],
+      }),
+    )
+  })
+})
