@@ -11,8 +11,8 @@ type Item = {
   model: string | null
   trim: string | null
   vin: string | null
-  listing_url: string
-  source: string
+  listing_url: string | null
+  source: string | null
   dealer_name: string | null
   dealer_phone: string | null
   dealer_address: string | null
@@ -118,14 +118,20 @@ export default function InventoryPage() {
               </div>
             </div>
 
-            <a
-              href={item.listing_url}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex w-full items-center justify-center rounded-xl border px-3 py-2 text-sm hover:bg-gray-50"
-            >
-              View Listing
-            </a>
+            {item.listing_url ? (
+              <a
+                href={item.listing_url}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex w-full items-center justify-center rounded-xl border px-3 py-2 text-sm hover:bg-gray-50"
+              >
+                View Listing
+              </a>
+            ) : (
+              <span className="inline-flex w-full items-center justify-center rounded-xl border px-3 py-2 text-sm text-gray-400">
+                Available on AutoLenis
+              </span>
+            )}
           </div>
         ))}
       </div>
