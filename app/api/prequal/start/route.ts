@@ -5,6 +5,7 @@ import { logger } from "@/lib/logger"
 import { encryptSsn } from "@/lib/prequal/encryption"
 import { generateSessionToken, setPrequalSessionCookie } from "@/lib/prequal/session"
 import { writePrequalAuditLog } from "@/lib/prequal/audit"
+import { queueSubmissionConfirmation } from "@/lib/prequal/messaging"
 import { validateConsentVersion } from "@/lib/prequal/consent"
 import { getApplicationExpiryDate } from "@/lib/prequal/sla"
 import { step1Schema } from "@/lib/validations/prequal/step1"
@@ -120,6 +121,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       description: "Consumer submitted prequal application",
       metadata: { sessionToken, email: step1.email },
     })
+
+    // Queue submission confirmation email (non-blocking)
+    await queueSubmissionConfirmation(application.id, step1.email, step1.firstName)
 
     // Set session cookie
     await setPrequalSessionCookie(sessionToken)

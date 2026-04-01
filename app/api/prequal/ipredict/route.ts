@@ -4,6 +4,7 @@ import { logger } from "@/lib/logger"
 import { decryptSsn, encrypt } from "@/lib/prequal/encryption"
 import { getPrequalSessionToken } from "@/lib/prequal/session"
 import { writePrequalAuditLog } from "@/lib/prequal/audit"
+import { queueResultReady } from "@/lib/prequal/messaging"
 import { callIpredict } from "@/lib/microbilt/ipredict-client"
 import type { ApplicationStatus } from "@/lib/types/prequal"
 
@@ -192,6 +193,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         description: `Auto-declined: ${scoringResult.hardFailReason ?? "score below threshold"}`,
         metadata: { newState: "NOT_PREQUALIFIED" },
       })
+
+      // Queue result-ready email for auto-decline (non-blocking, dedup-safe)
+      await queueResultReady(
+        application.id,
+        application.email,
+        application.firstName,
+        "NOT_PREQUALIFIED",
+      )
     }
 
     return NextResponse.json({

@@ -26,6 +26,10 @@
     {
       "path": "/api/cron/prequal/purge",
       "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/prequal/message-delivery",
+      "schedule": "*/5 * * * *"
     }
   ]
 }
