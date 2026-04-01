@@ -241,6 +241,9 @@ export class InventoryService {
     if (existing) return existing
 
     // Create new vehicle (VIN is guaranteed non-empty here)
+    // bodyStyle and mileage are required on the Vehicle model:
+    //   - bodyStyle defaults to "Other" when the caller omits it or normalization yields empty
+    //   - mileage defaults to 0 for new vehicle identity records (actual mileage lives on InventoryItem)
     return prisma.vehicle.create({
       data: {
         vin: data.vin,
@@ -327,8 +330,10 @@ export class InventoryService {
       }
     }
 
-    // Find or create normalized vehicle record (best-effort; InventoryItem stores data inline)
-    await this.findOrCreateVehicle({
+    // Best-effort Vehicle record creation for cross-referencing.
+    // InventoryItem stores vehicle data inline, so a missing Vehicle record does not
+    // block inventory creation. When VIN is absent, findOrCreateVehicle returns null.
+    const vehicle = await this.findOrCreateVehicle({
       vin: data.vin,
       make: data.make,
       model: data.model,
@@ -343,6 +348,9 @@ export class InventoryService {
       interiorColor: data.interiorColor,
       mileage: data.mileage,
     })
+    if (!vehicle && data.vin) {
+      console.warn(`[InventoryService] Vehicle record could not be created for VIN ${data.vin}`)
+    }
 
     // Create inventory item with inline vehicle data
     return prisma.inventoryItem.create({

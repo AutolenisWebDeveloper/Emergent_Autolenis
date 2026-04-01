@@ -81,22 +81,26 @@ export async function GET(req: NextRequest) {
 
   // Fallback: query InventoryItem table via Prisma when canonical table is empty or errored
   if (isPrismaAvailable()) {
-    const where: Record<string, unknown> = { status: "AVAILABLE" }
-    if (make) where.make = { contains: make, mode: "insensitive" }
-    if (model) where.model = { contains: model, mode: "insensitive" }
-    if (minPrice > 0) where.priceCents = { gte: Math.round(minPrice * 100) }
-    if (maxPrice > 0) {
-      where.priceCents = {
-        ...(where.priceCents as Record<string, unknown> || {}),
-        lte: Math.round(maxPrice * 100),
-      }
-    }
-    if (q) {
-      where.OR = [
-        { vin: { contains: q, mode: "insensitive" } },
-        { make: { contains: q, mode: "insensitive" } },
-        { model: { contains: q, mode: "insensitive" } },
-      ]
+    const priceFilter: { gte?: number; lte?: number } = {}
+    if (minPrice > 0) priceFilter.gte = Math.round(minPrice * 100)
+    if (maxPrice > 0) priceFilter.lte = Math.round(maxPrice * 100)
+
+    const where = {
+      status: "AVAILABLE" as const,
+      ...(make ? { make: { contains: make, mode: "insensitive" as const } } : {}),
+      ...(model ? { model: { contains: model, mode: "insensitive" as const } } : {}),
+      ...(priceFilter.gte !== undefined || priceFilter.lte !== undefined
+        ? { priceCents: priceFilter }
+        : {}),
+      ...(q
+        ? {
+            OR: [
+              { vin: { contains: q, mode: "insensitive" as const } },
+              { make: { contains: q, mode: "insensitive" as const } },
+              { model: { contains: q, mode: "insensitive" as const } },
+            ],
+          }
+        : {}),
     }
 
     const [items, total] = await Promise.all([
