@@ -34,7 +34,6 @@ export async function queueSubmissionConfirmation(
           "",
           "— The AutoLenis Team",
         ].join("\n"),
-        updatedAt: new Date(),
       },
     })
   } catch (error: unknown) {
@@ -104,7 +103,6 @@ export async function queueResultReady(
           "",
           "— The AutoLenis Team",
         ].join("\n"),
-        updatedAt: new Date(),
       },
     })
   } catch (error: unknown) {
@@ -157,7 +155,6 @@ export async function queueIbvReminder(
           "",
           "— The AutoLenis Team",
         ].join("\n"),
-        updatedAt: new Date(),
       },
     })
 

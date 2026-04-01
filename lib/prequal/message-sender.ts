@@ -63,7 +63,6 @@ export async function processQueuedMessages(
         data: {
           deliveryStatus: "SENT",
           sentAt: new Date(),
-          updatedAt: new Date(),
         },
       })
       sent++
@@ -78,7 +77,6 @@ export async function processQueuedMessages(
         data: {
           deliveryStatus: "FAILED",
           failureReason: result.error ?? "Unknown error",
-          updatedAt: new Date(),
         },
       })
       failed++
