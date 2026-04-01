@@ -22,11 +22,21 @@ export function mapIpredictResponse(raw: IpredictResponse): ParsedIpredictResult
   const dda = details?.DDA
   const status = raw.RESPONSE?.STATUS
 
-  // Extract primary score from SCORES array
-  const primaryScoreObj = decision?.SCORES?.find((s) => s.Value)
-  const primaryScoreVal = primaryScoreObj?.Value ? parseInt(primaryScoreObj.Value, 10) : null
-  const plsVal = primaryScoreObj?.performsLikeScore
-    ? parseInt(primaryScoreObj.performsLikeScore, 10)
+  // Extract the iPredict risk score — CLV:INQ is the primary risk/inquiry score
+  // CLV:CVI = Consumer Verification Index (NOT a risk score — do not use for band assignment)
+  // CLV:IDV = Identity Verification score (NOT a risk score — do not use for band assignment)
+  // CLV:INQ = iPredict inquiry/risk score (THIS is what we use for band assignment)
+  //
+  // If CLV:INQ is not present, fall back to the first score with a performsLikeScore,
+  // then to the first score with any value as a last resort.
+  const inqScore = decision?.SCORES?.find((s) => s.type === "CLV:INQ")
+  const fallbackScore = inqScore
+    ?? decision?.SCORES?.find((s) => s.performsLikeScore)
+    ?? decision?.SCORES?.find((s) => s.Value)
+
+  const primaryScoreVal = fallbackScore?.Value ? parseInt(fallbackScore.Value, 10) : null
+  const plsVal = fallbackScore?.performsLikeScore
+    ? parseInt(fallbackScore.performsLikeScore, 10)
     : null
 
   // Extract reason codes
@@ -62,7 +72,7 @@ export function mapIpredictResponse(raw: IpredictResponse): ParsedIpredictResult
 
     primaryScore: primaryScoreVal && !isNaN(primaryScoreVal) ? primaryScoreVal : null,
     performsLikeScore: plsVal && !isNaN(plsVal) ? plsVal : null,
-    scoreModel: primaryScoreObj?.model ?? null,
+    scoreModel: fallbackScore?.model ?? null,
 
     reasonCodes,
 
@@ -84,7 +94,7 @@ export function mapIpredictResponse(raw: IpredictResponse): ParsedIpredictResult
     ssnDeceased: idv?.deceasedIndicator === "Y" || preview?.SSNAttributes?.SSNDeceased === "Y",
     fraudWarning: idv?.fraudWarning === "Y",
     highRiskAddress: idv?.highRiskAddress === "Y" || preview?.AddressAttributes?.HighRiskAddress === "Y",
-    ofacMatch: preview?.WatchListAttributes?.OFACIndicator === "Y",
+    ofacMatch: idv?.OFACAlert === "Y" || preview?.WatchListAttributes?.OFACIndicator === "Y",
 
     bankName: preview?.BankAccountAttributes?.bankName ?? null,
     routingNumberValid: preview?.BankAccountAttributes?.routingNumberValid === "Y",
