@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { logger } from "@/lib/logger"
 import { getPrequalSessionToken } from "@/lib/prequal/session"
 import { writePrequalAuditLog } from "@/lib/prequal/audit"
+import { queueResultReady } from "@/lib/prequal/messaging"
 import { makeFinalDecision } from "@/lib/decision/final-decision"
 import { calculateShoppingRange, getShoppingPassExpiry } from "@/lib/decision/shopping-power"
 import type { IpredictBand, IbvOutcome } from "@/lib/types/prequal"
@@ -136,6 +137,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         shoppingMax,
       },
     })
+
+    // Queue result-ready email (non-blocking)
+    await queueResultReady(
+      application.id,
+      application.email,
+      application.firstName,
+      decisionResult.finalStatus,
+    )
 
     logger.info("[Prequal] Decision finalized", {
       applicationId: application.id,
