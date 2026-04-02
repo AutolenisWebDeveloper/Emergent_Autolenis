@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getSupabase } from "@/lib/db"
+import { prisma, isPrismaAvailable } from "@/lib/db"
 import { rateLimit, rateLimits } from "@/lib/middleware/rate-limit"
 
 export async function GET(req: NextRequest) {
@@ -19,6 +20,7 @@ export async function GET(req: NextRequest) {
   const limit = Math.min(Number(searchParams.get("limit") || 24), 100)
   const offset = Math.max(Number(searchParams.get("offset") || 0), 0)
 
+  // Try canonical listings first (Supabase view/table)
   const supabase = getSupabase()
 
   let query = supabase
@@ -67,16 +69,96 @@ export async function GET(req: NextRequest) {
 
   const { data, error, count } = await query
 
-  if (error) {
-    return NextResponse.json(
-      { error: "Failed to search inventory", details: error.message },
-      { status: 500 },
-    )
+  // If canonical table returned results, use them
+  if (!error && data && data.length > 0) {
+    return NextResponse.json({
+      items: data,
+      total: count || 0,
+      limit,
+      offset,
+    })
   }
 
+  // Fallback: query InventoryItem table via Prisma when canonical table is empty or errored
+  if (isPrismaAvailable()) {
+    const priceFilter: { gte?: number; lte?: number } = {}
+    if (minPrice > 0) priceFilter.gte = Math.round(minPrice * 100)
+    if (maxPrice > 0) priceFilter.lte = Math.round(maxPrice * 100)
+
+    const where = {
+      status: "AVAILABLE" as const,
+      ...(make ? { make: { contains: make, mode: "insensitive" as const } } : {}),
+      ...(model ? { model: { contains: model, mode: "insensitive" as const } } : {}),
+      ...(priceFilter.gte !== undefined || priceFilter.lte !== undefined
+        ? { priceCents: priceFilter }
+        : {}),
+      ...(q
+        ? {
+            OR: [
+              { vin: { contains: q, mode: "insensitive" as const } },
+              { make: { contains: q, mode: "insensitive" as const } },
+              { model: { contains: q, mode: "insensitive" as const } },
+            ],
+          }
+        : {}),
+    }
+
+    const [items, total] = await Promise.all([
+      prisma.inventoryItem.findMany({
+        where,
+        include: {
+          dealer: {
+            select: {
+              businessName: true,
+              phone: true,
+              address: true,
+              city: true,
+              state: true,
+              zip: true,
+            },
+          },
+        },
+        orderBy: { createdAt: "desc" },
+        skip: offset,
+        take: limit,
+      }),
+      prisma.inventoryItem.count({ where }),
+    ])
+
+    // Map to the same shape the frontend expects
+    const mappedItems = items.map((item: typeof items[number]) => ({
+      id: item.id,
+      price: item.priceCents ? item.priceCents / 100 : null,
+      mileage: item.mileage,
+      year: item.year,
+      make: item.make,
+      model: item.model,
+      trim: item.trim,
+      vin: item.vin,
+      listing_url: null,
+      source: item.source,
+      dealer_name: item.dealer?.businessName ?? null,
+      dealer_phone: item.dealer?.phone ?? null,
+      dealer_address: item.dealer?.address ?? null,
+      dealer_website: null,
+      city: item.dealer?.city ?? item.locationCity ?? null,
+      state: item.dealer?.state ?? item.locationState ?? null,
+      zip: item.dealer?.zip ?? null,
+      last_seen_at: item.updatedAt?.toISOString() ?? item.createdAt?.toISOString() ?? null,
+    }))
+
+    return NextResponse.json({
+      items: mappedItems,
+      total,
+      limit,
+      offset,
+    })
+  }
+
+  // If neither source worked, return empty
   return NextResponse.json({
-    items: data || [],
-    total: count || 0,
+    items: [],
+    total: 0,
     limit,
     offset,
   })

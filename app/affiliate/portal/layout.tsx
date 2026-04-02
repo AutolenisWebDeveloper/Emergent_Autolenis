@@ -84,7 +84,7 @@ export default async function AffiliatePortalLayout({ children }: { children: Re
   return (
     <AffiliateLayoutClient nav={nav} userEmail={user.email} portalLinks={portalLinks}>
       {children}
-      <ChatWidget />
+      <ChatWidget variant="affiliate" />
     </AffiliateLayoutClient>
   )
 }

@@ -1,27 +1,27 @@
 "use client"
 
 /**
- * Lenis Concierge -- Elite Fortune 500-grade AI chat widget.
+ * Lenis Concierge -- Elite Fortune 500-grade chat widget.
  *
  * Features:
- *   - Real-time streaming responses with SSE
+ *   - Local FAQ/intent-based response engine (no external AI APIs)
  *   - Persistent conversation history
- *   - Advanced error handling with retry logic
- *   - Sophisticated typing indicators
- *   - Message actions (copy, regenerate, rate)
  *   - Context-aware quick prompt suggestions
+ *   - Quick reply chips for suggested follow-up topics
+ *   - Route-aware response prioritization
  *   - Premium fintech design with polished animations
- *   - Conversation management (clear history, export)
+ *   - Conversation management (clear history)
  *   - Auto-scroll optimization
  *   - Mobile-responsive with accessibility
  */
 
 import { useState, useRef, useEffect, useCallback, type FormEvent, type KeyboardEvent } from "react"
+import { usePathname } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
-import { getQuickPrompts, MORE_DETAILS_PROMPT, formatPromptMessage, type QuickPromptState } from "@/lib/lenis/quickPrompts"
-import type { AIRole } from "@/lib/ai/context-builder"
-import { extractApiError } from "@/lib/utils/error-message"
-import { csrfHeaders } from "@/lib/csrf-client"
+import { MORE_DETAILS_PROMPT } from "@/lib/lenis/quickPrompts"
+import { processMessage, type SuggestedChip } from "@/lib/chatbot/faq"
+import type { CopilotVariant, CopilotResponse, ActionResult, QuickAction } from "@/lib/copilot/shared/types"
+import { useCopilotSession } from "@/lib/copilot/shared/conversation-state"
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -29,134 +29,77 @@ import { csrfHeaders } from "@/lib/csrf-client"
 
 interface ChatMessage {
   id: string
-  sender: "user" | "assistant" | "system"
+  sender: "user" | "assistant"
   content: string
   timestamp: number
-  isStreaming?: boolean
   error?: boolean
+  response?: CopilotResponse
 }
 
 function generateId(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID()
+  }
   return `${Date.now()}_${Math.random().toString(36).slice(2, 11)}`
 }
 
-function generateConversationId(): string {
-  return `conv_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+/* ------------------------------------------------------------------ */
+/*  Variant metadata                                                   */
+/* ------------------------------------------------------------------ */
+
+const VARIANT_LABELS: Record<CopilotVariant, string> = {
+  public: "AutoLenis Copilot",
+  buyer: "Buyer Assistant",
+  dealer: "Dealer Assistant",
+  affiliate: "Affiliate Assistant",
+  admin: "Admin Assistant",
 }
 
-function roleFromPath(pathname: string): AIRole {
-  if (pathname.startsWith("/admin")) return "admin"
-  if (pathname.startsWith("/affiliate")) return "affiliate"
-  if (pathname.startsWith("/dealer")) return "dealer"
-  if (pathname.startsWith("/buyer")) return "buyer"
-  return "public"
+const VARIANT_WELCOME: Record<CopilotVariant, string> = {
+  public:
+    "Welcome to AutoLenis! I can help you understand how our platform works, pricing, prequalification, and more. What would you like to know?",
+  buyer:
+    "Welcome back! I'm your buyer assistant. I can help you check your deal status, pay fees, review your contract, or navigate next steps.",
+  dealer:
+    "Welcome! I'm your dealer assistant. I can help you view active auctions, manage your inventory, submit offers, and review fix lists.",
+  affiliate:
+    "Welcome! I'm your affiliate assistant. I can help with commission details, referral links, your team, and payout history.",
+  admin:
+    "Welcome to the Admin Assistant. I can help you look up deals, buyers, reports, and platform health.",
 }
+
+/* ------------------------------------------------------------------ */
+/*  Props                                                              */
+/* ------------------------------------------------------------------ */
 
 interface ChatWidgetProps {
-  promptState?: QuickPromptState
-}
-
-/* ------------------------------------------------------------------ */
-/*  Storage helpers                                                    */
-/* ------------------------------------------------------------------ */
-
-const STORAGE_KEY = "lenis_chat_history"
-const MAX_STORED_MESSAGES = 100
-
-function loadConversationHistory(): { conversationId: string; messages: ChatMessage[] } {
-  if (typeof window === "undefined") return { conversationId: generateConversationId(), messages: [] }
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY)
-    if (!stored) return { conversationId: generateConversationId(), messages: [] }
-    const parsed = JSON.parse(stored)
-    return {
-      conversationId: parsed.conversationId || generateConversationId(),
-      messages: (parsed.messages || []).slice(-MAX_STORED_MESSAGES),
-    }
-  } catch {
-    return { conversationId: generateConversationId(), messages: [] }
-  }
-}
-
-function saveConversationHistory(conversationId: string, messages: ChatMessage[]) {
-  if (typeof window === "undefined") return
-  try {
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({
-        conversationId,
-        messages: messages.slice(-MAX_STORED_MESSAGES),
-      }),
-    )
-  } catch {
-    // Quota exceeded - clear old messages
-    try {
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({
-          conversationId,
-          messages: messages.slice(-20),
-        }),
-      )
-    } catch {
-      // Still failing - give up
-    }
-  }
-}
-
-function clearConversationHistory() {
-  if (typeof window === "undefined") return
-  try {
-    localStorage.removeItem(STORAGE_KEY)
-  } catch {
-    // Ignore
-  }
+  variant?: CopilotVariant
 }
 
 /* ------------------------------------------------------------------ */
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
 
-export default function ChatWidget(props: ChatWidgetProps = {}) {
-  const { promptState } = props
+export default function ChatWidget({ variant = "public" }: ChatWidgetProps) {
   const [open, setOpen] = useState(false)
-  const [conversationId, setConversationId] = useState(generateConversationId)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState("")
   const [loading, setLoading] = useState(false)
-  const [retryCount, setRetryCount] = useState(0)
+  const [suggestedTopics, setSuggestedTopics] = useState<readonly SuggestedChip[]>([])
+  const [pendingConfirmation, setPendingConfirmation] = useState<CopilotResponse | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const [hasInitialized, setHasInitialized] = useState(false)
-
-  const pathname = typeof window !== "undefined" ? window.location.pathname : "/"
-  const role = roleFromPath(pathname)
-  const quickPrompts = getQuickPrompts({ role, pathname, state: promptState })
+  const pathname = usePathname()
+  const sessionIdRef = useRef(generateId())
+  const { clearSession } = useCopilotSession()
 
   const lastMessageIsAssistant =
     messages.length > 0 && messages[messages.length - 1].sender === "assistant" && !loading
 
-  // Load conversation history on mount
-  useEffect(() => {
-    if (!hasInitialized) {
-      const history = loadConversationHistory()
-      setConversationId(history.conversationId)
-      setMessages(history.messages)
-      setHasInitialized(true)
-    }
-  }, [hasInitialized])
-
-  // Save conversation history whenever messages change
-  useEffect(() => {
-    if (hasInitialized && messages.length > 0) {
-      saveConversationHistory(conversationId, messages)
-    }
-  }, [messages, conversationId, hasInitialized])
-
-  // Auto-scroll to bottom
+  // Auto-scroll
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages])
+  }, [messages, loading])
 
   // Auto-resize textarea
   useEffect(() => {
@@ -166,178 +109,304 @@ export default function ChatWidget(props: ChatWidgetProps = {}) {
     }
   }, [input])
 
+  /** Build conversation history from recent messages (last 20 turns) */
+  const buildHistory = useCallback(() => {
+    return messages
+      .slice(-20)
+      .map((m) => ({
+        role: m.sender === "user" ? ("user" as const) : ("assistant" as const),
+        content: m.content,
+        timestamp: m.timestamp,
+      }))
+  }, [messages])
+
+  /** Determine the correct API endpoint for the variant */
+  const getApiEndpoint = useCallback(() => {
+    const endpoints: Record<CopilotVariant, string> = {
+      public: "/api/copilot/public",
+      buyer: "/api/copilot/buyer",
+      dealer: "/api/copilot/dealer",
+      affiliate: "/api/copilot/affiliate",
+      admin: "/api/copilot/admin",
+    }
+    return endpoints[variant]
+  }, [variant])
+
+  /** Determine the role for the variant */
+  const getRole = useCallback(() => {
+    const roles: Record<CopilotVariant, string> = {
+      public: "anonymous",
+      buyer: "buyer",
+      dealer: "dealer",
+      affiliate: "affiliate",
+      admin: "admin",
+    }
+    return roles[variant]
+  }, [variant])
+
+  /** Process the CopilotResponse from the API and add it as a message */
+  const handleCopilotResponse = useCallback((response: CopilotResponse, msgId: string) => {
+    // Handle confirmation requests
+    if (response.renderState === "confirmation" && response.confirmation) {
+      setPendingConfirmation(response)
+      const assistantMsg: ChatMessage = {
+        id: msgId,
+        sender: "assistant",
+        content: response.confirmation.description,
+        timestamp: Date.now(),
+        response,
+      }
+      setMessages((prev) => [...prev, assistantMsg])
+      return
+    }
+
+    // Handle action results
+    if (response.renderState === "action_result" && response.actionResult) {
+      const assistantMsg: ChatMessage = {
+        id: msgId,
+        sender: "assistant",
+        content: response.actionResult.summary,
+        timestamp: Date.now(),
+        response,
+      }
+      setMessages((prev) => [...prev, assistantMsg])
+      return
+    }
+
+    // Handle error responses
+    if (response.renderState === "error") {
+      const assistantMsg: ChatMessage = {
+        id: msgId,
+        sender: "assistant",
+        content: response.errorMessage ?? "Something went wrong. Please try again.",
+        timestamp: Date.now(),
+        error: true,
+        response,
+      }
+      setMessages((prev) => [...prev, assistantMsg])
+      return
+    }
+
+    // Default: text or quick_actions response
+    const assistantMsg: ChatMessage = {
+      id: msgId,
+      sender: "assistant",
+      content: response.text ?? "",
+      timestamp: Date.now(),
+      response,
+    }
+    setMessages((prev) => [...prev, assistantMsg])
+  }, [])
+
+  /** Handle confirmation acceptance from the user */
+  const handleConfirm = useCallback(async () => {
+    if (!pendingConfirmation?.confirmation) return
+    const { toolName, toolArgs } = pendingConfirmation.confirmation
+    const savedConfirmation = pendingConfirmation
+
+    setPendingConfirmation(null)
+    setLoading(true)
+
+    const confirmMsgId = generateId()
+    setMessages((prev) => [
+      ...prev,
+      { id: generateId(), sender: "user", content: "Yes, proceed", timestamp: Date.now() },
+    ])
+
+    try {
+      const apiResponse = await fetch(getApiEndpoint(), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: "confirm",
+          context: {
+            variant,
+            role: getRole(),
+            route: pathname ?? "/",
+            sessionId: sessionIdRef.current,
+          },
+          history: buildHistory(),
+          confirmedTool: { toolName, toolArgs },
+        }),
+      })
+
+      if (apiResponse.ok) {
+        const data = (await apiResponse.json()) as { response?: CopilotResponse }
+        if (data?.response) {
+          handleCopilotResponse(data.response, confirmMsgId)
+        }
+      } else {
+        // Restore confirmation so user can retry
+        setPendingConfirmation(savedConfirmation)
+        setMessages((prev) => [
+          ...prev,
+          { id: confirmMsgId, sender: "assistant", content: "Something went wrong. Please try again or cancel.", timestamp: Date.now(), error: true },
+        ])
+      }
+    } catch {
+      // Restore confirmation so user can retry
+      setPendingConfirmation(savedConfirmation)
+      setMessages((prev) => [
+        ...prev,
+        { id: confirmMsgId, sender: "assistant", content: "Connection error. Please try again or cancel.", timestamp: Date.now(), error: true },
+      ])
+    } finally {
+      setLoading(false)
+    }
+  }, [pendingConfirmation, getApiEndpoint, variant, getRole, pathname, buildHistory, handleCopilotResponse])
+
+  /** Handle confirmation cancellation */
+  const handleCancelConfirm = useCallback(() => {
+    setPendingConfirmation(null)
+    const cancelMsgId = generateId()
+    setMessages((prev) => [
+      ...prev,
+      { id: generateId(), sender: "user", content: "Cancel", timestamp: Date.now() },
+      { id: cancelMsgId, sender: "assistant", content: "No problem — cancelled. What else can I help you with?", timestamp: Date.now() },
+    ])
+  }, [])
+
   const sendMessage = useCallback(
-    async (text: string, isRetry = false) => {
+    async (text: string) => {
       if (!text.trim() || loading) return
+
+      // Clear any pending confirmation when sending a new message
+      setPendingConfirmation(null)
 
       const userMsgId = generateId()
       const assistantMsgId = generateId()
 
-      // Add user message
-      const userMsg: ChatMessage = {
-        id: userMsgId,
-        sender: "user",
-        content: text,
-        timestamp: Date.now(),
+      if (text.trim()) {
+        setMessages((prev) => [
+          ...prev,
+          { id: userMsgId, sender: "user", content: text, timestamp: Date.now() },
+        ])
       }
-
-      setMessages((prev) => [...prev, userMsg])
       setInput("")
       setLoading(true)
 
-      // Add streaming placeholder
-      const streamingMsg: ChatMessage = {
-        id: assistantMsgId,
-        sender: "assistant",
-        content: "",
-        timestamp: Date.now(),
-        isStreaming: true,
-      }
-      setMessages((prev) => [...prev, streamingMsg])
+      // Process locally first (deterministic — 0ms, $0)
+      const result = processMessage(text.trim(), pathname)
 
+      // If FAQ matched an intent, use the local result immediately
+      if (result.intentId !== null) {
+        const assistantMsg: ChatMessage = {
+          id: assistantMsgId,
+          sender: "assistant",
+          content: result.reply,
+          timestamp: Date.now(),
+        }
+        setMessages((prev) => [...prev, assistantMsg])
+        setSuggestedTopics(result.suggestedTopics)
+        setLoading(false)
+        return
+      }
+
+      // FAQ returned no match — call the variant-specific API for orchestrated response
       try {
-        const traceId = `ct_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
-        const res = await fetch("/api/ai/chat", {
+        const apiResponse = await fetch(getApiEndpoint(), {
           method: "POST",
-          headers: csrfHeaders({ "x-trace-id": traceId }),
-          body: JSON.stringify({ conversationId, message: text, stream: true, clientTraceId: traceId }),
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message: text.trim(),
+            context: {
+              variant,
+              role: getRole(),
+              route: pathname ?? "/",
+              sessionId: sessionIdRef.current,
+            },
+            history: buildHistory(),
+          }),
         })
 
-        if (!res.ok) {
-          // Parse structured error envelope from gateway or proxy
-          let userMessage = `Request failed (${res.status}).`
-          try {
-            const errBody = await res.json()
-            const extracted = errBody?.error?.userMessage ?? errBody?.error?.message
-            if (extracted) {
-              userMessage = extracted
+        if (apiResponse.ok) {
+          const data = (await apiResponse.json()) as { response?: CopilotResponse; ok?: boolean }
+          if (data?.response) {
+            handleCopilotResponse(data.response, assistantMsgId)
+            // Update suggested topics from quick actions if available
+            if (data.response.quickActions && data.response.quickActions.length > 0) {
+              setSuggestedTopics(
+                data.response.quickActions.map((qa) => ({ label: qa.label, query: qa.message })),
+              )
+            } else {
+              setSuggestedTopics(result.suggestedTopics)
             }
-          } catch { /* non-JSON response */ }
-          const err = Object.assign(new Error(userMessage), { status: res.status })
-          throw err
-        }
-
-        // Handle streaming response
-        const reader = res.body?.getReader()
-        const decoder = new TextDecoder()
-
-        if (!reader) {
-          throw new Error("No response body")
-        }
-
-        let accumulatedContent = ""
-
-        while (true) {
-          const { done, value } = await reader.read()
-          if (done) break
-
-          const chunk = decoder.decode(value, { stream: true })
-          const lines = chunk.split("\n")
-
-          for (const line of lines) {
-            if (line.startsWith("data: ")) {
-              try {
-                const data = JSON.parse(line.slice(6))
-
-                if (data.type === "chunk") {
-                  accumulatedContent += data.content
-                  // Update message with accumulated content
-                  setMessages((prev) =>
-                    prev.map((m) =>
-                      m.id === assistantMsgId ? { ...m, content: accumulatedContent, isStreaming: true } : m,
-                    ),
-                  )
-                } else if (data.type === "done") {
-                  // Finalize streaming
-                  setMessages((prev) =>
-                    prev.map((m) =>
-                      m.id === assistantMsgId ? { ...m, isStreaming: false } : m,
-                    ),
-                  )
-                } else if (data.type === "error") {
-                  const errMsg = data.error?.userMessage ?? extractApiError(data.error, "Stream error")
-                  const classified = new Error(errMsg)
-                  classified.name = "AiStreamError"
-                  throw classified
-                }
-              } catch (parseError) {
-                // Re-throw classified errors; ignore JSON parse errors for incomplete chunks
-                if (parseError instanceof Error && parseError.name === "AiStreamError") throw parseError
-                console.warn("[v0] Parse warning:", parseError)
-              }
+          } else {
+            // API returned ok but no response object — use FAQ fallback
+            const assistantMsg: ChatMessage = {
+              id: assistantMsgId,
+              sender: "assistant",
+              content: result.reply,
+              timestamp: Date.now(),
             }
+            setMessages((prev) => [...prev, assistantMsg])
+            setSuggestedTopics(result.suggestedTopics)
           }
+        } else {
+          // API error — fall back to FAQ reply
+          const assistantMsg: ChatMessage = {
+            id: assistantMsgId,
+            sender: "assistant",
+            content: result.reply,
+            timestamp: Date.now(),
+          }
+          setMessages((prev) => [...prev, assistantMsg])
+          setSuggestedTopics(result.suggestedTopics)
         }
-
-        setRetryCount(0) // Reset retry count on success
-      } catch (error) {
-        console.warn("[v0] Chat error:", error)
-
-        const errorMessage = error instanceof Error ? error.message : "Something went wrong. Please try again."
-
-        // Update message with classified error
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === assistantMsgId
-              ? {
-                  ...m,
-                  content: errorMessage,
-                  isStreaming: false,
-                  error: true,
-                }
-              : m,
-          ),
-        )
-
-        // Auto-retry logic (max 2 retries, skip non-retryable errors)
-        const httpStatus = error && typeof error === "object" && "status" in error
-          ? (error as { status: number }).status
-          : undefined
-        const retryable = !httpStatus || httpStatus >= 500
-        if (retryable && !isRetry && retryCount < 2) {
-          setRetryCount((c) => c + 1)
-          setTimeout(() => {
-            setMessages((prev) => prev.filter((m) => m.id !== assistantMsgId))
-            sendMessage(text, true)
-          }, 2000)
+      } catch {
+        // Network error — fall back to local FAQ reply
+        const assistantMsg: ChatMessage = {
+          id: assistantMsgId,
+          sender: "assistant",
+          content: result.reply,
+          timestamp: Date.now(),
         }
+        setMessages((prev) => [...prev, assistantMsg])
+        setSuggestedTopics(result.suggestedTopics)
       } finally {
         setLoading(false)
       }
     },
-    [conversationId, loading, retryCount],
+    [loading, pathname, variant, getApiEndpoint, getRole, buildHistory, handleCopilotResponse],
   )
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
-    sendMessage(input)
+    void sendMessage(input)
   }
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault()
-      sendMessage(input)
+      void sendMessage(input)
     }
   }
 
   const handleClearHistory = () => {
-    if (confirm("Clear all conversation history? This cannot be undone.")) {
+    if (confirm("Clear conversation? This cannot be undone.")) {
       setMessages([])
-      setConversationId(generateConversationId())
-      clearConversationHistory()
+      setSuggestedTopics([])
+      setPendingConfirmation(null)
+      clearSession()
     }
   }
 
   const handleCopyMessage = (content: string) => {
-    navigator.clipboard?.writeText(content)
+    void navigator.clipboard?.writeText(content)
   }
+
+  const handleChipClick = (chip: QuickAction) => {
+    void sendMessage(chip.message)
+  }
+
+  const label = VARIANT_LABELS[variant]
 
   return (
     <>
       {/* ------- Toggle FAB ------- */}
       <motion.button
         onClick={() => setOpen((o) => !o)}
-        aria-label={open ? "Close chat" : "Open chat"}
+        aria-label={open ? "Close chat" : `Open ${label}`}
         className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full text-primary-foreground shadow-[0_4px_24px_rgba(0,0,0,0.18)] focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-purple focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         style={{ background: "linear-gradient(135deg, var(--brand-purple) 0%, var(--brand-blue) 100%)" }}
         whileHover={{ scale: 1.08, boxShadow: "0 6px 32px rgba(0,0,0,0.24)" }}
@@ -379,20 +448,6 @@ export default function ChatWidget(props: ChatWidgetProps = {}) {
             </motion.svg>
           )}
         </AnimatePresence>
-        
-        {/* Notification badge for new messages (future) */}
-        <AnimatePresence>
-          {!open && messages.length > 0 && (
-            <motion.span
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0 }}
-              className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-brand-green text-[10px] font-bold text-white shadow-sm"
-            >
-              {messages.filter(m => m.sender === "assistant" && !m.error).length > 0 ? "·" : ""}
-            </motion.span>
-          )}
-        </AnimatePresence>
       </motion.button>
 
       {/* ------- Chat Panel ------- */}
@@ -410,25 +465,20 @@ export default function ChatWidget(props: ChatWidgetProps = {}) {
               className="flex items-center gap-3 px-5 py-4 border-b border-white/10"
               style={{ background: "linear-gradient(135deg, var(--brand-purple) 0%, var(--brand-blue) 100%)" }}
             >
-              {/* Avatar */}
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm ring-1 ring-white/20">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" />
                 </svg>
               </div>
               <div className="flex flex-col flex-1">
-                <span className="text-sm font-semibold text-white leading-tight">
-                  Lenis Concierge
-                </span>
-                <span className="text-[11px] text-white/70 leading-tight">AI-Powered Assistant</span>
+                <span className="text-sm font-semibold text-white leading-tight">{label}</span>
+                <span className="text-[11px] text-white/70 leading-tight">AutoLenis</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-1.5">
                   <span className="h-2 w-2 rounded-full bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.6)]" />
                   <span className="text-[11px] text-white/60 font-medium">Live</span>
                 </div>
-                
-                {/* Settings dropdown */}
                 <button
                   type="button"
                   onClick={handleClearHistory}
@@ -451,7 +501,6 @@ export default function ChatWidget(props: ChatWidgetProps = {}) {
                   transition={{ duration: 0.3, delay: 0.1 }}
                   className="flex flex-col gap-4"
                 >
-                  {/* Welcome card */}
                   <div className="rounded-xl bg-background border border-border p-5 flex flex-col gap-3 shadow-sm">
                     <div className="flex items-center gap-2.5">
                       <div className="flex h-8 w-8 items-center justify-center rounded-xl" style={{ background: "linear-gradient(135deg, var(--brand-purple) 0%, var(--brand-blue) 100%)" }}>
@@ -459,43 +508,17 @@ export default function ChatWidget(props: ChatWidgetProps = {}) {
                           <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
                         </svg>
                       </div>
-                      <span className="text-sm font-semibold text-foreground">Welcome to AutoLenis</span>
+                      <span className="text-sm font-semibold text-foreground">{label}</span>
                     </div>
                     <p className="text-[13px] text-muted-foreground leading-relaxed">
-                      I'm here to guide you through every step of car buying -- from finding your perfect vehicle to making dealers compete for your business.
+                      {VARIANT_WELCOME[variant]}
                     </p>
-                    <div className="flex items-start gap-2 rounded-lg bg-brand-green/8 border border-brand-green/15 px-3 py-2">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-brand-green mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <p className="text-[12px] text-muted-foreground leading-relaxed">
-                        Get instant answers about pricing, fees, financing, dealer negotiations, and more.
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Quick prompts */}
-                  <div className="flex flex-wrap gap-2">
-                    {quickPrompts.map((qp, i) => (
-                      <motion.button
-                        key={qp.label}
-                        type="button"
-                        onClick={() => sendMessage(formatPromptMessage(qp))}
-                        disabled={loading}
-                        initial={{ opacity: 0, y: 6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.2, delay: 0.2 + i * 0.05 }}
-                        className="rounded-xl border border-brand-purple/15 bg-brand-purple/[0.05] px-3 py-2 text-[12px] font-medium text-brand-purple hover:bg-brand-purple/[0.1] hover:border-brand-purple/25 disabled:opacity-40 transition-all duration-200 hover:shadow-sm"
-                      >
-                        {qp.emoji} {qp.label}
-                      </motion.button>
-                    ))}
                   </div>
                 </motion.div>
               )}
 
               {/* Message bubbles */}
-              {messages.map((m, i) => (
+              {messages.map((m) => (
                 <motion.div
                   key={m.id}
                   initial={{ opacity: 0, y: 8 }}
@@ -510,7 +533,7 @@ export default function ChatWidget(props: ChatWidgetProps = {}) {
                       </svg>
                     </div>
                   )}
-                  <div className="flex flex-col gap-1 max-w-[80%]">
+                  <div className="flex flex-col gap-1.5 max-w-[80%]">
                     <div
                       className={`rounded-2xl px-4 py-3 text-[13px] leading-relaxed ${
                         m.sender === "user"
@@ -522,17 +545,36 @@ export default function ChatWidget(props: ChatWidgetProps = {}) {
                       style={m.sender === "user" ? { background: "linear-gradient(135deg, var(--brand-purple) 0%, var(--brand-blue) 100%)" } : undefined}
                     >
                       {m.content}
-                      {m.isStreaming && !m.content && (
-                        <span className="inline-flex items-center gap-1">
-                          <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40 animate-bounce [animation-delay:0ms]" />
-                          <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40 animate-bounce [animation-delay:150ms]" />
-                          <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40 animate-bounce [animation-delay:300ms]" />
-                        </span>
-                      )}
                     </div>
-                    
-                    {/* Message actions (copy) */}
-                    {m.sender === "assistant" && !m.isStreaming && m.content && (
+
+                    {/* Quick action chips */}
+                    {m.response?.renderState === "quick_actions" &&
+                      m.response.quickActions &&
+                      m.response.quickActions.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mt-1">
+                          {m.response.quickActions.map((chip) => (
+                            <button
+                              key={chip.label}
+                              type="button"
+                              onClick={() => handleChipClick(chip)}
+                              disabled={loading}
+                              className="rounded-full border border-brand-purple/20 bg-brand-purple/[0.06] px-3 py-1.5 text-[11px] font-medium text-brand-purple hover:bg-brand-purple/[0.12] hover:border-brand-purple/30 disabled:opacity-40 transition-all"
+                            >
+                              {chip.label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                    {/* Action result card */}
+                    {m.response?.renderState === "action_result" &&
+                      m.response.actionResult &&
+                      variant !== "public" && (
+                        <ActionResultCard result={m.response.actionResult} />
+                      )}
+
+                    {/* Copy button */}
+                    {m.sender === "assistant" && m.content && (
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
                           type="button"
@@ -550,12 +592,75 @@ export default function ChatWidget(props: ChatWidgetProps = {}) {
                 </motion.div>
               ))}
 
+              {/* Typing indicator */}
+              {loading && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex justify-start"
+                >
+                  <div className="mr-2 mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full ring-1 ring-border" style={{ background: "linear-gradient(135deg, var(--brand-purple) 0%, var(--brand-blue) 100%)" }}>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+                    </svg>
+                  </div>
+                  <div className="rounded-2xl rounded-bl-md bg-background border border-border px-4 py-3 shadow-sm">
+                    <span className="inline-flex items-center gap-1">
+                      <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40 animate-bounce [animation-delay:0ms]" />
+                      <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40 animate-bounce [animation-delay:150ms]" />
+                      <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40 animate-bounce [animation-delay:300ms]" />
+                    </span>
+                  </div>
+                </motion.div>
+              )}
+
               <div ref={messagesEndRef} />
             </div>
 
-            {/* ---- "More details" strip ---- */}
-            {lastMessageIsAssistant && (
-              <div className="border-t border-border px-3 py-2 bg-background">
+            {/* ---- Confirmation dialog ---- */}
+            {pendingConfirmation?.confirmation && !loading && (
+              <div className="border-t border-border px-3 py-3 bg-background">
+                <div className="rounded-xl border border-brand-purple/20 bg-brand-purple/[0.04] p-3 space-y-2">
+                  <p className="text-[12px] font-semibold text-foreground">{pendingConfirmation.confirmation.title}</p>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={handleConfirm}
+                      className="flex-1 rounded-lg px-3 py-2 text-[12px] font-semibold text-white transition-colors"
+                      style={{ background: "linear-gradient(135deg, var(--brand-purple) 0%, var(--brand-blue) 100%)" }}
+                    >
+                      {pendingConfirmation.confirmation.confirmLabel ?? "Confirm"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleCancelConfirm}
+                      className="flex-1 rounded-lg border border-border px-3 py-2 text-[12px] font-semibold text-muted-foreground hover:bg-accent transition-colors"
+                    >
+                      {pendingConfirmation.confirmation.cancelLabel ?? "Cancel"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ---- Quick reply chips & "More details" strip ---- */}
+            {lastMessageIsAssistant && !pendingConfirmation && (
+              <div className="border-t border-border px-3 py-2 bg-background space-y-2">
+                {suggestedTopics.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {suggestedTopics.map((chip) => (
+                      <button
+                        key={chip.label}
+                        type="button"
+                        onClick={() => sendMessage(chip.query)}
+                        disabled={loading}
+                        className="rounded-lg border border-brand-purple/15 bg-brand-purple/[0.05] px-2.5 py-1.5 text-[11px] font-medium text-brand-purple hover:bg-brand-purple/[0.1] hover:border-brand-purple/25 disabled:opacity-40 transition-all duration-150"
+                      >
+                        {chip.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 <button
                   type="button"
                   onClick={() => sendMessage(MORE_DETAILS_PROMPT)}
@@ -592,14 +697,14 @@ export default function ChatWidget(props: ChatWidgetProps = {}) {
                   className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-primary-foreground disabled:opacity-40 transition-all shadow-sm hover:shadow-md"
                   style={{ background: "linear-gradient(135deg, var(--brand-purple) 0%, var(--brand-blue) 100%)" }}
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
                   </svg>
                 </motion.button>
               </div>
               <div className="flex items-center justify-between mt-2">
                 <p className="text-[10px] text-muted-foreground/50">
-                  Powered by AutoLenis AI
+                  Powered by AutoLenis
                 </p>
                 {messages.length > 0 && (
                   <p className="text-[10px] text-muted-foreground/50">
@@ -612,5 +717,25 @@ export default function ChatWidget(props: ChatWidgetProps = {}) {
         )}
       </AnimatePresence>
     </>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/*  Action Result Card                                                 */
+/* ------------------------------------------------------------------ */
+
+function ActionResultCard({ result }: { result: ActionResult }) {
+  return (
+    <div className="mt-1 rounded-xl border border-brand-purple/15 bg-brand-purple/[0.04] px-4 py-3 flex items-center justify-between gap-3">
+      <p className="text-[12px] text-foreground leading-snug flex-1">{result.summary}</p>
+      {result.redirectTo && (
+        <a
+          href={result.redirectTo}
+          className="shrink-0 rounded-lg bg-brand-purple px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-brand-purple/90 transition-colors"
+        >
+          {result.redirectLabel ?? "Go there →"}
+        </a>
+      )}
+    </div>
   )
 }

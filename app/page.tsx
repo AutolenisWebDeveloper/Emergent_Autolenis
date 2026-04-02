@@ -674,7 +674,7 @@ export default function HomePage() {
       <PageFaithBlock pathname="/" />
 
       <PublicFooter />
-      <ChatWidget />
+      <ChatWidget variant="public" />
     </div>
   )
 }

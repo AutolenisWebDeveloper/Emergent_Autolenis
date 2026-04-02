@@ -311,6 +311,7 @@ export class DealerService {
     dealerId: string,
     data: {
       price?: number
+      priceCents?: number
       status?: string
       stockNumber?: string
     },
@@ -319,13 +320,13 @@ export class DealerService {
 
     const updateData: Record<string, unknown> = {
       updatedAt: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
     }
 
-    if (data.price !== undefined) {
-      updateData.price = data.price
+    // Accept priceCents directly, or convert dollar price to cents
+    if (data.priceCents !== undefined) {
+      updateData.priceCents = data.priceCents
+    } else if (data.price !== undefined) {
       updateData.priceCents = Math.round(data.price * 100)
-      updateData.price_cents = Math.round(data.price * 100)
     }
 
     if (data.status !== undefined) {
@@ -334,7 +335,6 @@ export class DealerService {
 
     if (data.stockNumber !== undefined) {
       updateData.stockNumber = data.stockNumber
-      updateData.stock_number = data.stockNumber
     }
 
     const { data: inventoryItem, error } = await supabase

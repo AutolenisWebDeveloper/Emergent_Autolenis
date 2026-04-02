@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { logger } from "@/lib/logger"
 import { writePrequalAuditLog } from "@/lib/prequal/audit"
+import { queueIbvReminder } from "@/lib/prequal/messaging"
 import { IBV_REMINDER_DELAY_HOURS } from "@/lib/prequal/constants"
 
 export const dynamic = "force-dynamic"
@@ -41,27 +42,17 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     let remindersQueued = 0
 
     for (const app of pending) {
-      // Queue a reminder message (actual sending is handled by a separate job/service)
-      await prisma.prequalMessage.create({
-        data: {
+      const { queued } = await queueIbvReminder(app.id, app.email, app.firstName)
+
+      if (queued) {
+        await writePrequalAuditLog({
           applicationId: app.id,
-          channel: "EMAIL",
-          messageType: "IBV_REMINDER",
-          deliveryStatus: "QUEUED",
-          recipient: app.email,
-          subject: "Complete your income verification",
-          body: `Hi ${app.firstName}, your vehicle shopping application is waiting for bank verification. Please complete the income verification to continue.`,
-        },
-      })
-
-      await writePrequalAuditLog({
-        applicationId: app.id,
-        eventType: "IBV_REMINDER_QUEUED",
-        actorType: "SYSTEM",
-        description: "IBV reminder queued for incomplete bank verification",
-      })
-
-      remindersQueued++
+          eventType: "IBV_REMINDER_QUEUED",
+          actorType: "SYSTEM",
+          description: "IBV reminder email queued for incomplete bank verification",
+        })
+        remindersQueued++
+      }
     }
 
     logger.info("[Prequal Cron] IBV reminders queued", { remindersQueued })

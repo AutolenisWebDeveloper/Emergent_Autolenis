@@ -207,6 +207,7 @@ export interface IpredictServiceDetails {
     fraudWarning?: string
     highRiskAddress?: string
     bankruptcyFlag?: string
+    OFACAlert?: string
   }
   iPreView?: {
     SSNAttributes?: {

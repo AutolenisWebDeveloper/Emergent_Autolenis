@@ -1,32 +1,29 @@
 /**
- * AI Chat API Route — single gateway for ALL portals.
+ * AI Chat API Route — hybrid FAQ + LLM handler for ALL portals.
  *
- * Handles chat requests from the chat widget and admin AI panel.
- * Uses the orchestrator to route messages to the appropriate AI agent
- * based on user role and intent.
+ * Uses hybridChat(): FAQ fast-path (0ms, $0) → Groq LLM fallback → compliance scrub.
+ * Gracefully degrades to FAQ-only when GROQ_API_KEY is absent or kill switch is active.
  *
- * Returns a structured envelope:
- *   Success (streaming): SSE events { type: "metadata"|"chunk"|"done" }
- *   Success (non-streaming): { ok: true, conversationId, message, agent }
- *   Error: { ok: false, error: { code, userMessage, debugId } }
+ * Returns:
+ *   Streaming:     SSE events { type: "metadata"|"chunk"|"done" }
+ *   Non-streaming: { ok: true, conversationId, reply, agent, intent }
+ *   Error:         { ok: false, error: { code, userMessage, debugId } }
+ *
+ * Observability header: x-copilot-source: "faq" | "llm"
  */
 
 import { NextRequest } from "next/server"
 import { getSession } from "@/lib/auth-server"
-import { orchestrate } from "@/lib/ai/orchestrator"
-import { streamChatWithGemini, fallbackResponse, isAIDisabled } from "@/lib/ai/gemini-client"
 import {
   generateDebugId,
-  classifyError,
   buildErrorResponse,
-  buildStreamErrorEvent,
 } from "@/lib/ai/error-classifier"
+import { isAIDisabled } from "@/lib/ai/kill-switch"
+import { hybridChat } from "@/lib/ai/hybrid-chat"
+import type { CopilotContext } from "@/lib/copilot/shared/types"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
-
-/** Request timeout for orchestration + streaming (ms). */
-const ORCHESTRATE_TIMEOUT_MS = 30_000
 
 interface ChatRequestBody {
   conversationId: string
@@ -34,16 +31,16 @@ interface ChatRequestBody {
   adminOverride?: boolean
   stream?: boolean
   clientTraceId?: string
+  variant?: CopilotContext["variant"]
+  route?: string
 }
 
 export async function POST(request: NextRequest) {
-  // Extract correlation IDs early
   const clientTraceId =
     request.headers.get("x-trace-id") || undefined
   let debugId = generateDebugId(clientTraceId)
 
   try {
-    // Parse request body
     let body: ChatRequestBody
     try {
       body = await request.json()
@@ -51,14 +48,12 @@ export async function POST(request: NextRequest) {
       return buildErrorResponse("VALIDATION_ERROR", debugId, "Invalid JSON in request body.")
     }
 
-    const { conversationId, message, adminOverride, stream = true } = body
+    const { conversationId, message, adminOverride, stream = true, variant = "public", route } = body
 
-    // Allow body-level trace ID to override header
     if (body.clientTraceId) {
       debugId = generateDebugId(body.clientTraceId)
     }
 
-    // Validate input
     if (!conversationId || typeof conversationId !== "string") {
       return buildErrorResponse("VALIDATION_ERROR", debugId, "conversationId is required.")
     }
@@ -67,16 +62,13 @@ export async function POST(request: NextRequest) {
       return buildErrorResponse("VALIDATION_ERROR", debugId, "message is required.")
     }
 
-    // Kill switch check (fail fast)
     if (isAIDisabled()) {
       console.warn("[AI Chat] Kill switch active. debugId=%s", debugId)
       return buildErrorResponse("AI_DISABLED", debugId)
     }
 
-    // Get session (can be null for anonymous/public users)
     const session = await getSession()
 
-    // If admin override, send manual reply (admin takeover mode)
     if (adminOverride) {
       if (!session || (session.role !== "ADMIN" && session.role !== "SUPER_ADMIN")) {
         return buildErrorResponse("FORBIDDEN", debugId, "Admin override requires admin privileges.")
@@ -90,62 +82,54 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Orchestrate with timeout
-    const orchestratePromise = orchestrate({
-      conversationId,
+    const VALID_USER_ROLES: CopilotContext["role"][] = ["anonymous", "buyer", "dealer", "affiliate", "admin"]
+
+    // Build a minimal context for the hybrid chat engine
+    // Map session role to a valid CopilotContext UserRole
+    const rawRole = session?.role?.toLowerCase() ?? "anonymous"
+    const mappedRole = (VALID_USER_ROLES.includes(rawRole as CopilotContext["role"])
+      ? rawRole
+      : "anonymous") as CopilotContext["role"]
+
+    const context: CopilotContext = {
+      variant,
+      role: mappedRole,
+      route: route ?? "/",
+      sessionId: conversationId,
+    }
+
+    // Run hybrid chat: FAQ fast-path → LLM fallback → compliance scrub
+    const result = await hybridChat({
       message: message.trim(),
-      session,
+      variant,
+      context,
+      route: route ?? "/",
     })
 
-    const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error("Orchestration timed out")), ORCHESTRATE_TIMEOUT_MS),
-    )
-
-    const result = await Promise.race([orchestratePromise, timeoutPromise])
-
-    // Streaming response
     if (stream) {
       const encoder = new TextEncoder()
       const readable = new ReadableStream({
-        async start(controller) {
-          try {
-            // Send metadata first
-            const metadata = {
-              type: "metadata",
-              conversationId,
-              agent: result.agent,
-              intent: result.intent,
-              riskLevel: result.riskLevel,
-              disclosure: result.disclosure,
-              debugId,
-            }
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify(metadata)}\n\n`))
-
-            // Stream the AI response
-            const history = result.memoryContext.messages.map((msg) => ({
-              role: msg.sender === "user" ? ("user" as const) : ("model" as const),
-              parts: [{ text: msg.content }],
-            }))
-
-            for await (const chunk of streamChatWithGemini({
-              systemPrompt: result.systemPrompt,
-              history,
-              message: message.trim(),
-              role: result.role,
-            })) {
-              const data = { type: "chunk", content: chunk }
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`))
-            }
-
-            // Done signal
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "done" })}\n\n`))
-            controller.close()
-          } catch (streamErr) {
-            console.error("[AI Stream Error] debugId=%s", debugId, streamErr)
-            const code = classifyError(streamErr)
-            controller.enqueue(encoder.encode(buildStreamErrorEvent(code, debugId)))
-            controller.close()
+        start(controller) {
+          // Metadata event
+          const metadata = {
+            type: "metadata",
+            conversationId,
+            agent: "LenisConcierge",
+            intent: result.intent ?? "general",
+            source: result.source,
+            riskLevel: "low",
+            disclosure: null,
+            debugId,
           }
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(metadata)}\n\n`))
+
+          // Send the full reply as a single chunk
+          const chunk = { type: "chunk", content: result.reply }
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`))
+
+          // Done signal
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "done" })}\n\n`))
+          controller.close()
         },
       })
 
@@ -154,25 +138,32 @@ export async function POST(request: NextRequest) {
           "Content-Type": "text/event-stream",
           "Cache-Control": "no-cache",
           Connection: "keep-alive",
+          "x-copilot-source": result.source,
         },
       })
     }
 
-    // Non-streaming fallback
-    const reply = fallbackResponse(result.agent, result.disclosure)
-    return Response.json({
-      ok: true,
-      reply,
-      conversationId,
-      agent: result.agent,
-      intent: result.intent,
-      riskLevel: result.riskLevel,
-      disclosure: result.disclosure,
-      debugId,
-    })
+    return new Response(
+      JSON.stringify({
+        ok: true,
+        reply: result.reply,
+        conversationId,
+        agent: "LenisConcierge",
+        intent: result.intent ?? "general",
+        source: result.source,
+        riskLevel: "low",
+        disclosure: null,
+        debugId,
+      }),
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "x-copilot-source": result.source,
+        },
+      },
+    )
   } catch (error) {
-    const code = classifyError(error)
-    console.error("[AI Chat Error] code=%s debugId=%s", code, debugId, error)
-    return buildErrorResponse(code, debugId)
+    console.error("[AI Chat Error] debugId=%s", debugId, error)
+    return buildErrorResponse("INTERNAL_ERROR", debugId)
   }
 }

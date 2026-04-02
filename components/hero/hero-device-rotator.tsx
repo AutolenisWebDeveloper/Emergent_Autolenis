@@ -37,7 +37,11 @@ export function HeroDeviceRotator({ variant }: HeroDeviceRotatorProps) {
     setDirection(directionRef.current)
   }, [active])
 
+  /* Respect prefers-reduced-motion — skip auto-rotation for a11y */
   useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)")
+    if (mq.matches) return
+
     const id = setInterval(advance, ROTATION_INTERVAL)
     return () => clearInterval(id)
   }, [advance])
