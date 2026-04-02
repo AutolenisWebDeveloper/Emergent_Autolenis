@@ -69,6 +69,23 @@ export function assertDocuSignConfig(): void {
         "and set the returned ID as DOCUSIGN_DEALER_TEMPLATE_ID.",
     )
   }
+
+  // Production sandbox guard — warn when demo/sandbox URLs detected in production
+  if (process.env.NODE_ENV === "production") {
+    try {
+      if (new URL(c.basePath).hostname === "demo.docusign.net") {
+        logger.warn("[DocuSign] SANDBOX basePath detected in production — set DOCUSIGN_BASE_PATH or DOCUSIGN_BASE_URL env var to production endpoint (e.g. https://na4.docusign.net/restapi)")
+      }
+    } catch { /* basePath may not be a full URL */ }
+    if (c.authServer === "account-d.docusign.com") {
+      logger.warn("[DocuSign] SANDBOX authServer detected in production — set DOCUSIGN_AUTH_SERVER env var to account.docusign.com")
+    }
+    try {
+      if (new URL(c.oauthBaseUrl).hostname === "account-d.docusign.com") {
+        logger.warn("[DocuSign] SANDBOX oauthBaseUrl detected in production — set DOCUSIGN_OAUTH_BASE_URL env var to https://account.docusign.com")
+      }
+    } catch { /* malformed URL — will fail at runtime */ }
+  }
 }
 
 // ---------------------------------------------------------------------------

@@ -11,10 +11,18 @@ const envSchema = z.object({
   JWT_SECRET: z.string().min(32, "JWT_SECRET must be at least 32 characters"),
 
   // Stripe (Required)
-  STRIPE_SECRET_KEY: z.string().startsWith("sk_", "STRIPE_SECRET_KEY must start with sk_"),
+  // In production, enforce live-mode keys to prevent sandbox fallback
+  STRIPE_SECRET_KEY: z.string().startsWith("sk_", "STRIPE_SECRET_KEY must start with sk_").refine(
+    (key) => process.env.NODE_ENV !== "production" || key.startsWith("sk_live_"),
+    "STRIPE_SECRET_KEY must start with sk_live_ in production — sandbox key detected",
+  ),
   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: z
     .string()
-    .startsWith("pk_", "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY must start with pk_"),
+    .startsWith("pk_", "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY must start with pk_")
+    .refine(
+      (key) => process.env.NODE_ENV !== "production" || key.startsWith("pk_live_"),
+      "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY must start with pk_live_ in production — sandbox key detected",
+    ),
   STRIPE_WEBHOOK_SECRET: z.string().min(1, "STRIPE_WEBHOOK_SECRET is required for Stripe webhook verification").optional(),
 
   // Cron (Required if cron jobs exist)
