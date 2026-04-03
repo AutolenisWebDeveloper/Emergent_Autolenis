@@ -114,7 +114,8 @@ export interface IpredictApplicationInput {
   applicationId: string // Used as RefNum to link response back
 }
 
-function buildRequest(input: IpredictApplicationInput): IpredictRequest {
+/** @internal — exported for testing only */
+export function buildRequest(input: IpredictApplicationInput): IpredictRequest {
   const request: IpredictRequest = {
     MsgRqHdr: {
       RequestType: "N",
@@ -160,12 +161,15 @@ function buildRequest(input: IpredictApplicationInput): IpredictRequest {
   }
 
   if (input.payFrequency && request.IncomeInfo) {
+    // MicroBilt iPredict spec requires uppercase full-word values for PmtFreq
+    // e.g. "WEEKLY", "BIWEEKLY", "SEMIMONTHLY", "MONTHLY", "ANNUALLY"
     const freqMap: Record<string, string> = {
-      weekly: "W",
-      biweekly: "B",
-      semimonthly: "S",
-      monthly: "M",
-      annual: "A",
+      weekly: "WEEKLY",
+      biweekly: "BIWEEKLY",
+      semimonthly: "SEMIMONTHLY",
+      monthly: "MONTHLY",
+      annual: "ANNUALLY",
+      annually: "ANNUALLY",
     }
     const mapped = freqMap[input.payFrequency.toLowerCase()]
     if (mapped) {
@@ -304,6 +308,7 @@ export async function callAndMapIpredict(input: IpredictApplicationInput): Promi
 
 /**
  * Retrieves a previously archived iPredict report by its RqUID / reference number.
+ * Uses the spec-defined GET /GetArchiveReport endpoint (iPredict_6.yaml).
  * Returns null if not found or on any error.
  */
 export async function retrieveIpredictArchive(rqUID: string): Promise<IpredictResponse | null> {
@@ -314,7 +319,7 @@ export async function retrieveIpredictArchive(rqUID: string): Promise<IpredictRe
 
     try {
       const response = await fetch(
-        `${IPREDICT_BASE_URL}/GetReport/${encodeURIComponent(rqUID)}`,
+        `${IPREDICT_BASE_URL}/GetArchiveReport/${encodeURIComponent(rqUID)}`,
         {
           method: "GET",
           headers: {
