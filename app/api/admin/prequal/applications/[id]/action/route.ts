@@ -41,8 +41,11 @@ export async function POST(
     }
 
     const { action, reason, overrideStatus } = parsed.data
+    const workspaceId = user.workspace_id
 
-    const application = await prisma.prequalApplication.findUnique({ where: { id } })
+    const application = await prisma.prequalApplication.findFirst({
+      where: { id, ...(workspaceId ? { workspaceId } : {}) },
+    })
     if (!application) {
       return NextResponse.json({ success: false, error: "Application not found" }, { status: 404 })
     }

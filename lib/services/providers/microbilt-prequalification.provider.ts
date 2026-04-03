@@ -1,6 +1,15 @@
 /**
- * MicroBilt/Experian Prequalification Provider Adapter
+ * @deprecated — STUB ADAPTER with a fabricated API contract (`/prequalification/soft-pull`).
  *
+ * The AUTHORITATIVE MicroBilt integration is `lib/microbilt/ipredict-client.ts`,
+ * which uses the real MicroBilt OAuth2 + POST /GetReport contract.
+ *
+ * This file is still imported by `prequal-session.service.ts` for its sandbox
+ * mode and type exports. It should be replaced by wiring `prequal-session.service.ts`
+ * to the real client in `lib/microbilt/`.
+ *
+ * Original description:
+ * MicroBilt/Experian Prequalification Provider Adapter.
  * Production integration with MicroBilt's prequalification API using Experian data.
  * This is a soft-inquiry (consumer-initiated, consent-based) flow.
  *
@@ -66,58 +75,12 @@ export class MicroBiltPrequalProvider {
       return MicroBiltPrequalProvider.sandboxPrequalify(data)
     }
 
-    // Production API call
-    const startTime = Date.now()
-    try {
-      const response = await fetch(`${config.apiUrl}/prequalification/soft-pull`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${config.apiKey}`,
-          "X-Subscriber-ID": config.subscriberId,
-          "X-Session-ID": options?.sessionId || "",
-        },
-        body: JSON.stringify({
-          consumer: {
-            firstName: data.firstName,
-            lastName: data.lastName,
-            dateOfBirth: data.dateOfBirth,
-            address: {
-              line1: data.addressLine1,
-              city: data.city,
-              state: data.state,
-              postalCode: data.postalCode,
-            },
-            ssnLast4: data.ssnLast4,
-          },
-          permissiblePurpose: MicroBiltPrequalProvider.PERMISSIBLE_PURPOSE,
-          inquiryType: "SOFT_PULL",
-        }),
-        signal: AbortSignal.timeout(30_000),
-      })
-
-      const latencyMs = Date.now() - startTime
-
-      if (!response.ok) {
-        const errorBody = await response.text().catch(() => "Unknown error")
-        return {
-          success: false,
-          errorMessage: `MicroBilt API error (${response.status}): Request failed`,
-          _meta: { latencyMs, httpStatus: response.status, rawError: errorBody },
-        } as PreQualProviderResponse & { _meta: unknown }
-      }
-
-      const result = await response.json()
-      return MicroBiltPrequalProvider.normalizeResponse(result, latencyMs)
-    } catch (error) {
-      const latencyMs = Date.now() - startTime
-      const message = error instanceof Error ? error.message : "Unknown provider error"
-      return {
-        success: false,
-        errorMessage: `MicroBilt provider error: ${message}`,
-        _meta: { latencyMs },
-      } as PreQualProviderResponse & { _meta: unknown }
-    }
+    // LIVE-mode guard: This deprecated stub must never make real API calls.
+    // The authoritative MicroBilt integration is lib/microbilt/ipredict-client.ts.
+    throw new Error(
+      "DEPRECATED: MicroBiltPrequalProvider.prequalify() invoked in production mode. " +
+        "Use the authoritative MicroBilt iPredict client (lib/microbilt/ipredict-client.ts) instead.",
+    )
   }
 
   /**

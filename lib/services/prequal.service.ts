@@ -200,13 +200,14 @@ export class PreQualService {
   }
 
   // Get active pre-qualification for user
-  async getActivePrequalification(userId: string) {
+  async getActivePrequalification(userId: string, workspaceId?: string | null) {
     // First check by buyerId (legacy field)
     const prequal = await prisma.preQualification.findFirst({
       where: {
         buyerId: userId,
         status: "ACTIVE",
         expiresAt: { gt: new Date() },
+        ...(workspaceId ? { workspaceId } : {}),
       },
       orderBy: { createdAt: "desc" },
     })
@@ -377,6 +378,7 @@ export class PreQualService {
       where: {
         buyerId: userId,
         status: "ACTIVE",
+        ...(profile?.workspaceId ? { workspaceId: profile.workspaceId } : {}),
       },
       data: {
         status: "EXPIRED",
@@ -514,10 +516,10 @@ export class PreQualService {
   }
 
   // Admin: Get prequal history for user
-  async getPreQualHistoryForUser(userId: string) {
+  async getPreQualHistoryForUser(userId: string, workspaceId?: string | null) {
     const [preQuals, consentEvents, providerEvents] = await Promise.all([
       prisma.preQualification.findMany({
-        where: { buyerId: userId },
+        where: { buyerId: userId, ...(workspaceId ? { workspaceId } : {}) },
         orderBy: { createdAt: "desc" },
       }),
       prisma.$queryRaw<
@@ -557,8 +559,8 @@ export class PreQualService {
   }
 
   // Admin: Revoke pre-qualification
-  async revokePreQual(userId: string, adminUserId: string, reason?: string) {
-    const activePreQual = await this.getActivePrequalification(userId)
+  async revokePreQual(userId: string, adminUserId: string, reason?: string, workspaceId?: string | null) {
+    const activePreQual = await this.getActivePrequalification(userId, workspaceId)
 
     if (!activePreQual) {
       throw new Error("No active pre-qualification found for this user")
@@ -592,11 +594,12 @@ export class PreQualService {
   }
 
   // Create a new prequal session
-  async createSession(userId: string, _requestContext: { ipAddress?: string; userAgent?: string }) {
+  async createSession(userId: string, _requestContext: { ipAddress?: string; userAgent?: string }, workspaceId?: string | null) {
     return prisma.prequalSession.create({
       data: {
         userId,
         status: "INITIATED",
+        ...(workspaceId ? { workspaceId } : {}),
         createdAt: new Date(),
         updatedAt: new Date(),
       },
@@ -609,6 +612,7 @@ export class PreQualService {
     consentVersionId: string,
     sessionId: string,
     requestContext: { ipAddress?: string; userAgent?: string },
+    workspaceId?: string | null,
   ) {
     // Verify consent version exists
     const consentVersion = await prisma.prequalConsentVersion.findUnique({
@@ -620,7 +624,7 @@ export class PreQualService {
 
     // Verify session belongs to this user
     const prequalSession = await prisma.prequalSession.findFirst({
-      where: { id: sessionId, userId },
+      where: { id: sessionId, userId, ...(workspaceId ? { workspaceId } : {}) },
     })
     if (!prequalSession) {
       throw Object.assign(new Error("Session not found"), { code: "NOT_FOUND" })
@@ -651,7 +655,7 @@ export class PreQualService {
   }
 
   // Get normalized prequal offers for buyer
-  async getOffers(userId: string) {
+  async getOffers(userId: string, workspaceId?: string | null) {
     const buyer = await prisma.buyerProfile.findUnique({
       where: { userId },
       select: { id: true },
@@ -663,6 +667,7 @@ export class PreQualService {
         buyerId: buyer.id,
         status: "ACTIVE",
         expiresAt: { gt: new Date() },
+        ...(workspaceId ? { workspaceId } : {}),
       },
       orderBy: { createdAt: "desc" },
     })

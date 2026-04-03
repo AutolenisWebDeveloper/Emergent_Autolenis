@@ -19,7 +19,11 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const page = Math.max(1, parseInt(url.searchParams.get("page") ?? "1", 10))
     const perPage = Math.min(50, Math.max(1, parseInt(url.searchParams.get("perPage") ?? "20", 10)))
 
-    const where: Record<string, unknown> = {}
+    const workspaceId = user.workspace_id
+
+    const where: Record<string, unknown> = {
+      ...(workspaceId ? { workspaceId } : {}),
+    }
     if (status) where.status = status
     if (queueSegment) where.queueSegment = queueSegment
 

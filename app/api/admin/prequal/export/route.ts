@@ -18,6 +18,7 @@ export async function GET(request: NextRequest) {
     const userId = searchParams.get("userId") || undefined
     const since = searchParams.get("since") || undefined
     const until = searchParams.get("until") || undefined
+    const workspaceId = user.workspace_id
 
     // Build date filters
     const dateFilter: { gte?: Date; lte?: Date } = {}
@@ -26,6 +27,7 @@ export async function GET(request: NextRequest) {
     const hasDateFilter = Object.keys(dateFilter).length > 0
 
     const userFilter = userId ? { userId } : {}
+    const workspaceFilter = workspaceId ? { workspaceId } : {}
 
     const [consentArtifacts, providerEvents, purposeLogs, forwardingAuths] = await Promise.all([
       prisma.prequalConsentArtifact.findMany({
@@ -44,6 +46,7 @@ export async function GET(request: NextRequest) {
         where: {
           ...(hasDateFilter ? { createdAt: dateFilter } : {}),
           ...(userId ? { userId } : {}),
+          ...workspaceFilter,
         },
         orderBy: { createdAt: "desc" },
       }),

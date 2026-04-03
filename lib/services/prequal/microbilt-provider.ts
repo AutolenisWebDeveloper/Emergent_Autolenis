@@ -1,10 +1,17 @@
 /**
- * MicroBilt PreQual Provider Adapter
+ * @deprecated — STUB ADAPTER with a fabricated API contract (`api.microbilt.com/v1/credit/prequalify`).
  *
- * Integrates with MicroBilt's credit decisioning API for LIVE pre-qualification.
- * Requires MICROBILT_API_KEY and MICROBILT_API_URL environment variables.
+ * The AUTHORITATIVE MicroBilt integration is `lib/microbilt/ipredict-client.ts`,
+ * which uses the real MicroBilt OAuth2 + POST /GetReport contract.
  *
- * This adapter is FCRA-compliant and requires a valid ConsentArtifact before execution.
+ * This file is wired into `prequal/provider-registry.ts` → `prequal.service.ts`,
+ * but its API contract is entirely fabricated and will never work against the real
+ * MicroBilt endpoint. It should be replaced by an adapter that delegates to
+ * `lib/microbilt/ipredict-client.ts`.
+ *
+ * Original description:
+ * MicroBilt PreQual Provider Adapter. Integrates with MicroBilt's credit decisioning
+ * API for LIVE pre-qualification. Requires MICROBILT_API_KEY and MICROBILT_API_URL.
  */
 
 import type {
@@ -35,69 +42,14 @@ export class MicroBiltProvider implements PreQualProvider {
   async prequalify(
     request: PreQualProviderRequest,
   ): Promise<PreQualProviderResponse> {
-    if (!this.isConfigured()) {
-      return {
-        success: false,
-        errorMessage:
-          "MicroBilt provider is not configured. Set MICROBILT_API_KEY.",
-      }
-    }
-
-    const startTime = Date.now()
-
-    try {
-      const response = await fetch(
-        `${this.apiUrl}/credit/prequalify`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${this.apiKey}`,
-          },
-          body: JSON.stringify({
-            applicant: {
-              firstName: request.firstName,
-              lastName: request.lastName,
-              dateOfBirth: request.dateOfBirth,
-              ssn4: request.ssnLast4,
-              address: {
-                line1: request.addressLine1,
-                city: request.city,
-                state: request.state,
-                zip: request.postalCode,
-              },
-            },
-            financials: {
-              monthlyIncome: request.monthlyIncomeCents / 100,
-              monthlyHousing: request.monthlyHousingCents / 100,
-            },
-          }),
-          signal: AbortSignal.timeout(30_000),
-        },
-      )
-
-      if (!response.ok) {
-        const errorBody = await response.text().catch(() => "")
-        return {
-          success: false,
-          errorMessage: `MicroBilt API error: ${response.status}`,
-          rawResponse: { status: response.status, body: errorBody },
-        }
-      }
-
-      const data = await response.json()
-      const durationMs = Date.now() - startTime
-
-      return this.mapResponse(data, durationMs)
-    } catch (error) {
-      return {
-        success: false,
-        errorMessage:
-          error instanceof Error
-            ? `MicroBilt request failed: ${error.message}`
-            : "MicroBilt request failed",
-      }
-    }
+    // LIVE-mode guard: This stub must never execute in production.
+    // The authoritative path is lib/microbilt/ipredict-client.ts via
+    // the AuthoritativeIpredictAdapter registered in provider-registry.ts.
+    throw new Error(
+      "DEPRECATED: MicroBilt stub adapter invoked. " +
+        "Use the authoritative MicroBilt iPredict adapter (lib/services/prequal/authoritative-ipredict-adapter.ts) " +
+        "which delegates to lib/microbilt/ipredict-client.ts.",
+    )
   }
 
   /**

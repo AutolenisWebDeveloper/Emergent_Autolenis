@@ -9,7 +9,19 @@
  */
 
 import type { PreQualProviderResponse } from "../prequal.service"
-import type { IPredictRiskResponse } from "./ipredict-risk.provider"
+
+/**
+ * Shape of iPredict risk assessment data — used for supplementary enrichment.
+ * Defined here to avoid importing from the deprecated ipredict-risk.provider.ts.
+ */
+interface IPredictRiskResponse {
+  success: boolean
+  riskScore?: number
+  riskCategory?: string
+  fraudIndicators?: string[]
+  providerReferenceId?: string
+  errorMessage?: string
+}
 
 /**
  * Canonical normalized prequalification result DTO.

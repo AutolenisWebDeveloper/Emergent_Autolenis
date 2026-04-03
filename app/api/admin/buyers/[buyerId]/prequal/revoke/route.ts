@@ -11,8 +11,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ buy
       console.error("[Admin Buyer Prequal Revoke] Failed to parse request body:", err)
       return {}
     })
+    const workspaceId = session.workspace_id
 
-    await prequalService.revokePreQual(buyerId, session.userId, body.reason)
+    await prequalService.revokePreQual(buyerId, session.userId, body.reason, workspaceId)
 
     return NextResponse.json({
       success: true,

@@ -1,6 +1,14 @@
 /**
- * iPredict Risk Provider Adapter
+ * @deprecated — STUB ADAPTER with a fabricated API contract (`/risk/assess`).
  *
+ * The AUTHORITATIVE iPredict integration is `lib/microbilt/ipredict-client.ts`,
+ * which uses the real MicroBilt OAuth2 + POST /GetReport contract.
+ *
+ * This file is still imported by `prequal-session.service.ts` for its sandbox
+ * mode and type exports (`IPredictRiskResponse`). It should be replaced by
+ * wiring `prequal-session.service.ts` to the real client in `lib/microbilt/`.
+ *
+ * Original description:
  * Supplementary risk scoring provider. Used alongside MicroBilt/Experian
  * prequalification to provide additional risk assessment signals.
  *
@@ -60,47 +68,12 @@ export class IPredictRiskProvider {
       return IPredictRiskProvider.sandboxAssessRisk(data)
     }
 
-    const startTime = Date.now()
-    try {
-      const response = await fetch(`${config.apiUrl}/risk/assess`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${config.apiKey}`,
-          "X-Session-ID": options?.sessionId || "",
-        },
-        body: JSON.stringify({
-          consumer: {
-            firstName: data.firstName,
-            lastName: data.lastName,
-            dateOfBirth: data.dateOfBirth,
-            address: {
-              line1: data.addressLine1,
-              city: data.city,
-              state: data.state,
-              postalCode: data.postalCode,
-            },
-          },
-        }),
-        signal: AbortSignal.timeout(15_000),
-      })
-
-      if (!response.ok) {
-        return {
-          success: false,
-          errorMessage: `iPredict API error (${response.status}): Request failed`,
-        }
-      }
-
-      const result = await response.json()
-      return IPredictRiskProvider.normalizeResponse(result)
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Unknown provider error"
-      return {
-        success: false,
-        errorMessage: `iPredict provider error: ${message}`,
-      }
-    }
+    // LIVE-mode guard: This deprecated stub must never make real API calls.
+    // The authoritative iPredict integration is lib/microbilt/ipredict-client.ts.
+    throw new Error(
+      "DEPRECATED: IPredictRiskProvider.assessRisk() invoked in production mode. " +
+        "Use the authoritative MicroBilt iPredict client (lib/microbilt/ipredict-client.ts) instead.",
+    )
   }
 
   /**

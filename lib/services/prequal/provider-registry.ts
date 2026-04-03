@@ -4,24 +4,25 @@
  * Resolves which PreQualProvider to use based on workspace mode and configuration.
  *
  * Rules:
- * - LIVE workspaces MUST use a bureau-backed provider (MicroBilt or iPredict)
+ * - LIVE workspaces MUST use the authoritative iPredict adapter (real MicroBilt API)
  * - TEST workspaces MAY use the internal heuristic provider
  * - Internal provider is NEVER used in LIVE mode (enforced)
+ *
+ * The authoritative adapter delegates to `lib/microbilt/ipredict-client.ts`
+ * (OAuth2 + POST /GetReport). Deprecated stub adapters are no longer registered.
  */
 
 import type { WorkspaceMode } from "@/lib/types"
 import type { PreQualProvider } from "./provider-interface"
 import { internalProvider } from "./internal-provider"
-import { microBiltProvider } from "./microbilt-provider"
-import { iPredictProvider } from "./ipredict-provider"
+import { authoritativeIpredictAdapter } from "./authoritative-ipredict-adapter"
 
 export class ProviderRegistry {
   private readonly providers: Map<string, PreQualProvider> = new Map()
 
   constructor() {
     this.register(internalProvider)
-    this.register(microBiltProvider)
-    this.register(iPredictProvider)
+    this.register(authoritativeIpredictAdapter)
   }
 
   register(provider: PreQualProvider): void {
@@ -35,7 +36,7 @@ export class ProviderRegistry {
   /**
    * Resolves the appropriate provider for the given workspace mode.
    *
-   * LIVE: Returns the first configured bureau-backed provider.
+   * LIVE: Returns the authoritative iPredict adapter (real MicroBilt API).
    * TEST: Returns the internal heuristic provider.
    *
    * Throws if no suitable provider is available.
@@ -50,24 +51,15 @@ export class ProviderRegistry {
       return internalProvider
     }
 
-    // LIVE — must use a bureau-backed provider
-    const liveProviders = Array.from(this.providers.values()).filter(
-      (p) => p.supportsLive,
-    )
-
-    // Find first configured provider
-    for (const provider of liveProviders) {
-      if (provider.isConfigured) {
-        if (provider.isConfigured()) {
-          return provider
-        }
-      }
+    // LIVE — must use the authoritative iPredict adapter
+    if (authoritativeIpredictAdapter.isConfigured()) {
+      return authoritativeIpredictAdapter
     }
 
     // No configured LIVE provider — fail closed
     throw new Error(
       "No bureau-backed provider is configured for LIVE pre-qualification. " +
-        "Set MICROBILT_API_KEY or IPREDICT_API_KEY.",
+        "Set MICROBILT_CLIENT_ID and MICROBILT_CLIENT_SECRET.",
     )
   }
 

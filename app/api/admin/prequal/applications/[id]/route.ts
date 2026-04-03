@@ -17,9 +17,10 @@ export async function GET(
     }
 
     const { id } = await params
+    const workspaceId = user.workspace_id
 
-    const application = await prisma.prequalApplication.findUnique({
-      where: { id },
+    const application = await prisma.prequalApplication.findFirst({
+      where: { id, ...(workspaceId ? { workspaceId } : {}) },
       include: {
         consent: true,
         ipredictReport: {
