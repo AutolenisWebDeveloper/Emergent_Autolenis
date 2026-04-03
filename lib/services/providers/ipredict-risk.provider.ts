@@ -1,6 +1,14 @@
 /**
- * iPredict Risk Provider Adapter
+ * @deprecated — STUB ADAPTER with a fabricated API contract (`/risk/assess`).
  *
+ * The AUTHORITATIVE iPredict integration is `lib/microbilt/ipredict-client.ts`,
+ * which uses the real MicroBilt OAuth2 + POST /GetReport contract.
+ *
+ * This file is still imported by `prequal-session.service.ts` for its sandbox
+ * mode and type exports (`IPredictRiskResponse`). It should be replaced by
+ * wiring `prequal-session.service.ts` to the real client in `lib/microbilt/`.
+ *
+ * Original description:
  * Supplementary risk scoring provider. Used alongside MicroBilt/Experian
  * prequalification to provide additional risk assessment signals.
  *

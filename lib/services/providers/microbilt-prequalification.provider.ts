@@ -1,6 +1,15 @@
 /**
- * MicroBilt/Experian Prequalification Provider Adapter
+ * @deprecated — STUB ADAPTER with a fabricated API contract (`/prequalification/soft-pull`).
  *
+ * The AUTHORITATIVE MicroBilt integration is `lib/microbilt/ipredict-client.ts`,
+ * which uses the real MicroBilt OAuth2 + POST /GetReport contract.
+ *
+ * This file is still imported by `prequal-session.service.ts` for its sandbox
+ * mode and type exports. It should be replaced by wiring `prequal-session.service.ts`
+ * to the real client in `lib/microbilt/`.
+ *
+ * Original description:
+ * MicroBilt/Experian Prequalification Provider Adapter.
  * Production integration with MicroBilt's prequalification API using Experian data.
  * This is a soft-inquiry (consumer-initiated, consent-based) flow.
  *

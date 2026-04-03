@@ -1,10 +1,17 @@
 /**
- * iPredict PreQual Provider Adapter
+ * @deprecated — STUB ADAPTER with a fabricated API contract (`api.ipredict.com/v1/predict/qualify`).
  *
- * Integrates with iPredict's predictive credit API for LIVE pre-qualification.
- * Requires IPREDICT_API_KEY and IPREDICT_API_URL environment variables.
+ * The AUTHORITATIVE iPredict integration is `lib/microbilt/ipredict-client.ts`,
+ * which uses the real MicroBilt OAuth2 + POST /GetReport contract.
  *
- * This adapter is FCRA-compliant and requires a valid ConsentArtifact before execution.
+ * This file is wired into `prequal/provider-registry.ts` → `prequal.service.ts`,
+ * but its API contract is entirely fabricated and will never work against the real
+ * MicroBilt endpoint. It should be replaced by an adapter that delegates to
+ * `lib/microbilt/ipredict-client.ts`.
+ *
+ * Original description:
+ * iPredict PreQual Provider Adapter. Integrates with iPredict's predictive credit
+ * API for LIVE pre-qualification. Requires IPREDICT_API_KEY and IPREDICT_API_URL.
  */
 
 import type {

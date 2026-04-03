@@ -112,25 +112,24 @@ describe("Provider abstraction contract", () => {
     expect(source).toContain("providerName")
   })
 
-  it("MicroBilt provider adapter exists", () => {
-    expect(fileExists("lib/services/providers/microbilt-provider.ts")).toBe(true)
-    const source = readSource("lib/services/providers/microbilt-provider.ts")
+  it("MicroBilt prequalification provider adapter exists", () => {
+    expect(fileExists("lib/services/providers/microbilt-prequalification.provider.ts")).toBe(true)
+    const source = readSource("lib/services/providers/microbilt-prequalification.provider.ts")
     expect(source).toContain("MicroBiltPrequalProvider")
-    expect(source).toContain("implements PrequalProvider")
-    expect(source).toContain("MICROBILT_EXPERIAN")
+    expect(source).toContain('PROVIDER_NAME = "MicroBilt"')
   })
 
-  it("iPredict provider adapter exists", () => {
-    expect(fileExists("lib/services/providers/ipredict-provider.ts")).toBe(true)
-    const source = readSource("lib/services/providers/ipredict-provider.ts")
+  it("iPredict risk provider adapter exists", () => {
+    expect(fileExists("lib/services/providers/ipredict-risk.provider.ts")).toBe(true)
+    const source = readSource("lib/services/providers/ipredict-risk.provider.ts")
     expect(source).toContain("IPredictRiskProvider")
-    expect(source).toContain("implements PrequalProvider")
-    expect(source).toContain("IPREDICT")
+    expect(source).toContain("riskScore")
+    expect(source).toContain("riskCategory")
   })
 
   it("providers require env vars to be available", () => {
-    const microbilt = readSource("lib/services/providers/microbilt-provider.ts")
-    const ipredict = readSource("lib/services/providers/ipredict-provider.ts")
+    const microbilt = readSource("lib/services/providers/microbilt-prequalification.provider.ts")
+    const ipredict = readSource("lib/services/providers/ipredict-risk.provider.ts")
     expect(microbilt).toContain("MICROBILT_API_KEY")
     expect(microbilt).toContain("MICROBILT_API_URL")
     expect(ipredict).toContain("IPREDICT_API_KEY")
@@ -142,6 +141,14 @@ describe("Provider abstraction contract", () => {
     expect(source).toContain("export function registerProvider")
     expect(source).toContain("export function getProvider")
     expect(source).toContain("export function getAvailableProviders")
+  })
+
+  it("authoritative iPredict client exists in lib/microbilt/", () => {
+    expect(fileExists("lib/microbilt/ipredict-client.ts")).toBe(true)
+    const source = readSource("lib/microbilt/ipredict-client.ts")
+    expect(source).toContain("callIpredict")
+    expect(source).toContain("MICROBILT_CLIENT_ID")
+    expect(source).toContain("/GetReport")
   })
 })
 

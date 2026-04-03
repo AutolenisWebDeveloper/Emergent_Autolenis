@@ -1,10 +1,17 @@
 /**
- * MicroBilt PreQual Provider Adapter
+ * @deprecated — STUB ADAPTER with a fabricated API contract (`api.microbilt.com/v1/credit/prequalify`).
  *
- * Integrates with MicroBilt's credit decisioning API for LIVE pre-qualification.
- * Requires MICROBILT_API_KEY and MICROBILT_API_URL environment variables.
+ * The AUTHORITATIVE MicroBilt integration is `lib/microbilt/ipredict-client.ts`,
+ * which uses the real MicroBilt OAuth2 + POST /GetReport contract.
  *
- * This adapter is FCRA-compliant and requires a valid ConsentArtifact before execution.
+ * This file is wired into `prequal/provider-registry.ts` → `prequal.service.ts`,
+ * but its API contract is entirely fabricated and will never work against the real
+ * MicroBilt endpoint. It should be replaced by an adapter that delegates to
+ * `lib/microbilt/ipredict-client.ts`.
+ *
+ * Original description:
+ * MicroBilt PreQual Provider Adapter. Integrates with MicroBilt's credit decisioning
+ * API for LIVE pre-qualification. Requires MICROBILT_API_KEY and MICROBILT_API_URL.
  */
 
 import type {
