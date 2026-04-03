@@ -18,8 +18,12 @@
 import { prisma } from "@/lib/db"
 import { PREQUAL_EXPIRY_DAYS } from "@/lib/constants"
 import type { WorkspaceMode } from "@/lib/types"
-import { MicroBiltPrequalProvider } from "./providers/microbilt-prequalification.provider"
-import { IPredictRiskProvider } from "./providers/ipredict-risk.provider"
+import { callIpredict, type IpredictApplicationInput } from "@/lib/microbilt/ipredict-client"
+import { scoreIpredict } from "@/lib/decision/ipredict-scorer"
+import { decryptSsn } from "@/lib/prequal/encryption"
+import { MicroBiltTimeoutError, MicroBiltNoScoreError } from "@/lib/microbilt/errors"
+import { IPREDICT_THRESHOLDS } from "@/lib/prequal/constants"
+import { logger } from "@/lib/logger"
 import {
   PrequalResponseNormalizer,
   type NormalizedPrequalResult,
@@ -63,6 +67,12 @@ export interface RunPrequalInput {
   state: string
   postalCode: string
   ssnLast4?: string
+  /** AES-256-GCM encrypted full SSN — required for LIVE iPredict execution */
+  ssnEncrypted?: string
+  /** 10-digit phone number — used by iPredict */
+  phone?: string
+  /** Employer name — used by iPredict */
+  employerName?: string
   monthlyIncomeCents: number
   monthlyHousingCents: number
 }
@@ -479,9 +489,8 @@ export class PrequalSessionService {
   private getProviderName(sourceType: PrequalSourceType): string {
     switch (sourceType) {
       case "MICROBILT":
-        return MicroBiltPrequalProvider.PROVIDER_NAME
       case "IPREDICT":
-        return IPredictRiskProvider.PROVIDER_NAME
+        return "MicroBilt-iPredict"
       default:
         return "AutoLenisPrequal"
     }
@@ -498,46 +507,164 @@ export class PrequalSessionService {
     }
   }
 
+  /**
+   * Calls the appropriate provider based on sourceType.
+   *
+   * MICROBILT / IPREDICT → Authoritative iPredict via lib/microbilt/ipredict-client.ts
+   *   Requires ssnEncrypted in input for full SSN. Decrypts just-in-time.
+   * INTERNAL → Heuristic scoring (no vendor call, no SSN needed)
+   */
   private async callProvider(
     sourceType: PrequalSourceType,
     input: RunPrequalInput,
     sessionId: string,
   ): Promise<PreQualProviderResponse> {
-    const baseRequest = {
-      firstName: input.firstName,
-      lastName: input.lastName,
-      dateOfBirth: input.dateOfBirth,
-      addressLine1: input.addressLine1,
-      city: input.city,
-      state: input.state,
-      postalCode: input.postalCode,
-      ssnLast4: input.ssnLast4,
-    }
-
     switch (sourceType) {
       case "MICROBILT":
-        return MicroBiltPrequalProvider.prequalify(baseRequest, { sessionId })
-
       case "IPREDICT": {
-        // iPredict is risk-only; map to PreQualProviderResponse shape
-        const riskResult = await IPredictRiskProvider.assessRisk(baseRequest, { sessionId })
-        if (!riskResult.success) {
+        // Authoritative path: call real MicroBilt iPredict API
+        if (!input.ssnEncrypted) {
           return {
             success: false,
-            errorMessage: riskResult.errorMessage,
+            errorMessage:
+              "Full SSN (encrypted) is required for LIVE iPredict prequalification. " +
+              "Use the public /prequal flow or provide ssnEncrypted in the request.",
           }
         }
-        // iPredict doesn't provide approval amounts — it's supplementary
-        return {
-          success: true,
-          creditTier: IPredictRiskProvider.riskCategoryToCreditTier(riskResult.riskCategory),
-          providerReferenceId: riskResult.providerReferenceId,
+
+        // Decrypt SSN just-in-time — never log or persist in plain text
+        let ssnPlain: string
+        try {
+          ssnPlain = decryptSsn(input.ssnEncrypted)
+        } catch {
+          return {
+            success: false,
+            errorMessage: "Failed to decrypt SSN for iPredict call",
+          }
+        }
+
+        const ipredictInput: IpredictApplicationInput = {
+          firstName: input.firstName,
+          lastName: input.lastName,
+          ssn: ssnPlain,
+          dob: input.dateOfBirth,
+          address1: input.addressLine1,
+          city: input.city,
+          state: input.state,
+          zip: input.postalCode,
+          phone: input.phone || "",
+          employerName: input.employerName,
+          grossMonthlyIncome: input.monthlyIncomeCents / 100,
+          applicationId: `session-${sessionId}`,
+        }
+
+        try {
+          const callResult = await callIpredict(ipredictInput)
+          const scoringResult = scoreIpredict(callResult.parsed)
+
+          const creditTier = this.bandToCreditTier(scoringResult.band, scoringResult.scoreRaw)
+          const shoppingPower = this.estimateShoppingPower(
+            scoringResult.band,
+            input.monthlyIncomeCents,
+            input.monthlyHousingCents,
+          )
+
+          return {
+            success: scoringResult.band !== "FAIL",
+            creditTier,
+            approvedAmountCents: shoppingPower.approvedAmountCents,
+            maxMonthlyPaymentCents: shoppingPower.maxMonthlyPaymentCents,
+            minMonthlyPaymentCents: shoppingPower.minMonthlyPaymentCents,
+            dtiRatio: shoppingPower.dtiRatio,
+            providerReferenceId: callResult.vendorRequestId ?? undefined,
+            errorMessage: scoringResult.band === "FAIL"
+              ? `iPredict hard-fail: ${scoringResult.hardFailReason ?? "score below threshold"}`
+              : undefined,
+          }
+        } catch (error: unknown) {
+          if (error instanceof MicroBiltTimeoutError) {
+            try {
+              const retryResult = await callIpredict(ipredictInput)
+              const retryScoring = scoreIpredict(retryResult.parsed)
+              const creditTier = this.bandToCreditTier(retryScoring.band, retryScoring.scoreRaw)
+              const shoppingPower = this.estimateShoppingPower(
+                retryScoring.band,
+                input.monthlyIncomeCents,
+                input.monthlyHousingCents,
+              )
+              return {
+                success: retryScoring.band !== "FAIL",
+                creditTier,
+                approvedAmountCents: shoppingPower.approvedAmountCents,
+                maxMonthlyPaymentCents: shoppingPower.maxMonthlyPaymentCents,
+                minMonthlyPaymentCents: shoppingPower.minMonthlyPaymentCents,
+                dtiRatio: shoppingPower.dtiRatio,
+                providerReferenceId: retryResult.vendorRequestId ?? undefined,
+              }
+            } catch (retryError: unknown) {
+              logger.error("[PrequalSession] iPredict timeout after retry", {
+                sessionId,
+                error: retryError instanceof Error ? retryError.message : String(retryError),
+              })
+              return { success: false, errorMessage: "Credit assessment service temporarily unavailable" }
+            }
+          }
+
+          if (error instanceof MicroBiltNoScoreError) {
+            return { success: false, creditTier: "DECLINED", errorMessage: "Insufficient credit history" }
+          }
+
+          const message = error instanceof Error ? error.message : "Unknown iPredict error"
+          logger.error("[PrequalSession] iPredict error", { sessionId, error: message })
+          return { success: false, errorMessage: `iPredict provider error: ${message}` }
         }
       }
 
       default: {
         return this.internalPrequalify(input)
       }
+    }
+  }
+
+  /**
+   * Maps an iPredict band to a canonical credit tier.
+   */
+  private bandToCreditTier(band: string, scoreRaw?: number): string {
+    if (band === "FAIL") return "DECLINED"
+    if (band === "BORDERLINE") return "FAIR"
+    if (scoreRaw != null && scoreRaw >= 750) return "EXCELLENT"
+    return "GOOD"
+  }
+
+  /**
+   * Estimates shopping power from iPredict band + income data.
+   */
+  private estimateShoppingPower(
+    band: string,
+    monthlyIncomeCents: number,
+    monthlyHousingCents: number,
+  ): { approvedAmountCents: number; maxMonthlyPaymentCents: number; minMonthlyPaymentCents: number; dtiRatio: number } {
+    if (band === "FAIL") {
+      return { approvedAmountCents: 0, maxMonthlyPaymentCents: 0, minMonthlyPaymentCents: 0, dtiRatio: 0 }
+    }
+    const monthlyIncome = monthlyIncomeCents / 100
+    const monthlyHousing = monthlyHousingCents / 100
+    const dtiRatio = monthlyIncome > 0 ? (monthlyHousing / monthlyIncome) * 100 : 100
+    const rateMultiplier = band === "PASS" ? 0.9 : 0.7
+    const availableMonthly = monthlyIncome * 0.43 - monthlyHousing
+    const maxMonthlyPayment = Math.max(0, Math.floor(availableMonthly * rateMultiplier))
+    const avgApr = band === "PASS" ? 0.055 : 0.085
+    const termMonths = 60
+    const monthlyRate = avgApr / 12
+    const approvedAmount =
+      monthlyRate > 0
+        ? maxMonthlyPayment * ((1 - Math.pow(1 + monthlyRate, -termMonths)) / monthlyRate)
+        : maxMonthlyPayment * termMonths
+    return {
+      approvedAmountCents: Math.floor(approvedAmount) * 100,
+      maxMonthlyPaymentCents: maxMonthlyPayment * 100,
+      minMonthlyPaymentCents: Math.floor(maxMonthlyPayment * 0.5) * 100,
+      dtiRatio: Math.round(dtiRatio * 100) / 100,
     }
   }
 
@@ -623,6 +750,7 @@ export class PrequalSessionService {
   private sanitizeRequestPayload(input: RunPrequalInput): Record<string, unknown> {
     const sanitized = { ...input } as Record<string, unknown>
     delete sanitized["ssnLast4"]
+    delete sanitized["ssnEncrypted"]
     return sanitized
   }
 }

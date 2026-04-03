@@ -42,68 +42,14 @@ export class IPredictProvider implements PreQualProvider {
   async prequalify(
     request: PreQualProviderRequest,
   ): Promise<PreQualProviderResponse> {
-    if (!this.isConfigured()) {
-      return {
-        success: false,
-        errorMessage:
-          "iPredict provider is not configured. Set IPREDICT_API_KEY.",
-      }
-    }
-
-    try {
-      const response = await fetch(
-        `${this.apiUrl}/predict/qualify`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-API-Key": this.apiKey!,
-          },
-          body: JSON.stringify({
-            consumer: {
-              name: {
-                first: request.firstName,
-                last: request.lastName,
-              },
-              dob: request.dateOfBirth,
-              ssn4: request.ssnLast4,
-              address: {
-                street: request.addressLine1,
-                city: request.city,
-                state: request.state,
-                postalCode: request.postalCode,
-              },
-            },
-            income: {
-              monthlyGross: request.monthlyIncomeCents / 100,
-              monthlyHousing: request.monthlyHousingCents / 100,
-            },
-          }),
-          signal: AbortSignal.timeout(30_000),
-        },
-      )
-
-      if (!response.ok) {
-        const errorBody = await response.text().catch(() => "")
-        return {
-          success: false,
-          errorMessage: `iPredict API error: ${response.status}`,
-          rawResponse: { status: response.status, body: errorBody },
-        }
-      }
-
-      const data = await response.json()
-
-      return this.mapResponse(data)
-    } catch (error) {
-      return {
-        success: false,
-        errorMessage:
-          error instanceof Error
-            ? `iPredict request failed: ${error.message}`
-            : "iPredict request failed",
-      }
-    }
+    // LIVE-mode guard: This stub must never execute in production.
+    // The authoritative path is lib/microbilt/ipredict-client.ts via
+    // the AuthoritativeIpredictAdapter registered in provider-registry.ts.
+    throw new Error(
+      "DEPRECATED: iPredict stub adapter invoked. " +
+        "Use the authoritative MicroBilt iPredict adapter (lib/services/prequal/authoritative-ipredict-adapter.ts) " +
+        "which delegates to lib/microbilt/ipredict-client.ts.",
+    )
   }
 
   /**

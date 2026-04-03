@@ -20,6 +20,14 @@ export interface PreQualProviderRequest {
   monthlyIncomeCents: number
   monthlyHousingCents: number
   ssnLast4?: string
+  /** AES-256-GCM encrypted full SSN — required for LIVE iPredict execution */
+  ssnEncrypted?: string
+  /** 10-digit phone number — used by iPredict */
+  phone?: string
+  /** Employer name — used by iPredict */
+  employerName?: string
+  /** Application/session ID for vendor correlation */
+  applicationId?: string
 }
 
 // ─── Canonical Provider Response ────────────────────────────────────────────
