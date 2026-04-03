@@ -10,7 +10,7 @@ function makeInput(overrides: Partial<IpredictApplicationInput> = {}): IpredictA
   return {
     firstName: "Jane",
     lastName: "Doe",
-    ssn: "123-45-6789",
+    ssn: "000-00-0000",
     dob: "1990-03-15",
     address1: "123 Main St",
     city: "Dallas",
@@ -86,8 +86,8 @@ describe("buildRequest — envelope structure", () => {
   })
 
   it("strips non-digit chars from SSN", () => {
-    const req = buildRequest(makeInput({ ssn: "123-45-6789" }))
-    expect(req.PersonInfo.TINInfo.TaxId).toBe("123456789")
+    const req = buildRequest(makeInput({ ssn: "000-00-0000" }))
+    expect(req.PersonInfo.TINInfo.TaxId).toBe("000000000")
     expect(req.PersonInfo.TINInfo.TINType).toBe("1")
   })
 
