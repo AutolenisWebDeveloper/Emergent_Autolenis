@@ -100,10 +100,9 @@ describe("Response normalization — safe defaults", () => {
 describe("Provider registry — resolution", () => {
   const registrySrc = readSource("lib/services/prequal/provider-registry.ts")
 
-  it("registers internal, MicroBilt, and iPredict providers", () => {
+  it("registers internal and authoritative iPredict providers", () => {
     expect(registrySrc).toContain("internalProvider")
-    expect(registrySrc).toContain("microBiltProvider")
-    expect(registrySrc).toContain("iPredictProvider")
+    expect(registrySrc).toContain("authoritativeIpredictAdapter")
   })
 
   it("returns internal provider for TEST workspaces", () => {
@@ -117,8 +116,9 @@ describe("Provider registry — resolution", () => {
     )
   })
 
-  it("only uses supportsLive providers for LIVE workspaces", () => {
-    expect(registrySrc).toContain("p.supportsLive")
+  it("resolves authoritative adapter for LIVE workspaces", () => {
+    expect(registrySrc).toContain("authoritativeIpredictAdapter.isConfigured()")
+    expect(registrySrc).toContain("return authoritativeIpredictAdapter")
   })
 })
 
@@ -164,16 +164,12 @@ describe("MicroBilt adapter — structure", () => {
     expect(mbSrc).toContain("supportsLive = true")
   })
 
-  it("reads MICROBILT_API_KEY from environment", () => {
-    expect(mbSrc).toContain("MICROBILT_API_KEY")
+  it("is marked as deprecated", () => {
+    expect(mbSrc).toContain("@deprecated")
   })
 
-  it("uses request timeout", () => {
-    expect(mbSrc).toContain("AbortSignal.timeout")
-  })
-
-  it("returns error when not configured", () => {
-    expect(mbSrc).toContain("MicroBilt provider is not configured")
+  it("throws DEPRECATED error when prequalify is called", () => {
+    expect(mbSrc).toContain("DEPRECATED: MicroBilt stub adapter invoked")
   })
 })
 
@@ -194,12 +190,12 @@ describe("iPredict adapter — structure", () => {
     expect(ipSrc).toContain("supportsLive = true")
   })
 
-  it("reads IPREDICT_API_KEY from environment", () => {
-    expect(ipSrc).toContain("IPREDICT_API_KEY")
+  it("is marked as deprecated", () => {
+    expect(ipSrc).toContain("@deprecated")
   })
 
-  it("returns error when not configured", () => {
-    expect(ipSrc).toContain("iPredict provider is not configured")
+  it("throws DEPRECATED error when prequalify is called", () => {
+    expect(ipSrc).toContain("DEPRECATED: iPredict stub adapter invoked")
   })
 })
 
