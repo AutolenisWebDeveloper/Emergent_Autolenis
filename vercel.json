@@ -30,6 +30,18 @@
     {
       "path": "/api/cron/prequal/message-delivery",
       "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/prequal/stale-cleanup",
+      "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/prequal/sla-escalation",
+      "schedule": "*/30 * * * *"
+    },
+    {
+      "path": "/api/cron/prequal/ibv-reminders",
+      "schedule": "0 * * * *"
     }
   ]
 }

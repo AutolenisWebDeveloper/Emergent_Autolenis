@@ -5,10 +5,11 @@ import { prequalService } from "@/lib/services/prequal.service"
 // GET /api/admin/buyers/:buyerId/prequal - Admin view of buyer prequal history
 export async function GET(_request: Request, { params }: { params: Promise<{ buyerId: string }> }) {
   try {
-    await requireAuth(["ADMIN"])
+    const session = await requireAuth(["ADMIN"])
     const { buyerId } = await params
+    const workspaceId = session.workspace_id
 
-    const data = await prequalService.getPreQualHistoryForUser(buyerId)
+    const data = await prequalService.getPreQualHistoryForUser(buyerId, workspaceId)
 
     return NextResponse.json({
       success: true,

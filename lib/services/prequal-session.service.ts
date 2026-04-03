@@ -91,12 +91,14 @@ export class PrequalSessionService {
     userId: string,
     input: CreateSessionInput,
     requestContext: { ipAddress?: string; userAgent?: string },
+    workspaceId?: string | null,
   ) {
     const session = await prisma.prequalSession.create({
       data: {
         userId,
         status: "INITIATED",
         sourceType: input.sourceType || "INTERNAL",
+        ...(workspaceId ? { workspaceId } : {}),
         createdAt: new Date(),
         updatedAt: new Date(),
       },
@@ -114,6 +116,7 @@ export class PrequalSessionService {
     userId: string,
     input: CaptureConsentInput,
     requestContext: { ipAddress?: string; userAgent?: string },
+    workspaceId?: string | null,
   ) {
     if (!input.consentGiven) {
       throw new Error("Written-instruction consent is required to proceed with prequalification")
@@ -121,7 +124,7 @@ export class PrequalSessionService {
 
     // Ensure session belongs to user and is in correct state
     const session = await prisma.prequalSession.findFirst({
-      where: { id: sessionId, userId },
+      where: { id: sessionId, userId, ...(workspaceId ? { workspaceId } : {}) },
     })
 
     if (!session) {
@@ -169,9 +172,10 @@ export class PrequalSessionService {
     userId: string,
     input: CaptureForwardingAuthInput,
     requestContext: { ipAddress?: string; userAgent?: string },
+    workspaceId?: string | null,
   ) {
     const session = await prisma.prequalSession.findFirst({
-      where: { id: sessionId, userId },
+      where: { id: sessionId, userId, ...(workspaceId ? { workspaceId } : {}) },
     })
 
     if (!session) {
@@ -220,9 +224,10 @@ export class PrequalSessionService {
     userId: string,
     input: RunPrequalInput,
     workspaceMode?: WorkspaceMode | null,
+    workspaceId?: string | null,
   ): Promise<NormalizedPrequalResult> {
     const session = await prisma.prequalSession.findFirst({
-      where: { id: sessionId, userId },
+      where: { id: sessionId, userId, ...(workspaceId ? { workspaceId } : {}) },
     })
 
     if (!session) {
@@ -319,7 +324,7 @@ export class PrequalSessionService {
 
     // Expire existing active prequalifications
     await prisma.preQualification.updateMany({
-      where: { buyerId: userId, status: "ACTIVE" },
+      where: { buyerId: userId, status: "ACTIVE", ...(workspaceId ? { workspaceId } : {}) },
       data: { status: "EXPIRED", updatedAt: new Date() },
     })
 
@@ -328,6 +333,7 @@ export class PrequalSessionService {
         buyerId: userId,
         status: newStatus,
         creditTier: normalizedTier,
+        ...(workspaceId ? { workspaceId } : {}),
         maxOtd: providerResponse.approvedAmountCents
           ? providerResponse.approvedAmountCents / 100
           : 0,
@@ -393,9 +399,9 @@ export class PrequalSessionService {
   /**
    * Get session details including linked artifacts.
    */
-  async getSession(sessionId: string, userId: string) {
+  async getSession(sessionId: string, userId: string, workspaceId?: string | null) {
     const session = await prisma.prequalSession.findFirst({
-      where: { id: sessionId, userId },
+      where: { id: sessionId, userId, ...(workspaceId ? { workspaceId } : {}) },
       include: { providerEvents: true },
     })
 
@@ -443,9 +449,9 @@ export class PrequalSessionService {
   /**
    * Admin: List all sessions for a user.
    */
-  async listUserSessions(userId: string) {
+  async listUserSessions(userId: string, workspaceId?: string | null) {
     return prisma.prequalSession.findMany({
-      where: { userId },
+      where: { userId, ...(workspaceId ? { workspaceId } : {}) },
       include: { providerEvents: true },
       orderBy: { createdAt: "desc" },
     })
