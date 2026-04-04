@@ -53,3 +53,7 @@ skills-lock.json
 # backup and patch files
 *.bak
 *.patch
+-e 
+# Environment files
+*.env
+*.env.*
