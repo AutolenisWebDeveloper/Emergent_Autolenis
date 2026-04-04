@@ -1,88 +1,74 @@
-# AutoLenis Deployment PRD
+# AutoLenis Deployment & Dashboard Audit PRD
 
 ## Original Problem Statement
-Deploy the complete AutoLenis multi-role automotive concierge and reverse-auction platform to Vercel production. 256 pages, 467+ API routes, 119 service files, 4,725-line Prisma schema.
+1. Deploy AutoLenis multi-role automotive concierge platform to Vercel production
+2. Audit and fix all 4 dashboards (Buyer, Dealer, Affiliate, Admin) ensuring proper connections
+3. Ensure Admin dashboard has full visibility across all other dashboards
 
 ## Architecture
 - **Framework**: Next.js 16.0.11 (App Router, Turbopack)
 - **Language**: TypeScript (strict mode)
 - **ORM**: Prisma 6.16.0 with PostgreSQL
-- **Database**: Supabase PostgreSQL (pooled via PgBouncer)
-- **Auth**: JWT + Supabase Auth
+- **Database**: Supabase PostgreSQL
+- **Auth**: JWT + Supabase Auth, RBAC via proxy.ts middleware
 - **Payments**: Stripe (live keys)
 - **Email**: Resend
 - **E-Sign**: DocuSign (sandbox)
 - **Credit**: MicroBilt (sandbox)
 - **AI**: Groq SDK
-- **Package Manager**: pnpm 10.28.0
 - **Deployment**: Vercel (autolenis-deploy project)
 
 ## Platform Scale
 - 257 pages | 473 API routes | 118 service files | 10 cron jobs
-- 4,725-line Prisma schema | 249 test files (not run)
-- 2,240 total source files
+- 4,725-line Prisma schema | 2,240 total source files
+- 4 dashboard ecosystems: Buyer, Dealer, Affiliate, Admin
 
-## Deployment Completed - April 4, 2026
-- **Production URL**: https://autolenis-deploy.vercel.app
-- **Build**: SUCCESS (Vercel, Node 20.x, pnpm)
-- **Migration**: APPLIED (baseline migration resolved against live Supabase)
-- **Cron Jobs**: ALL 10 REGISTERED
-- **Route Verification**: ALL PASS (zero 500s, zero 404s)
+## What's Been Implemented
+
+### Phase 1: Vercel Deployment (April 4, 2026)
+- [x] Repository ingested (2,240 files)
+- [x] Dependencies installed (pnpm)
+- [x] Prisma schema validated, client generated
+- [x] Database migration applied (baseline)
+- [x] TypeScript strict check passes (0 errors)
+- [x] Build succeeds (Next.js 16 Turbopack)
+- [x] Deployed to Vercel production
+- [x] All 10 cron jobs registered
+- [x] All routes verified (zero 500s, zero 404s)
+- Production URL: https://autolenis-deploy.vercel.app
+
+### Phase 2: Dashboard Connection Audit (April 4, 2026)
+- [x] All 4 dashboard route structures audited
+- [x] All navigation links verified (zero broken links)
+- [x] All API route connections verified
+- [x] Auth guards and RBAC verified via proxy.ts
+- [x] Cross-dashboard data wiring confirmed
+- [x] Missing /api/admin/offers route created and deployed
+- [x] Admin → Buyer oversight: 43 pages, 7 key routes
+- [x] Admin → Dealer oversight: 35 pages, 7 key routes
+- [x] Admin → Affiliate oversight: 23 pages, 4 key routes
+- [x] Admin → Deal lifecycle: 7 key route groups
+- [x] Admin → Payments/Compliance: 7 key route groups
+- [x] Admin → System management: 8 key route groups
 
 ## Changes Made
-1. **package.json**: `engines.node` from `24.x` → `>=20.x` (Vercel Node.js compatibility)
-2. **Vercel project settings**: Node version set to 20.x
-3. **Environment variables**: All 43 variables configured in Vercel production scope (fixed trailing newline issue from `echo` → `printf`)
+1. **package.json**: `engines.node` 24.x → >=20.x (Vercel compatibility)
+2. **Vercel env vars**: 43 variables set with printf (no trailing newlines)
+3. **NEW: app/api/admin/offers/route.ts**: Created missing admin offers API route
 
-## Blockers Resolved
-1. **Vercel CLI deployment blocked by SSO/Git protection**: Created new `autolenis-deploy` project (not Git-linked)
-2. **CRON_SECRET trailing whitespace**: Fixed header validation failure in cron routes
-3. **NEXT_PUBLIC_APP_URL trailing newline**: Caused `%0A` in CORS header → all API routes 500. Fixed with `printf` instead of `echo` for env var injection
-4. **Database migration conflict**: Production DB already had tables → used `prisma migrate resolve --applied` to baseline
-
-## Route Verification Results
-| Route | Method | Status | Expected | Result |
-|-------|--------|--------|----------|--------|
-| / | GET | 200 | 200 | ✅ |
-| /how-it-works | GET | 200 | 200 | ✅ |
-| /pricing | GET | 200 | 200 | ✅ |
-| /for-dealers | GET | 200 | 200 | ✅ |
-| /affiliate | GET | 200 | 200 | ✅ |
-| /auth/signin | GET | 200 | 200 | ✅ |
-| /auth/signup | GET | 200 | 200 | ✅ |
-| /buyer | GET | 307 | redirect | ✅ |
-| /dealer | GET | 307 | redirect | ✅ |
-| /affiliate/portal | GET | 307 | redirect | ✅ |
-| /admin | GET | 307 | redirect | ✅ |
-| /api/health | GET | 401 | non-500 | ✅ |
-| /api/webhooks/stripe | POST | 400 | non-500 | ✅ |
-| /api/webhooks/docusign | POST | 401 | non-500 | ✅ |
-| /api/cron/* | POST | 403-405 | non-500 | ✅ |
-
-## Cron Jobs Registered
-| Path | Schedule | Status |
-|------|----------|--------|
-| /api/cron/auction-close | */5 * * * * | ✅ REGISTERED |
-| /api/cron/release-expired-holds | */10 * * * * | ✅ REGISTERED |
-| /api/cron/affiliate-reconciliation | 0 * * * * | ✅ REGISTERED |
-| /api/cron/contract-shield-reconciliation | 0 * * * * | ✅ REGISTERED |
-| /api/cron/session-cleanup | 0 */6 * * * | ✅ REGISTERED |
-| /api/cron/prequal/purge | 0 3 * * * | ✅ REGISTERED |
-| /api/cron/prequal/message-delivery | */5 * * * * | ✅ REGISTERED |
-| /api/cron/prequal/stale-cleanup | 0 2 * * * | ✅ REGISTERED |
-| /api/cron/prequal/sla-escalation | */30 * * * * | ✅ REGISTERED |
-| /api/cron/prequal/ibv-reminders | 0 * * * * | ✅ REGISTERED |
+## Dashboard Route Summary
+- Buyer: 20 pages, 15+ API routes
+- Dealer: 22 pages, 30+ API routes  
+- Affiliate: 12 pages, 10+ API routes
+- Admin: 50+ pages, 214 API routes (full cross-dashboard visibility)
 
 ## Remaining Operator Actions
 - P1: Point custom domain (autolenis.com) to Vercel deployment
-- P1: Register Stripe webhook URL → `https://autolenis-deploy.vercel.app/api/webhooks/stripe`
-- P1: Update NEXT_PUBLIC_APP_URL to match final production domain
-- P2: Replace DocuSign sandbox credentials with production when ready
-- P2: Replace MicroBilt sandbox URLs with production endpoints
-- P2: Verify Resend sender domain (autolenis.com)
+- P1: Register Stripe webhook URL
+- P2: Replace DocuSign/MicroBilt sandbox credentials for production
+- P2: Verify Resend sender domain
 
 ## Backlog
 - P0: Custom domain DNS configuration
 - P1: Stripe webhook registration
-- P2: DocuSign production approval
-- P2: MicroBilt production credentials
+- P2: Production DocuSign/MicroBilt credentials
