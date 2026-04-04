@@ -69,8 +69,14 @@ export async function GET(req: NextRequest) {
 
   const { data, error, count } = await query
 
+  // Explicit Supabase error handling
+  if (error) {
+    console.error("[InventorySearch] Supabase query error:", error)
+    return NextResponse.json({ error: "Failed to search inventory" }, { status: 500 })
+  }
+
   // If canonical table returned results, use them
-  if (!error && data && data.length > 0) {
+  if (data && data.length > 0) {
     return NextResponse.json({
       items: data,
       total: count || 0,
@@ -164,6 +170,6 @@ export async function GET(req: NextRequest) {
   })
   } catch (error) {
     console.error("[InventorySearch] Error:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    return NextResponse.json({ error: "Failed to search inventory" }, { status: 500 })
   }
 }

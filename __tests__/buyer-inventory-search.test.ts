@@ -48,6 +48,8 @@ vi.mock("@/lib/db", () => ({
       return createQueryChain()
     },
   }),
+  isPrismaAvailable: () => false,
+  prisma: undefined,
 }))
 
 // --------------- Helpers ---------------
