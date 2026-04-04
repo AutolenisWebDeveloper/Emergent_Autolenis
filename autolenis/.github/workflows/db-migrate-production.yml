@@ -1,0 +1,142 @@
+name: Production DB Migrations
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'prisma/migrations/**'
+      - 'prisma/schema.prisma'
+      - 'supabase/migrations/**'
+      - 'supabase/config.toml'
+      - '.github/workflows/db-migrate-production.yml'
+  workflow_dispatch:
+    inputs:
+      force_run:
+        description: 'Force run migrations even without file changes'
+        required: false
+        default: 'false'
+
+# Prevent concurrent migration runs. Never cancel in-progress migrations.
+concurrency:
+  group: db-migrate-production
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    name: Apply Production Database Migrations
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Corepack must be enabled BEFORE setup-node so the pnpm cache key
+      # is resolved correctly. This mirrors the pattern in ci.yml.
+      - name: Enable Corepack + pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.28.0 --activate
+          pnpm --version
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Fail fast with a clear message if required secrets are missing.
+      # The "Link Supabase project" step produces a confusing error when
+      # the project ref is empty.
+      - name: Validate required secrets
+        run: |
+          missing=0
+          if [ -z "$SUPABASE_ACCESS_TOKEN" ]; then
+            echo "::error::SUPABASE_ACCESS_TOKEN secret is not set. Configure it under GitHub → Settings → Environments → production → Secrets."
+            missing=1
+          fi
+          if [ -z "$SUPABASE_PROJECT_ID" ]; then
+            echo "::error::SUPABASE_PROJECT_ID secret is not set. Configure it under GitHub → Settings → Environments → production → Secrets."
+            missing=1
+          fi
+          if [ "$missing" -eq 1 ]; then exit 1; fi
+          echo "All required Supabase secrets are present."
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+
+      # Link the Supabase CLI to the remote project so that `supabase db push`
+      # knows which project to target. The project ref is read from the secret
+      # and never echoed to the log.
+      # Supabase CLI v2.82+ also requires project_id in config.toml for commands
+      # like `migration list`. We inject it from the secret so it is never
+      # hard-coded in the repository.
+      - name: Link Supabase project
+        run: |
+          pnpm supabase link --project-ref "$SUPABASE_PROJECT_ID"
+          sed -i "s/^project_id = .*/project_id = \"$SUPABASE_PROJECT_ID\"/" supabase/config.toml
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+
+      # Pre-flight: check for remote/local migration mismatches and repair
+      # known renamed versions before pushing. This prevents "remote version
+      # not found locally" errors from `supabase db push`.
+      # Known renames are maintained in scripts/reconcile-supabase-migrations.sh
+      # (single source of truth).
+      - name: Reconcile migration history
+        run: |
+          echo "::group::Migration reconciliation"
+          bash scripts/reconcile-supabase-migrations.sh --apply || {
+            rc=$?
+            echo "::endgroup::"
+            echo "::error::Migration reconciliation failed (exit $rc). See logs above."
+            exit $rc
+          }
+          echo "::endgroup::"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      # Step 1: Supabase SQL migrations FIRST.
+      # Supabase migrations define raw SQL tables, enums, RPC functions, and RLS
+      # policies. Prisma migrations may reference the resulting schema, so they
+      # must run after Supabase migrations complete successfully.
+      - name: Apply Supabase SQL migrations
+        run: pnpm supabase db push
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      # Generate the Prisma client before deploying migrations so that the
+      # Prisma engine binary is present. Uses POSTGRES_PRISMA_URL (pooled).
+      - name: Generate Prisma client
+        run: pnpm prisma generate
+        env:
+          POSTGRES_PRISMA_URL: ${{ secrets.POSTGRES_PRISMA_URL }}
+          POSTGRES_URL_NON_POOLING: ${{ secrets.POSTGRES_URL_NON_POOLING }}
+
+      # Step 2: Prisma migrations SECOND.
+      # prisma migrate deploy applies pending migrations from prisma/migrations/
+      # in order and records them in _prisma_migrations. It is production-safe
+      # and idempotent. Migrations MUST use POSTGRES_URL_NON_POOLING (direct
+      # port 5432) because PgBouncer (port 6543) does not support DDL statements.
+      - name: Apply Prisma migrations
+        run: pnpm prisma migrate deploy
+        env:
+          POSTGRES_PRISMA_URL: ${{ secrets.POSTGRES_PRISMA_URL }}
+          POSTGRES_URL_NON_POOLING: ${{ secrets.POSTGRES_URL_NON_POOLING }}
+
+      # Always write a summary regardless of success or failure so that the
+      # run is auditable from the GitHub Actions summary panel.
+      - name: Migration summary
+        if: always()
+        run: |
+          echo "## Migration Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Trigger**: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Actor**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status**: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY

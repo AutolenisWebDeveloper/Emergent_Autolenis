@@ -1,0 +1,110 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    name: Install, Validate, and Build
+    runs-on: ubuntu-latest
+
+    env:
+      PRISMA_CHECKPOINT_DISABLE: "1"
+      PRISMA_DISABLE_TELEMETRY: "1"
+      # Deterministic Prisma placeholder URLs for CI (quoted to avoid YAML parsing edge cases)
+      POSTGRES_PRISMA_URL: "postgresql://user:password@localhost:5432/placeholder?schema=public"
+      POSTGRES_URL_NON_POOLING: "postgresql://user:password@localhost:5432/placeholder?schema=public"
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Enable Corepack + pnpm FIRST
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.28.0 --activate
+          pnpm --version
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "pnpm"
+
+      - name: Debug Prisma URL protocol (safe)
+        run: |
+          node -e "const v=process.env.POSTGRES_PRISMA_URL||''; console.log('POSTGRES_PRISMA_URL protocol ok:', /^postgres(ql)?:\\/\\//.test(v));"
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Lint changed files
+        run: pnpm lint:changed
+        env:
+          GITHUB_BASE_REF: ${{ github.base_ref }}
+          GITHUB_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          GITHUB_BEFORE: ${{ github.event.before }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_EVENT_PATH: ${{ github.event_path }}
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Verify Prisma schema is valid
+        run: |
+          echo "Validating Prisma schema..."
+          pnpm prisma validate
+
+      # prisma migrate deploy is NOT part of the Vercel build command.
+      # It should be run manually or via deployment hook after baseline registration.
+      # See DEPLOYMENT_VERIFICATION.md for details.
+      # For local/manual deploys: pnpm db:deploy
+
+      - name: Build knowledge corpus
+        run: npx tsx scripts/build-knowledge.ts
+
+      - name: Build application
+        run: pnpm build
+
+      - name: Build safety scan
+        run: node scripts/verify-build-safety.mjs
+
+      - name: Verify security patches
+        run: |
+          echo "Verifying happy-dom version..."
+          HAPPY_DOM_VERSION=$(pnpm list happy-dom --json | jq -r '.[0].devDependencies["happy-dom"].version')
+          echo "happy-dom version: $HAPPY_DOM_VERSION"
+
+          # Check if version is >= 20.0.0
+          if [ "$(printf '%s\n' "20.0.0" "$HAPPY_DOM_VERSION" | sort -V | head -n1)" = "20.0.0" ]; then
+            echo "✓ happy-dom is patched (>= 20.0.0)"
+          else
+            echo "✗ happy-dom version is vulnerable (< 20.0.0)"
+            exit 1
+          fi
+
+      - name: Schema contract check
+        run: npx tsx scripts/check-schema-contract.ts
+
+      - name: Architecture governance check
+        run: pnpm check:architecture
+
+      - name: Type check
+        run: pnpm typecheck
+
+      - name: Unit tests
+        run: pnpm test:unit
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: E2E tests (smoke)
+        run: pnpm test:e2e --project=chromium
+        env:
+          CI: "true"
+

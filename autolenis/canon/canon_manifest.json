@@ -1,0 +1,119 @@
+{
+  "version": "1.0.0",
+  "updatedAt": "2026-02-23",
+  "description": "Canon Knowledge Pack for the AutoLenis Lenis Concierge system. Authoritative product knowledge derived from the platform knowledge corpus and system prompt.",
+  "docs": [
+    {
+      "docId": "product-overview",
+      "title": "Product Overview",
+      "path": "01_product_overview.md",
+      "tags": ["overview", "what-is-autolenis", "value-proposition", "positioning"],
+      "roleVisibility": ["public", "buyer", "dealer", "affiliate", "admin"],
+      "updatedAt": "2026-02-23"
+    },
+    {
+      "docId": "roles-and-permissions",
+      "title": "Roles and Permissions",
+      "path": "02_roles_and_permissions.md",
+      "tags": ["roles", "permissions", "rbac", "access-control"],
+      "roleVisibility": ["admin"],
+      "updatedAt": "2026-02-23"
+    },
+    {
+      "docId": "end-to-end-flow",
+      "title": "End-to-End Flow",
+      "path": "03_end_to_end_flow.md",
+      "tags": ["process", "steps", "how-it-works", "lifecycle", "flow"],
+      "roleVisibility": ["public", "buyer", "dealer", "affiliate", "admin"],
+      "updatedAt": "2026-02-23"
+    },
+    {
+      "docId": "contract-shield",
+      "title": "Contract Shield",
+      "path": "04_contract_shield.md",
+      "tags": ["contract-shield", "contract", "verification", "ai", "compliance"],
+      "roleVisibility": ["public", "buyer", "dealer", "admin"],
+      "updatedAt": "2026-02-23"
+    },
+    {
+      "docId": "insurance",
+      "title": "Insurance",
+      "path": "05_insurance.md",
+      "tags": ["insurance", "coverage", "requirements", "quotes"],
+      "roleVisibility": ["public", "buyer", "admin"],
+      "updatedAt": "2026-02-23"
+    },
+    {
+      "docId": "payments-and-fees",
+      "title": "Payments and Fees",
+      "path": "06_payments_and_fees.md",
+      "tags": ["fees", "pricing", "deposit", "payment", "stripe"],
+      "roleVisibility": ["public", "buyer", "dealer", "affiliate", "admin"],
+      "updatedAt": "2026-02-23"
+    },
+    {
+      "docId": "dealer-workflows",
+      "title": "Dealer Workflows",
+      "path": "07_dealer_workflows.md",
+      "tags": ["dealer", "auction", "offers", "workflow", "dashboard"],
+      "roleVisibility": ["dealer", "admin"],
+      "updatedAt": "2026-02-23"
+    },
+    {
+      "docId": "affiliate-program",
+      "title": "Affiliate Program",
+      "path": "08_affiliate_program.md",
+      "tags": ["affiliate", "commissions", "payouts", "referral", "attribution"],
+      "roleVisibility": ["affiliate", "admin"],
+      "updatedAt": "2026-02-23"
+    },
+    {
+      "docId": "refinance",
+      "title": "Refinance Program",
+      "path": "09_refinance.md",
+      "tags": ["refinance", "loan", "rates", "lender"],
+      "roleVisibility": ["public", "buyer", "admin"],
+      "updatedAt": "2026-02-23"
+    },
+    {
+      "docId": "compliance-and-disclosures",
+      "title": "Compliance and Disclosures",
+      "path": "10_compliance_and_disclosures.md",
+      "tags": ["compliance", "disclosures", "legal", "privacy", "terms", "safety"],
+      "roleVisibility": ["admin"],
+      "updatedAt": "2026-02-23"
+    },
+    {
+      "docId": "glossary",
+      "title": "Glossary",
+      "path": "11_glossary.md",
+      "tags": ["glossary", "definitions", "reference"],
+      "roleVisibility": ["public", "buyer", "dealer", "affiliate", "admin"],
+      "updatedAt": "2026-02-23"
+    }
+  ],
+  "stalenessRules": {
+    "maxAgeDays": 90,
+    "reviewCadence": "quarterly",
+    "ownerTeam": "platform-engineering",
+    "triggerEvents": [
+      "Fee structure changes in lib/constants.ts",
+      "Commission rate changes in lib/constants.ts",
+      "Credit tier threshold changes",
+      "Contract Shield threshold changes",
+      "New role or permission additions",
+      "Legal or compliance policy updates",
+      "New platform features launched"
+    ],
+    "validationChecks": [
+      "All fee amounts match lib/constants.ts FEE_STRUCTURE values",
+      "All commission rates match lib/constants.ts COMMISSION_RATES values",
+      "Credit tier ranges match lib/constants.ts CREDIT_TIERS values",
+      "Contract Shield thresholds match lib/constants.ts CONTRACT_SHIELD_THRESHOLDS values",
+      "Deposit amount matches lib/constants.ts DEPOSIT_AMOUNT value",
+      "Auction duration matches lib/constants.ts AUCTION_DURATION_HOURS value",
+      "Pre-qual expiry matches lib/constants.ts PREQUAL_EXPIRY_DAYS value",
+      "Max shortlist matches lib/constants.ts MAX_SHORTLIST_ITEMS value"
+    ]
+  }
+}

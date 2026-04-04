@@ -1,0 +1,178 @@
+name: Production Readiness Gate
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      run_staging_uat:
+        description: "Run buyer package staging UAT"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+      staging_url:
+        description: "Staging URL (e.g. https://staging.autolenis.com or a Vercel preview URL)"
+        required: false
+        default: "https://staging.autolenis.com"
+
+concurrency:
+  group: prod-gate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  readiness-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      POSTGRES_PRISMA_URL: "postgresql://user:password@localhost:5432/placeholder?schema=public"
+      POSTGRES_URL_NON_POOLING: "postgresql://user:password@localhost:5432/placeholder?schema=public"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm (corepack) FIRST
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.28.0 --activate
+          pnpm --version
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: pnpm
+
+      # Deterministic install
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      # Prisma schema must at least validate (no DB connectivity required)
+      - name: Prisma validate (schema correctness)
+        run: pnpm exec prisma validate
+
+      # Build must succeed in CI (mirrors Vercel)
+      - name: Build
+        env:
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
+          NEXT_PUBLIC_SUPABASE_URL: http://localhost
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: anon
+          SUPABASE_URL: http://localhost
+          SUPABASE_ANON_KEY: anon
+          SUPABASE_SERVICE_ROLE_KEY: service
+          JWT_SECRET: secret
+          RESEND_API_KEY: dummy
+          NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: dummy
+          STRIPE_SECRET_KEY: dummy
+          STRIPE_WEBHOOK_SECRET: dummy
+          CHECKPOINT_DISABLE: 1
+          PRISMA_TELEMETRY_INFORMATION: none
+        run: pnpm build
+
+      # Build safety scan
+      - name: Build safety scan
+        run: node scripts/verify-build-safety.mjs
+
+      # Security gate (example: ensure the happy-dom RCE patch is present)
+      - name: "Security gate: verify happy-dom >= 20.0.0"
+        run: node scripts/ci/check-happy-dom-version.mjs
+
+      # Navigation gate: detect broken internal links / missing pages
+      - name: "Navigation gate: check internal links and route existence"
+        run: node scripts/ci/check-routes-and-links.mjs
+
+      # Schema contract gate: prevent legacy field drift and route exposure
+      - name: "Schema contract gate: check field names and route guards"
+        run: pnpm check:schema-contract
+
+      # Architecture governance gate: layer boundaries, auth patterns, workspace scoping
+      - name: "Architecture governance gate"
+        run: pnpm check:architecture
+
+      # Run production readiness tests
+      - name: "Production readiness tests"
+        run: pnpm test:unit -- --run __tests__/production-readiness-complete.test.ts __tests__/production-readiness-hardening.test.ts __tests__/contract-access-control.test.ts __tests__/schema-contract-alignment.test.ts __tests__/service-role-scanner.test.ts
+
+  # Staging UAT — runs only on manual dispatch with run_staging_uat=true
+  staging-uat:
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.run_staging_uat == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    env:
+      SMOKE_BASE_URL: ${{ github.event.inputs.staging_url }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm (corepack)
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.28.0 --activate
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install chromium
+
+      - name: "DNS pre-check: verify staging is reachable"
+        run: |
+          node -e "
+            const dns = require('dns/promises');
+            const { URL } = require('url');
+            const host = new URL(process.env.SMOKE_BASE_URL).hostname;
+            dns.lookup(host)
+              .then(r => { console.log('✓ DNS resolved:', host, '→', r.address); process.exit(0); })
+              .catch(e => {
+                console.error('✗ DNS failed for', host, ':', e.code);
+                if (host.endsWith('.autolenis.com')) {
+                  console.error('Verify the CNAME record exists for ' + host.split('.')[0] + ' — check Vercel dashboard → Project Settings → Domains for the correct CNAME target.');
+                  console.error('Or use a Vercel preview URL instead: staging_url=https://<project>-<hash>.vercel.app');
+                } else {
+                  console.error('The hostname', host, 'could not be resolved. Verify the URL is correct.');
+                }
+                process.exit(1);
+              });
+          "
+
+      - name: "Health pre-check: verify deployment responds"
+        run: |
+          URL="${SMOKE_BASE_URL}/api/health"
+          echo "Checking deployment health at: $URL"
+          for i in 1 2 3 4 5; do
+            STATUS=$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 "$URL" 2>/dev/null || echo "000")
+            if [ "$STATUS" -lt 500 ] && [ "$STATUS" != "000" ]; then
+              echo "✓ Deployment is healthy (HTTP $STATUS)"
+              exit 0
+            fi
+            echo "Attempt $i/5: HTTP $STATUS — retrying in 10s..."
+            sleep 10
+          done
+          echo "✗ Deployment at $SMOKE_BASE_URL did not respond after 5 attempts"
+          exit 1
+
+      - name: "Run buyer package staging UAT"
+        run: pnpm exec playwright test e2e/buyer-package-uat.spec.ts --project=chromium --reporter=list
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-uat-results
+          path: |
+            test-results/
+            playwright-report/

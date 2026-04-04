@@ -1,0 +1,805 @@
+{
+  "pack": "buyer_faq_intents",
+  "version": "1.0.0",
+  "intents": [
+    {
+      "id": "VALUE_WHAT_IS",
+      "category": "VALUE",
+      "title": "What is AutoLenis?",
+      "user_questions": [
+        "What is AutoLenis?",
+        "What does AutoLenis do?",
+        "Tell me about AutoLenis",
+        "How does your platform work?"
+      ],
+      "answer_markdown": "AutoLenis is a 100% online, AI-powered car buying concierge. We are not a dealership or lender — we structure the negotiation so dealers compete and you stay in control. The result: transparent pricing, no dealer commissions, and a flat concierge fee.",
+      "cta": { "type": "PRIMARY_NEXT_STEP", "label": "Continue to your next step" },
+      "disclosure": "AutoLenis is a concierge intermediary. It does not guarantee specific outcomes.",
+      "tags": ["overview", "what-is", "intro"],
+      "version": "1.0.0"
+    },
+    {
+      "id": "VALUE_WHY_USE",
+      "category": "VALUE",
+      "title": "Why should I use AutoLenis?",
+      "user_questions": [
+        "Why should I use AutoLenis?",
+        "What's the benefit of AutoLenis?",
+        "Why not just go to a dealer?",
+        "Why use a concierge to buy a car?"
+      ],
+      "answer_markdown": "Going direct means one dealer sets the price. AutoLenis makes multiple dealers compete through a silent auction, reviews every contract for hidden fees, and manages the process end-to-end — so you keep leverage without the legwork.",
+      "cta": { "type": "PRIMARY_NEXT_STEP", "label": "Continue to your next step" },
+      "disclosure": "AutoLenis cannot guarantee a specific price or savings amount.",
+      "tags": ["value", "benefits", "comparison"],
+      "version": "1.0.0"
+    },
+    {
+      "id": "VALUE_VS_DEALER",
+      "category": "VALUE",
+      "title": "How is AutoLenis different from a dealership?",
+      "user_questions": [
+        "How is AutoLenis different from a dealership?",
+        "Are you a dealer?",
+        "Is AutoLenis a car dealer?",
+        "Do you sell cars?"
+      ],
+      "answer_markdown": "AutoLenis is not a dealership. Dealers sell cars; we negotiate on your behalf. Dealers set prices; our auction forces them to compete. Dealers may add fees; our Contract Shield catches them before you sign.",
+      "cta": { "type": "PRIMARY_NEXT_STEP", "label": "Continue to your next step" },
+      "disclosure": null,
+      "tags": ["value", "dealership", "difference"],
+      "version": "1.0.0"
+    },
+    {
+      "id": "VALUE_TRUST",
+      "category": "VALUE",
+      "title": "Can I trust AutoLenis?",
+      "user_questions": [
+        "Can I trust AutoLenis?",
+        "Is AutoLenis legit?",
+        "Is AutoLenis a scam?",
+        "How do I know you're trustworthy?"
+      ],
+      "answer_markdown": "AutoLenis charges a flat, transparent fee — no dealer commissions, no kickbacks. Every contract is reviewed by Contract Shield before you sign. Your deposit is refundable if no offers come in. You're never obligated to buy.",
+      "cta": { "type": "PRIMARY_NEXT_STEP", "label": "Continue to your next step" },
+      "disclosure": "AutoLenis is a concierge intermediary. It does not provide legal or financial advice.",
+      "tags": ["trust", "legitimacy", "safety"],
+      "version": "1.0.0"
+    },
+    {
+      "id": "VALUE_WHO_FOR",
+      "category": "VALUE",
+      "title": "Who is AutoLenis for?",
+      "user_questions": [
+        "Who is AutoLenis for?",
+        "Is AutoLenis right for me?",
+        "What kind of buyers use AutoLenis?",
+        "Can anyone use AutoLenis?"
+      ],
+      "answer_markdown": "AutoLenis is for anyone buying a new or used vehicle who wants transparent pricing, dealer competition, and contract protection — without spending days at a dealership. First-time buyers and experienced buyers both benefit.",
+      "cta": { "type": "PRIMARY_NEXT_STEP", "label": "Continue to your next step" },
+      "disclosure": null,
+      "tags": ["value", "audience", "eligibility"],
+      "version": "1.0.0"
+    },
+    {
+      "id": "VALUE_OBLIGATED",
+      "category": "VALUE",
+      "title": "Am I obligated to buy?",
+      "user_questions": [
+        "Am I obligated to buy?",
+        "Do I have to purchase?",
+        "Can I back out?",
+        "What if I don't like any offers?"
+      ],
+      "answer_markdown": "No. You are never obligated to accept any offer. If no offers meet your criteria, your $99 deposit is refunded automatically. You stay in control at every step.",
+      "cta": { "type": "PRIMARY_NEXT_STEP", "label": "Continue to your next step" },
+      "disclosure": null,
+      "tags": ["value", "obligation", "commitment"],
+      "version": "1.0.0"
+    },
+    {
+      "id": "VALUE_SUPPORT",
+      "category": "VALUE",
+      "title": "What kind of support does AutoLenis provide?",
+      "user_questions": [
+        "What support do you offer?",
+        "Can I talk to a person?",
+        "Is there customer support?",
+        "How do I get help?"
+      ],
+      "answer_markdown": "AutoLenis provides AI-powered concierge guidance through every step, plus human support via email (info@autolenis.com) and phone ((972) 600-1236) during business hours, Mon–Fri 9am–6pm CST.",
+      "cta": { "type": "PRIMARY_NEXT_STEP", "label": "Continue to your next step" },
+      "disclosure": null,
+      "tags": ["value", "support", "contact"],
+      "version": "1.0.0"
+    },
+    {
+      "id": "VALUE_DATA_PRIVACY",
+      "category": "VALUE",
+      "title": "How does AutoLenis protect my data?",
+      "user_questions": [
+        "How is my data protected?",
+        "Is my information safe?",
+        "Do you sell my data?",
+        "What about privacy?"
+      ],
+      "answer_markdown": "AutoLenis encrypts data in transit and at rest. We never sell personal information. Data is shared only with parties necessary for the transaction (lenders, dealers) under data protection agreements. Full details are in our privacy policy.",
+      "cta": { "type": "PRIMARY_NEXT_STEP", "label": "Continue to your next step" },
+      "disclosure": null,
+      "tags": ["value", "privacy", "data", "security"],
+      "version": "1.0.0"
+    },
+    {
+      "id": "FEES_HOW_MUCH",
+      "category": "FEES",
+      "title": "How much does AutoLenis cost?",
+      "user_questions": [
+        "How much does AutoLenis cost?",
+        "What are your fees?",
+        "How much is the concierge fee?",
+        "What do I pay?"
+      ],
+      "answer_markdown": "AutoLenis offers two plans: Free Plan (no cost to start) and Premium ($499 concierge fee). A $99 Serious Buyer Deposit is required to start the auction for both plans. On the Free plan, the deposit is credited toward your vehicle purchase at closing. On the Premium plan, the deposit is credited toward the $499 fee ($400 remaining). The deposit is refundable if no offers are received.",
+      "cta": { "type": "PRIMARY_NEXT_STEP", "label": "Continue to your next step" },
+      "disclosure": "AutoLenis cannot guarantee a specific price or outcome. Availability and final terms depend on dealer inventory and underwriting.",
+      "tags": ["fees", "pricing", "cost"],
+      "version": "1.0.0"
+    },
+    {
+      "id": "FEES_WORTH_IT",
+      "category": "FEES",
+      "title": "Why pay AutoLenis fees?",
+      "user_questions": [
+        "Why would I pay a fee if I can go directly to a dealer?",
+        "Why is AutoLenis worth the fees?",
+        "Why not use a free broker?"
+      ],
+      "answer_markdown": "Because the real cost of \"free\" is often hidden in pricing, financing terms, add-ons, and wasted time. AutoLenis makes the process structured and verifiable — so you keep leverage, reduce surprises, and close with confidence.",
+      "cta": { "type": "PRIMARY_NEXT_STEP", "label": "Continue to your next step" },
+      "disclosure": "AutoLenis cannot guarantee a specific price or outcome. Availability and final terms depend on dealer inventory and underwriting.",
+      "tags": ["fees", "value", "broker_comparison"],
+      "version": "1.0.0"
+    },
+    {
+      "id": "FEES_WHATS_INCLUDED",
+      "category": "FEES",
+      "title": "What does the fee cover?",
+      "user_questions": [
+        "What does the fee cover?",
+        "What's included in the fee?",
+        "What do I get for the concierge fee?",
+        "What services are included?"
+      ],
+      "answer_markdown": "The fee covers: instant pre-qualification, silent reverse auction among dealers, best-price engine, Contract Shield AI verification, insurance coordination, e-signature handling, and pickup scheduling — plus dedicated support.",
+      "cta": { "type": "PRIMARY_NEXT_STEP", "label": "Continue to your next step" },
+      "disclosure": null,
+      "tags": ["fees", "services", "included"],
+      "version": "1.0.0"
+    },
+    {
+      "id": "FEES_DEPOSIT",
+      "category": "FEES",
+      "title": "What is the deposit?",
+      "user_questions": [
+        "What is the deposit?",
+        "Do I need a deposit?",
+        "Is the deposit refundable?",
+        "How much is the deposit?"
+      ],
+      "answer_markdown": "A $99 refundable deposit is required to start the process. If no dealer offers are received, the deposit is refunded automatically. If you complete a purchase, the deposit is credited toward the concierge fee.",
+      "cta": { "type": "PRIMARY_NEXT_STEP", "label": "Continue to your next step" },
+      "disclosure": null,
+      "tags": ["fees", "deposit", "refund"],
+      "version": "1.0.0"
+    },
+    {
+      "id": "FEES_REFUND",
+      "category": "FEES",
+      "title": "Can I get a refund?",
+      "user_questions": [
+        "Can I get a refund?",
+        "What is the refund policy?",
+        "What if I cancel?",
+        "Is the fee refundable?"
+      ],
+      "answer_markdown": "The $99 deposit is refundable if no dealer offers are received. Once an offer is accepted and the auction concludes, the concierge fee is non-refundable. You can cancel before accepting an offer with no penalty.",
+      "cta": { "type": "PRIMARY_NEXT_STEP", "label": "Continue to your next step" },
+      "disclosure": null,
+      "tags": ["fees", "refund", "cancellation"],
+      "version": "1.0.0"
+    },
+    {
+      "id": "FEES_HIDDEN",
+      "category": "FEES",
+      "title": "Are there hidden fees?",
+      "user_questions": [
+        "Are there hidden fees?",
+        "Any extra charges?",
+        "Are there additional costs?",
+        "What about dealer fees?"
+      ],
+      "answer_markdown": "No hidden fees from AutoLenis. Our Contract Shield scans every dealer contract to catch unauthorized add-ons or markups. Standard dealer, DMV, and tax costs apply as usual — those are set by the dealer and your state, not by us.",
+      "cta": { "type": "PRIMARY_NEXT_STEP", "label": "Continue to your next step" },
+      "disclosure": null,
+      "tags": ["fees", "hidden", "transparency"],
+      "version": "1.0.0"
+    },
+    {
+      "id": "FEES_PAYMENT_OPTIONS",
+      "category": "FEES",
+      "title": "How do I pay the fee?",
+      "user_questions": [
+        "How do I pay the fee?",
+        "Can I include the fee in my loan?",
+        "What payment methods do you accept?",
+        "Can I finance the fee?"
+      ],
+      "answer_markdown": "Two options: (1) Pay directly via credit/debit card — doesn't affect your loan. (2) Include in financing — added to your loan with a transparent impact calculation showing the difference in monthly payment.",
+      "cta": { "type": "PRIMARY_NEXT_STEP", "label": "Continue to your next step" },
+      "disclosure": null,
+      "tags": ["fees", "payment", "financing"],
+      "version": "1.0.0"
+    },
+    {
+      "id": "FEES_COMMISSIONS",
+      "category": "FEES",
+      "title": "Does AutoLenis take dealer commissions?",
+      "user_questions": [
+        "Does AutoLenis take dealer commissions?",
+        "Do you get paid by dealers?",
+        "Do dealers pay you?",
+        "Are your incentives aligned with mine?"
+      ],
+      "answer_markdown": "No. AutoLenis does not accept dealer commissions. Our revenue comes from the flat concierge fee paid by the buyer. This means our incentives are 100% aligned with yours — we succeed when you get a good deal.",
+      "cta": { "type": "PRIMARY_NEXT_STEP", "label": "Continue to your next step" },
+      "disclosure": null,
+      "tags": ["fees", "commissions", "alignment"],
+      "version": "1.0.0"
+    },
+    {
+      "id": "FLOW_HOW_WORKS",
+      "category": "FLOW",
+      "title": "How does the process work?",
+      "user_questions": [
+        "How does AutoLenis work?",
+        "Walk me through the process",
+        "What are the steps?",
+        "How do I get started?"
+      ],
+      "answer_markdown": "Five steps: (1) Pre-qualify — soft credit check, no score impact. (2) Build your shortlist — pick vehicles that match your budget. (3) Dealer auction — dealers compete with blind bids. (4) Review offers + Contract Shield. (5) E-sign and schedule pickup.",
+      "cta": { "type": "PRIMARY_NEXT_STEP", "label": "Continue to your next step" },
+      "disclosure": null,
+      "tags": ["flow", "process", "steps"],
+      "version": "1.0.0"
+    },
+    {
+      "id": "FLOW_TIMELINE",
+      "category": "FLOW",
+      "title": "How long does the process take?",
+      "user_questions": [
+        "How long does it take?",
+        "What's the timeline?",
+        "How fast can I get a car?",
+        "When will I hear back?"
+      ],
+      "answer_markdown": "Most buyers complete the process in 5–7 days. Pre-qualification takes minutes. The auction runs 24–48 hours. Finalization and delivery coordination typically takes 2–3 days.",
+      "cta": { "type": "PRIMARY_NEXT_STEP", "label": "Continue to your next step" },
+      "disclosure": "Timelines vary based on dealer responsiveness and financing approval.",
+      "tags": ["flow", "timeline", "duration"],
+      "version": "1.0.0"
+    },
+    {
+      "id": "FLOW_PREQUAL",
+      "category": "FLOW",
+      "title": "How does pre-qualification work?",
+      "user_questions": [
+        "How does pre-qualification work?",
+        "What is pre-qual?",
+        "Does pre-qual affect my credit?",
+        "Is it a soft pull?"
+      ],
+      "answer_markdown": "Pre-qualification uses a soft credit pull — no impact on your credit score. You get conditional estimates in minutes. A hard inquiry occurs only at the point of final financing. Pre-qual is valid for 30 days.",
+      "cta": { "type": "PRIMARY_NEXT_STEP", "label": "Continue to your next step" },
+      "disclosure": "Pre-qualification is not a guarantee of approval. Final terms depend on lender underwriting.",
+      "tags": ["flow", "prequal", "credit", "soft-pull"],
+      "version": "1.0.0"
+    },
+    {
+      "id": "FLOW_PREQUAL_INFO",
+      "category": "FLOW",
+      "title": "What do I need for pre-qualification?",
+      "user_questions": [
+        "What do I need for pre-qualification?",
+        "What info is required for pre-qual?",
+        "What documents do I need to start?",
+        "How do I apply?"
+      ],
+      "answer_markdown": "Basic personal information, employment details, income verification, and consent for a soft credit check. No SSN or sensitive documents are required at this stage — those come later through the platform's secure upload.",
+      "cta": { "type": "PRIMARY_NEXT_STEP", "label": "Continue to your next step" },
+      "disclosure": null,
+      "tags": ["flow", "prequal", "requirements"],
+      "version": "1.0.0"
+    },
+    {
+      "id": "FLOW_SHORTLIST",
+      "category": "FLOW",
+      "title": "How does the shortlist work?",
+      "user_questions": [
+        "How does the shortlist work?",
+        "How many vehicles can I shortlist?",
+        "What is the shortlist?",
+        "How do I pick vehicles?"
+      ],
+      "answer_markdown": "After pre-qualification, you build a shortlist of up to 5 vehicles that match your budget and preferences. These are the vehicles dealers will compete to offer you in the auction.",
+      "cta": { "type": "PRIMARY_NEXT_STEP", "label": "Continue to your next step" },
+      "disclosure": null,
+      "tags": ["flow", "shortlist", "vehicles"],
+      "version": "1.0.0"
+    },
+    {
+      "id": "FLOW_WHAT_NEXT",
+      "category": "FLOW",
+      "title": "What happens next?",
+      "user_questions": [
+        "What happens next?",
+        "What's my next step?",
+        "What should I do now?",
+        "What do I do after this?"
+      ],
+      "answer_markdown": "Your next step depends on where you are in the process. I'll determine your current stage and show you exactly what to do next.",
+      "cta": { "type": "PRIMARY_NEXT_STEP", "label": "Continue to your next step" },
+      "disclosure": null,
+      "tags": ["flow", "next-step", "guidance"],
+      "version": "1.0.0"
+    },
+    {
+      "id": "FLOW_DOCUMENTS",
+      "category": "FLOW",
+      "title": "What documents do I need?",
+      "user_questions": [
+        "What documents do I need?",
+        "What paperwork is required?",
+        "Do I need to upload documents?",
+        "What documents should I have ready?"
+      ],
+      "answer_markdown": "Documents that may be required: valid driver's license, proof of income (pay stubs or tax returns), proof of residence, proof of insurance, and trade-in title if applicable. Upload securely through the platform — never share sensitive documents in chat.",
+      "cta": { "type": "PRIMARY_NEXT_STEP", "label": "Continue to your next step" },
+      "disclosure": null,
+      "tags": ["flow", "documents", "upload"],
+      "version": "1.0.0"
+    },
+    {
+      "id": "FLOW_FINANCING_OWN",
+      "category": "FLOW",
+      "title": "Can I use my own financing?",
+      "user_questions": [
+        "Can I use my own financing?",
+        "Can I use my bank's pre-approval?",
+        "Do I have to use your lenders?",
+        "Can I bring my own loan?"
+      ],
+      "answer_markdown": "Yes. You can use your own financing from a bank or credit union. Upload your pre-approval documentation through the platform. Alternatively, AutoLenis connects you with participating lenders for competitive rates.",
+      "cta": { "type": "PRIMARY_NEXT_STEP", "label": "Continue to your next step" },
+      "disclosure": "AutoLenis does not issue loans. Financing terms are set by the lender.",
+      "tags": ["flow", "financing", "own-financing"],
+      "version": "1.0.0"
+    },
+    {
+      "id": "FLOW_CREDIT_SCORE",
+      "category": "FLOW",
+      "title": "What credit score do I need?",
+      "user_questions": [
+        "What credit score do I need?",
+        "Do I need good credit?",
+        "Can I use AutoLenis with bad credit?",
+        "What's the minimum credit score?"
+      ],
+      "answer_markdown": "AutoLenis works with all credit tiers: Excellent (740–850), Good (670–739), Fair (580–669), and Poor (300–579). Your credit tier affects estimated APR rates from lenders but does not prevent you from using the platform.",
+      "cta": { "type": "PRIMARY_NEXT_STEP", "label": "Continue to your next step" },
+      "disclosure": "Credit tiers are for estimation only. Final rates are determined by the lender after underwriting.",
+      "tags": ["flow", "credit", "eligibility"],
+      "version": "1.0.0"
+    },
+    {
+      "id": "FLOW_LENDERS",
+      "category": "FLOW",
+      "title": "What lenders does AutoLenis work with?",
+      "user_questions": [
+        "What lenders do you work with?",
+        "Who are your lending partners?",
+        "Which banks do you use?",
+        "What financing options are available?"
+      ],
+      "answer_markdown": "AutoLenis partners with major automotive lenders to offer competitive financing. Specific lenders vary based on your credit profile and vehicle. AutoLenis does not issue loans directly — lenders make all credit decisions independently.",
+      "cta": { "type": "PRIMARY_NEXT_STEP", "label": "Continue to your next step" },
+      "disclosure": "AutoLenis is not a lender. Loan approval and terms are determined by the lender.",
+      "tags": ["flow", "lenders", "financing"],
+      "version": "1.0.0"
+    },
+    {
+      "id": "OFFERS_AUCTION",
+      "category": "OFFERS",
+      "title": "How does the auction work?",
+      "user_questions": [
+        "How does the auction work?",
+        "What is a reverse auction?",
+        "How do dealers bid?",
+        "How does dealer competition work?"
+      ],
+      "answer_markdown": "In AutoLenis's silent reverse auction, dealers submit blind bids — they can't see competing offers. This creates genuine competition and prevents collusion. The auction runs for 24–48 hours. You review all offers and choose the best one.",
+      "cta": { "type": "PRIMARY_NEXT_STEP", "label": "Continue to your next step" },
+      "disclosure": null,
+      "tags": ["offers", "auction", "competition"],
+      "version": "1.0.0"
+    },
+    {
+      "id": "OFFERS_NO_BIDS",
+      "category": "OFFERS",
+      "title": "What if no dealers bid?",
+      "user_questions": [
+        "What if no dealers bid?",
+        "What if I get no offers?",
+        "What happens if the auction gets no responses?",
+        "Do I lose my deposit if no one bids?"
+      ],
+      "answer_markdown": "If no dealer offers are received during the auction, your $99 deposit is automatically refunded. We'll work with you to adjust your search criteria, budget, or vehicle preferences and try again.",
+      "cta": { "type": "PRIMARY_NEXT_STEP", "label": "Continue to your next step" },
+      "disclosure": null,
+      "tags": ["offers", "no-bids", "refund"],
+      "version": "1.0.0"
+    },
+    {
+      "id": "OFFERS_COMPARE",
+      "category": "OFFERS",
+      "title": "How do I compare offers?",
+      "user_questions": [
+        "How do I compare offers?",
+        "How do I know which offer is best?",
+        "Can I see all the offers side by side?",
+        "What should I look for in an offer?"
+      ],
+      "answer_markdown": "AutoLenis displays all offers in a transparent comparison view showing the out-the-door price, financing terms, and any included add-ons. Contract Shield will flag anything unusual before you commit.",
+      "cta": { "type": "PRIMARY_NEXT_STEP", "label": "Continue to your next step" },
+      "disclosure": null,
+      "tags": ["offers", "compare", "pricing"],
+      "version": "1.0.0"
+    },
+    {
+      "id": "OFFERS_NEGOTIATE",
+      "category": "OFFERS",
+      "title": "Can I negotiate the offer?",
+      "user_questions": [
+        "Can I negotiate?",
+        "Can I counter an offer?",
+        "Is the price negotiable?",
+        "Can I ask for a better deal?"
+      ],
+      "answer_markdown": "The auction is designed to drive competitive pricing upfront. While counteroffers aren't part of the standard auction flow, the competition itself motivates dealers to submit their best price. You can accept, decline, or wait for more offers.",
+      "cta": { "type": "PRIMARY_NEXT_STEP", "label": "Continue to your next step" },
+      "disclosure": null,
+      "tags": ["offers", "negotiate", "counteroffer"],
+      "version": "1.0.0"
+    },
+    {
+      "id": "OFFERS_PRICING_BREAKDOWN",
+      "category": "OFFERS",
+      "title": "What's in the pricing breakdown?",
+      "user_questions": [
+        "What's in the pricing breakdown?",
+        "What does OTD mean?",
+        "What is the out-the-door price?",
+        "What fees are in the price?"
+      ],
+      "answer_markdown": "The out-the-door (OTD) price includes the vehicle price, tax, title, registration, and any dealer fees. AutoLenis requires dealers to provide fully transparent pricing so you know exactly what you're paying before you sign.",
+      "cta": { "type": "PRIMARY_NEXT_STEP", "label": "Continue to your next step" },
+      "disclosure": null,
+      "tags": ["offers", "pricing", "OTD", "breakdown"],
+      "version": "1.0.0"
+    },
+    {
+      "id": "OFFERS_ACCEPT",
+      "category": "OFFERS",
+      "title": "How do I accept an offer?",
+      "user_questions": [
+        "How do I accept an offer?",
+        "What happens when I accept?",
+        "How do I select a deal?",
+        "What do I do after I choose an offer?"
+      ],
+      "answer_markdown": "Select the offer you want in your dashboard. Once accepted, the dealer prepares the contract, which Contract Shield reviews before you sign. You're not locked in until you e-sign the final documents.",
+      "cta": { "type": "PRIMARY_NEXT_STEP", "label": "Continue to your next step" },
+      "disclosure": null,
+      "tags": ["offers", "accept", "select"],
+      "version": "1.0.0"
+    },
+    {
+      "id": "OFFERS_AFFORDABILITY",
+      "category": "OFFERS",
+      "title": "What can I afford?",
+      "user_questions": [
+        "What can I afford?",
+        "How much car can I afford?",
+        "What's my budget?",
+        "Help me figure out my budget"
+      ],
+      "answer_markdown": "Your monthly payment depends on five factors: purchase price, down payment, interest rate (set by the lender), loan term, and state taxes/fees. Share your target payment, down payment, and credit tier, and I can run an estimate using our official calculator.",
+      "cta": { "type": "PRIMARY_NEXT_STEP", "label": "Continue to your next step" },
+      "disclosure": "Affordability estimates are not credit decisions or loan offers. Final terms depend on lender approval.",
+      "tags": ["offers", "affordability", "budget"],
+      "version": "1.0.0"
+    },
+    {
+      "id": "OFFERS_MULTIPLE_VEHICLES",
+      "category": "OFFERS",
+      "title": "Can I get offers on multiple vehicles?",
+      "user_questions": [
+        "Can I get offers on multiple vehicles?",
+        "Can I shortlist more than one car?",
+        "How many vehicles can I request?",
+        "Can I compare different cars?"
+      ],
+      "answer_markdown": "Yes. You can shortlist up to 5 vehicles at a time. Dealers will compete to offer you the best price on each. This lets you compare options before committing.",
+      "cta": { "type": "PRIMARY_NEXT_STEP", "label": "Continue to your next step" },
+      "disclosure": null,
+      "tags": ["offers", "multiple", "shortlist"],
+      "version": "1.0.0"
+    },
+    {
+      "id": "CONTRACT_SHIELD_WHAT",
+      "category": "CONTRACT_SHIELD",
+      "title": "What is Contract Shield?",
+      "user_questions": [
+        "What is Contract Shield?",
+        "How does contract review work?",
+        "Do you review my contract?",
+        "What does Contract Shield do?"
+      ],
+      "answer_markdown": "Contract Shield is an automated review system that compares your dealer contract to your accepted offer and standard fee ranges. It flags potential discrepancies so the dealer can clarify or correct before you sign.",
+      "cta": { "type": "PRIMARY_NEXT_STEP", "label": "Continue to your next step" },
+      "disclosure": "Contract Shield is an informational tool only. It does not provide legal, tax, or financial advice and does not guarantee contract correctness.",
+      "tags": ["contract-shield", "review", "protection"],
+      "version": "1.0.0"
+    },
+    {
+      "id": "CONTRACT_SHIELD_FLAGS",
+      "category": "CONTRACT_SHIELD",
+      "title": "What happens if Contract Shield flags something?",
+      "user_questions": [
+        "What happens if something is flagged?",
+        "What if Contract Shield finds a problem?",
+        "What does a flag mean?",
+        "My contract was flagged — what now?"
+      ],
+      "answer_markdown": "A flag means a line item differs from your accepted offer or falls outside typical fee ranges. The dealer gets a chance to clarify or correct. You should review flagged items carefully and discuss any questions with the dealer before signing.",
+      "cta": { "type": "PRIMARY_NEXT_STEP", "label": "Continue to your next step" },
+      "disclosure": "Contract Shield may not detect every issue. You are responsible for reviewing all documents before signing.",
+      "tags": ["contract-shield", "flags", "discrepancy"],
+      "version": "1.0.0"
+    },
+    {
+      "id": "CONTRACT_SHIELD_GUARANTEE",
+      "category": "CONTRACT_SHIELD",
+      "title": "Does Contract Shield guarantee my contract is correct?",
+      "user_questions": [
+        "Does it guarantee my contract is right?",
+        "Is Contract Shield a guarantee?",
+        "Can Contract Shield catch everything?",
+        "Should I still review my contract?"
+      ],
+      "answer_markdown": "No. Contract Shield is an informational tool designed to help identify potential discrepancies — it may not catch every issue. You are responsible for reviewing and understanding your contract before signing. Consider consulting a qualified professional if you have concerns.",
+      "cta": { "type": "PRIMARY_NEXT_STEP", "label": "Continue to your next step" },
+      "disclosure": "Contract Shield does not provide legal, tax, or financial advice. It does not guarantee contract correctness.",
+      "tags": ["contract-shield", "guarantee", "limitation"],
+      "version": "1.0.0"
+    },
+    {
+      "id": "CONTRACT_SHIELD_SCORES",
+      "category": "CONTRACT_SHIELD",
+      "title": "What do Contract Shield scores mean?",
+      "user_questions": [
+        "What do the scores mean?",
+        "What is a pass vs warning vs fail?",
+        "How does Contract Shield scoring work?",
+        "What's a good Contract Shield score?"
+      ],
+      "answer_markdown": "Contract Shield uses three thresholds: Pass (85%+) means the contract closely matches your accepted offer. Warning (70–84%) means some items may need review. Below 70% means significant discrepancies were found and you should review with the dealer before signing.",
+      "cta": { "type": "PRIMARY_NEXT_STEP", "label": "Continue to your next step" },
+      "disclosure": "Scores are informational only. They do not constitute legal or financial advice.",
+      "tags": ["contract-shield", "scores", "thresholds"],
+      "version": "1.0.0"
+    },
+    {
+      "id": "CONTRACT_SHIELD_REJECT",
+      "category": "CONTRACT_SHIELD",
+      "title": "What happens if my contract is rejected?",
+      "user_questions": [
+        "What if my contract is rejected?",
+        "Contract Shield rejected my contract — what now?",
+        "What if it fails?",
+        "My contract didn't pass — what should I do?"
+      ],
+      "answer_markdown": "If Contract Shield flags significant issues, the dealer is notified and can submit a corrected contract. You can request clarification on any flagged items. You should not sign until you're comfortable with all terms.",
+      "cta": { "type": "PRIMARY_NEXT_STEP", "label": "Continue to your next step" },
+      "disclosure": "If you have concerns about contract terms, consider consulting a qualified attorney.",
+      "tags": ["contract-shield", "reject", "correction"],
+      "version": "1.0.0"
+    },
+    {
+      "id": "CONTRACT_SHIELD_MANUAL",
+      "category": "CONTRACT_SHIELD",
+      "title": "What is manual review?",
+      "user_questions": [
+        "What is manual review?",
+        "Why is my contract in manual review?",
+        "What does manual review mean?",
+        "How long does manual review take?"
+      ],
+      "answer_markdown": "Manual review means the automated check needs human verification — typically when documents are complex or unusual. The AutoLenis team reviews the contract and provides an update. This usually takes 1–2 business days.",
+      "cta": { "type": "PRIMARY_NEXT_STEP", "label": "Continue to your next step" },
+      "disclosure": "Manual review is informational only and does not provide legal advice.",
+      "tags": ["contract-shield", "manual-review", "timeline"],
+      "version": "1.0.0"
+    },
+    {
+      "id": "CONTRACT_SHIELD_UPLOAD",
+      "category": "CONTRACT_SHIELD",
+      "title": "How do I upload my contract?",
+      "user_questions": [
+        "How do I upload my contract?",
+        "Where do I submit contract documents?",
+        "How do I send my contract for review?",
+        "What format should the contract be in?"
+      ],
+      "answer_markdown": "Upload your contract through the Documents section in your buyer dashboard. Accepted formats include PDF and common image formats. Never share contract documents in chat — always use the secure upload.",
+      "cta": { "type": "PRIMARY_NEXT_STEP", "label": "Continue to your next step" },
+      "disclosure": null,
+      "tags": ["contract-shield", "upload", "documents"],
+      "version": "1.0.0"
+    },
+    {
+      "id": "CLOSE_ESIGN",
+      "category": "CLOSE",
+      "title": "How does e-sign work?",
+      "user_questions": [
+        "How does e-sign work?",
+        "Can I sign digitally?",
+        "How do I sign my documents?",
+        "Is electronic signature legally binding?"
+      ],
+      "answer_markdown": "Once your contract passes Contract Shield review, you can sign digitally through the platform. E-signatures are legally binding. You can also choose to sign in person at the dealership during pickup.",
+      "cta": { "type": "PRIMARY_NEXT_STEP", "label": "Continue to your next step" },
+      "disclosure": null,
+      "tags": ["close", "esign", "signature"],
+      "version": "1.0.0"
+    },
+    {
+      "id": "CLOSE_PICKUP",
+      "category": "CLOSE",
+      "title": "How does pickup work?",
+      "user_questions": [
+        "How does pickup work?",
+        "How do I get my car?",
+        "Where do I pick up my vehicle?",
+        "What happens at pickup?"
+      ],
+      "answer_markdown": "Schedule a pickup appointment at the dealership through your dashboard. When you arrive, use your unique QR code to complete the handoff. Currently, only dealership pickup is available — home delivery is coming soon.",
+      "cta": { "type": "PRIMARY_NEXT_STEP", "label": "Continue to your next step" },
+      "disclosure": null,
+      "tags": ["close", "pickup", "delivery"],
+      "version": "1.0.0"
+    },
+    {
+      "id": "CLOSE_DELIVERY",
+      "category": "CLOSE",
+      "title": "Does AutoLenis offer home delivery?",
+      "user_questions": [
+        "Do you deliver to my home?",
+        "Is home delivery available?",
+        "Can you ship the car to me?",
+        "Do I have to go to the dealer?"
+      ],
+      "answer_markdown": "Currently, all pickups happen at the dealership using a QR code. Home delivery is on our roadmap but not yet available.",
+      "cta": { "type": "PRIMARY_NEXT_STEP", "label": "Continue to your next step" },
+      "disclosure": null,
+      "tags": ["close", "delivery", "home"],
+      "version": "1.0.0"
+    },
+    {
+      "id": "CLOSE_INSURANCE",
+      "category": "CLOSE",
+      "title": "Do I need insurance before pickup?",
+      "user_questions": [
+        "Do I need insurance?",
+        "What insurance is required?",
+        "How do I get insurance?",
+        "Can I use my existing insurance?"
+      ],
+      "answer_markdown": "Yes, insurance is required before completing a purchase. Two paths: (1) Compare quotes from 5+ providers instantly through AutoLenis. (2) Upload your existing insurance card or declaration page for verification.",
+      "cta": { "type": "PRIMARY_NEXT_STEP", "label": "Continue to your next step" },
+      "disclosure": null,
+      "tags": ["close", "insurance", "requirement"],
+      "version": "1.0.0"
+    },
+    {
+      "id": "CLOSE_CHECKLIST",
+      "category": "CLOSE",
+      "title": "What's the final checklist before pickup?",
+      "user_questions": [
+        "What do I need before pickup?",
+        "Is there a checklist?",
+        "What should I bring to pickup?",
+        "Am I ready to pick up my car?"
+      ],
+      "answer_markdown": "Before pickup, ensure: (1) Contract is e-signed. (2) Insurance is verified. (3) Financing is finalized. (4) Pickup appointment is scheduled. (5) Bring valid ID and your QR code. Your dashboard shows the status of each requirement.",
+      "cta": { "type": "PRIMARY_NEXT_STEP", "label": "Continue to your next step" },
+      "disclosure": null,
+      "tags": ["close", "checklist", "ready"],
+      "version": "1.0.0"
+    },
+    {
+      "id": "CLOSE_AFTER_PURCHASE",
+      "category": "CLOSE",
+      "title": "What happens after I buy?",
+      "user_questions": [
+        "What happens after I buy?",
+        "Is there post-purchase support?",
+        "What if I have issues after pickup?",
+        "What about warranty?"
+      ],
+      "answer_markdown": "After purchase, AutoLenis provides documentation of your transaction in your dashboard. For vehicle warranty or mechanical issues, contact the dealership directly. For platform questions or referral rewards, reach out to our support team.",
+      "cta": { "type": "PRIMARY_NEXT_STEP", "label": "Continue to your next step" },
+      "disclosure": null,
+      "tags": ["close", "post-purchase", "support"],
+      "version": "1.0.0"
+    },
+    {
+      "id": "CLOSE_REFERRAL",
+      "category": "CLOSE",
+      "title": "Can I refer someone?",
+      "user_questions": [
+        "Can I refer a friend?",
+        "Is there a referral program?",
+        "Do I get anything for referring?",
+        "How does the referral program work?"
+      ],
+      "answer_markdown": "Yes. AutoLenis has an affiliate referral program. Share your unique referral link, and you earn commission on completed deals from your referrals. Commission rates range from 2% to 20% depending on the referral tier.",
+      "cta": { "type": "PRIMARY_NEXT_STEP", "label": "Continue to your next step" },
+      "disclosure": "Commissions are earned only on completed deals where the concierge fee has been collected. Commissions are taxable income.",
+      "tags": ["close", "referral", "affiliate"],
+      "version": "1.0.0"
+    },
+    {
+      "id": "CLOSE_TRADE_IN",
+      "category": "CLOSE",
+      "title": "Can I trade in my current vehicle?",
+      "user_questions": [
+        "Can I trade in my car?",
+        "Does AutoLenis handle trade-ins?",
+        "What about my current vehicle?",
+        "How does trade-in work?"
+      ],
+      "answer_markdown": "Trade-in arrangements are handled directly with the dealer as part of the offer negotiation. If you have a trade-in, include it in your vehicle request so dealers can factor it into their bids.",
+      "cta": { "type": "PRIMARY_NEXT_STEP", "label": "Continue to your next step" },
+      "disclosure": "Trade-in value is determined by the dealer, not AutoLenis.",
+      "tags": ["close", "trade-in", "vehicle"],
+      "version": "1.0.0"
+    },
+    {
+      "id": "CLOSE_REFINANCE",
+      "category": "CLOSE",
+      "title": "Can I refinance later?",
+      "user_questions": [
+        "Can I refinance later?",
+        "Does AutoLenis offer refinancing?",
+        "How does refinancing work?",
+        "Can I lower my payments later?"
+      ],
+      "answer_markdown": "Yes. AutoLenis offers vehicle refinancing to help lower monthly payments or secure a better rate. The refinance process considers your current loan, vehicle condition, and credit profile. Visit the refinance section on the platform to explore options.",
+      "cta": { "type": "PRIMARY_NEXT_STEP", "label": "Continue to your next step" },
+      "disclosure": "Refinancing is subject to lender approval. AutoLenis does not guarantee specific rates or savings.",
+      "tags": ["close", "refinance", "rates"],
+      "version": "1.0.0"
+    }
+  ]
+}
