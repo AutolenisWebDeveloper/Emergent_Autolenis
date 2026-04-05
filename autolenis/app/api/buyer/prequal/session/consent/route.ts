@@ -62,8 +62,9 @@ export async function POST(request: Request) {
     }
 
     const status = message === "Unauthorized" ? 401 : 500
+    console.error("[PrequalSession] Error capturing consent:", message, error)
     return NextResponse.json(
-      { success: false, error: { code: status === 401 ? "UNAUTHENTICATED" : "INTERNAL_ERROR", message: status === 401 ? "Unauthorized" : "Failed to capture consent" } },
+      { success: false, error: { code: status === 401 ? "UNAUTHENTICATED" : "INTERNAL_ERROR", message } },
       { status },
     )
   }

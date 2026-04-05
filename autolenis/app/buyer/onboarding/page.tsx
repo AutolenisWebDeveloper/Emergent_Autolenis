@@ -64,11 +64,11 @@ export default function BuyerOnboardingPage() {
     setFailureMessage("")
 
     try {
-      // Step 1: Create a prequal session
+      // Step 1: Create a prequal session (backend auto-selects source type based on workspace)
       const sessionRes = await fetch("/api/buyer/prequal/session", {
         method: "POST",
         headers: csrfHeaders(),
-        body: JSON.stringify({ sourceType: "INTERNAL" }),
+        body: JSON.stringify({ sourceType: "AUTO" }),
       })
       const sessionResult = await sessionRes.json()
       if (!sessionResult.success) {

@@ -117,7 +117,9 @@ export function getPrisma() {
   if (!_prismaLoadAttempted || (_prismaInstance === null && isPrismaConfigured())) {
     _prismaLoadAttempted = true
     try {
-      const { PrismaClient } = require("@prisma/client")
+      // Use eval to bypass Turbopack static analysis for Prisma v6
+      const mod = eval('require')(".prisma/client/index.js")
+      const PrismaClient = mod.PrismaClient
       _prismaInstance = new PrismaClient()
       _prismaLoadError = null
       logger.info("Prisma client initialized successfully")

@@ -8,21 +8,28 @@ export async function POST(request: Request) {
     const session = await requireAuth(["BUYER"])
     const body = await request.json()
 
+    // Auto-select source type based on workspace mode if not explicitly specified
+    let sourceType = body.sourceType
+    if (!sourceType || sourceType === "AUTO") {
+      sourceType = session.workspace_mode === "LIVE" ? "IPREDICT" : "INTERNAL"
+    }
+
     const result = await prequalSessionService.createSession(
       session.userId,
-      { sourceType: body.sourceType },
+      { sourceType },
       {
         ipAddress: request.headers.get("x-forwarded-for") || undefined,
         userAgent: request.headers.get("user-agent") || undefined,
       },
     )
 
-    return NextResponse.json({ success: true, data: result })
+    return NextResponse.json({ success: true, data: { ...result, sourceType } })
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Internal error"
+    console.error("[PrequalSession] Error creating session:", message, error)
     const status = message === "Unauthorized" ? 401 : 500
     return NextResponse.json(
-      { success: false, error: { code: status === 401 ? "UNAUTHENTICATED" : "INTERNAL_ERROR", message: status === 401 ? "Unauthorized" : "Failed to create session" } },
+      { success: false, error: { code: status === 401 ? "UNAUTHENTICATED" : "INTERNAL_ERROR", message: status === 401 ? "Unauthorized" : message } },
       { status },
     )
   }

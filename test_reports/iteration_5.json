@@ -1,0 +1,44 @@
+{
+  "timestamp": "2026-04-05T00:48:07.090Z",
+  "testSuite": "prequal-e2e-authenticated",
+  "testEmail": "buyer-e2e-test-1775350086207@autolenis-test.com",
+  "testPassword": "SecureTest123!",
+  "results": [
+    {
+      "test": "Buyer Signup",
+      "status": "FAIL",
+      "detail": "Response: {\"success\":false,\"error\":\"Unable to complete registration. Please try again later.\",\"code\":\"SERVICE_ERROR\"}"
+    },
+    {
+      "test": "Buyer Signin",
+      "status": "PASS",
+      "detail": "Email not verified yet — using signup session cookie"
+    },
+    {
+      "test": "Auth/Me Check",
+      "status": "FAIL",
+      "detail": "Response: {\"success\":false,\"error\":\"Not authenticated\"}"
+    },
+    {
+      "test": "GET /api/buyer/prequal",
+      "status": "FAIL",
+      "detail": "Status 401: {\"error\":\"Authentication required\",\"correlationId\":\"d1ea16d3-c7dd-4619-bf44-0339c09ad401\"}"
+    },
+    {
+      "test": "Save Profile Draft",
+      "status": "FAIL",
+      "detail": "Response: {\"error\":\"Authentication required\",\"correlationId\":\"ff3d419c-5f14-4af7-baf1-e8b8c31b6d35\"}"
+    },
+    {
+      "test": "Create Prequal Session",
+      "status": "FAIL",
+      "detail": "Response: {\"error\":\"Authentication required\",\"correlationId\":\"735b5c8c-0d5a-4ff9-ad77-2d3574d8352a\"}"
+    }
+  ],
+  "summary": {
+    "passed": 1,
+    "failed": 5,
+    "skipped": 0,
+    "total": 6
+  }
+}

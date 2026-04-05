@@ -1,0 +1,36 @@
+{
+  "timestamp": "2026-04-05T01:02:49.181Z",
+  "testSuite": "prequal-e2e-authenticated-v2",
+  "results": [
+    {
+      "test": "Sign In",
+      "status": "PASS",
+      "detail": "Authenticated as buyer-e2e-1775350240@autolenis-test.com, role=BUYER"
+    },
+    {
+      "test": "Auth/Me",
+      "status": "PASS",
+      "detail": "Session valid for buyer-e2e-1775350240@autolenis-test.com"
+    },
+    {
+      "test": "GET /api/buyer/prequal",
+      "status": "PASS",
+      "detail": "Status 200. Active: false"
+    },
+    {
+      "test": "Save Draft",
+      "status": "FAIL",
+      "detail": "Unexpected end of JSON input"
+    },
+    {
+      "test": "Create Session",
+      "status": "FAIL",
+      "detail": "{\"success\":false,\"error\":{\"code\":\"INTERNAL_ERROR\",\"message\":\"Failed to create session\"}}"
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 2,
+    "total": 5
+  }
+}
