@@ -9,6 +9,7 @@ AutoLenis is a multi-role car-buying concierge platform with buyer, dealer, affi
 - **Runtime DB**: Supabase as runtime persistence layer
 - **Database**: PostgreSQL via Supabase (PgBouncer pooled)
 - **Deployment**: Vercel Pro, Node 24.x, pnpm 10.28.0
+- **Middleware**: `proxy.ts` (NOT `middleware.ts` — Next.js 16 native)
 
 ## Production URLs
 - https://www.autolenis.com
@@ -31,50 +32,47 @@ AutoLenis is a multi-role car-buying concierge platform with buyer, dealer, affi
 ### Session 1: Deployment Fixes (Emergent)
 | Fix | Where Applied | Status |
 |-----|---------------|--------|
-| .vercelignore created | Local main (pending push) | Ready |
-| middleware.ts created | Local main (pending push) | Ready |
-| tsconfig.json: autolenis excluded | Local main + copilot | Preserved |
+| .vercelignore created | main | Pushed |
+| middleware.ts deleted (conflicts with proxy.ts) | main | Pushed |
+| tsconfig.json: autolenis excluded | main + copilot | Preserved |
 | All env vars on Vercel project | Vercel project settings | Live |
-| Production deployment from copilot branch | Vercel production | Live |
+| Production deployment from copilot branch | Vercel production | Live (pending switch to main) |
 
 ### Session 2: Database Alignment Fixes (Emergent)
 | Fix | Where Applied | Status |
 |-----|---------------|--------|
-| VehicleRequestCase VIEW → TABLE (18 cols) | Supabase DB directly | Live |
+| VehicleRequestCase VIEW -> TABLE (18 cols) | Supabase DB directly | Live |
 | Transaction.type column added | Supabase DB directly | Live |
-| Dealer: 12 cols snake_case → camelCase | Supabase DB directly | Live |
+| Dealer: 12 cols snake_case -> camelCase | Supabase DB directly | Live |
 | dealer_agreements: 28 cols renamed | Supabase DB directly | Live |
 | docusign_connect_events: 7 cols renamed | Supabase DB directly | Live |
-| ConsentCaptureMethod enum aligned | DB + Prisma schema | Live + pending push |
+| ConsentCaptureMethod enum aligned | DB + Prisma schema | Live + Pushed |
 
-### Session 3: Preservation Audit + Deployment Fix (Emergent)
+### Session 3: Preservation Audit + Main Branch Normalization (Emergent)
 | Fix | Where Applied | Status |
 |-----|---------------|--------|
-| .gitignore: /autolenis/ recovered from copilot | Local main (committed) | Pending push |
-| eslint.config.mjs: autolenis/** recovered | Local main (committed) | Pending push |
-| .gitignore: 16 duplicate env blocks cleaned | Local main (committed) | Pending push |
-| vercel.json: `rm -rf autolenis` added to build | Local main (unstaged) | Pending commit+push |
-| Vercel project build command updated | Vercel project settings | Live |
+| .gitignore: /autolenis/ recovered from copilot | main | Pushed |
+| eslint.config.mjs: autolenis/** recovered | main | Pushed |
+| .gitignore: 16 duplicate env blocks cleaned | main | Pushed |
+| vercel.json: `rm -rf autolenis` added to build | main | Pushed |
+| middleware.ts: Deleted (proxy.ts conflict) | main | Pushed |
 | All 20 prior fixes verified intact | Verification only | Confirmed |
+| Local Next.js build: PASSES | Local | Verified |
 
-## Current State
-- **Production**: Deployed from copilot/fix-vercel-deployment-issues, stable
-- **Main branch (local)**: Contains ALL unified fixes, 3 commits + 1 unstaged change ahead of GitHub
-- **After Emergent push**: `main` can be deployed to production (vercel.json now has `rm -rf autolenis`)
+## Current State (Feb 2026)
+- **Production**: Live from Vercel, all routes responding correctly
+- **Main branch**: All unified fixes pushed to GitHub, local build passes
+- **Route verification**: All 7 core routes verified (/, /auth/signin, /buyer, /dealer, /admin/sign-in, /api/inventory/search, /prequal)
+- **Action required**: User must confirm on Vercel dashboard that `main` is the production branch (may need to switch from `copilot/fix-vercel-deployment-issues`)
 
-## Pending Push to GitHub (8 files)
-| File | Change |
-|------|--------|
-| .gitignore | Cleaned duplicates + added /autolenis/ |
-| .vercelignore | New file (exclude stale dirs) |
-| eslint.config.mjs | Added autolenis/** ignore |
-| memory/PRD.md | Updated documentation |
-| middleware.ts | New file (Next.js entry point) |
-| prisma/schema.prisma | ConsentCaptureMethod: IN_PERSON + ELECTRONIC |
-| tsconfig.json | autolenis + autolenis_repo excluded |
-| vercel.json | Build command: rm -rf autolenis && ... |
+## Critical Rules
+- DO NOT create `middleware.ts` — project uses `proxy.ts` natively (Next.js 16)
+- Prisma schema and DB are matched using camelCase — no `@map` annotations
+- `autolenis/` directory is stale — deleted during build via vercel.json
 
-## Next Actions After Push
-1. Trigger deployment from `main` branch (will succeed with updated vercel.json)
-2. Switch MicroBilt & DocuSign from sandbox to production
-3. Configure Sentry for error monitoring
+## Next Actions
+1. Confirm Vercel production is deploying from `main` (switch if needed)
+2. Permanently remove `autolenis/` from git history (P1)
+3. Set up Prisma schema drift detection CI (P2)
+4. Switch MicroBilt & DocuSign from sandbox to production (P2)
+5. Configure Sentry for error monitoring (P2)
