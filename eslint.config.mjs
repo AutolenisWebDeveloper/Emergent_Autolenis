@@ -130,6 +130,7 @@ export default [
     ignores: [
       ".next/**",
       "node_modules/**",
+      "autolenis/**",
       "scripts/!(governance)/**",
       "scripts/*.ts",
       "scripts/*.js",

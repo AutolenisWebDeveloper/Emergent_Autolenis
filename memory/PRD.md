@@ -1,81 +1,68 @@
 # AutoLenis - Production Readiness Document
 
 ## Project Overview
-AutoLenis is a multi-role car-buying concierge platform with buyer, dealer, affiliate, and admin portals. Features include prequalification, inventory management, silent reverse auction, best-price engine, financing, insurance, Contract Shield, e-sign, pickup scheduling, affiliate commissions, payments, audit logging, and admin oversight.
+AutoLenis is a multi-role car-buying concierge platform with buyer, dealer, affiliate, and admin portals.
 
 ## Architecture
-- **Framework**: Next.js 16.0.11 (App Router, Turbopack)
-- **Language**: TypeScript + React
-- **ORM**: Prisma 6.16.0 (schema/types/migrations)
+- **Framework**: Next.js 16 (App Router) + TypeScript + React
+- **ORM/Schema**: Prisma 6.16.0 (schema/types/migrations)
 - **Runtime DB**: Supabase as runtime persistence layer
-- **Database**: PostgreSQL via Supabase (pooled via PgBouncer)
-- **Auth**: Custom JWT + Supabase auth, MFA support
-- **Payments**: Stripe (live keys)
-- **Email**: Resend
-- **E-Sign**: DocuSign (sandbox)
-- **Prequalification**: MicroBilt iPredict + IBV
-- **AI**: Groq
-- **Deployment**: Vercel (Pro plan)
-- **Node**: 24.x, pnpm 10.28.0
+- **Database**: PostgreSQL via Supabase (PgBouncer pooled)
+- **Deployment**: Vercel Pro, Node 24.x, pnpm 10.28.0
 
-## Deployment Details
-- **Vercel Project**: autolenis-deploy (prj_0nqteNxc8Fmp5PVKOsWC3V8NdhLx)
-- **Production URL**: https://www.autolenis.com
-- **Vercel URL**: https://autolenis-deploy.vercel.app
-- **Branch Deployed**: copilot/fix-vercel-deployment-issues
-- **Build Status**: SUCCESS
-- **Migration Status**: 0001_initial_baseline applied (214 tables)
+## Production URLs
+- https://www.autolenis.com
+- https://autolenis-deploy.vercel.app
 
-## Database Alignment Audit (Session 2 - April 5, 2026)
+## Fix Inventory (All Sessions)
 
-### Issues Found and Fixed
+### Session 0: PR Fixes (merged to main before Emergent sessions)
+| PR | Fix | Status |
+|----|-----|--------|
+| #23 | Env variable audit, Stripe live-key enforcement | Preserved |
+| #29 | AI copilot enhancements | Preserved |
+| #30 | iPredict CLV:INQ risk score extraction fix | Preserved |
+| #31 | Prequal email messaging via Resend | Preserved |
+| #32 | Inventory pipeline, field mappings, VIN handling | Preserved |
+| #33 | P0 prequal blockers: cron, workspace isolation, admin routes | Preserved |
+| #34 | Inventory search route Supabase error handling | Preserved |
+| #1  | Node.js heap size OOM fix (4GB) | Preserved |
 
-#### CRITICAL: VehicleRequestCase was a VIEW, not a TABLE
-- **Severity**: Critical
-- **Root cause**: The `VehicleRequestCase` Prisma model expected a full table with 18 columns, but the DB only had a VIEW on `car_requests` with 5 columns
-- **Fix**: Dropped the VIEW and created a proper TABLE with all 18 columns, foreign keys (workspaceId, buyerId), indexes, and RLS policies
-- **Impact**: Vehicle sourcing system is now fully functional
+### Session 1: Deployment Fixes (Emergent)
+| Fix | Status |
+|-----|--------|
+| Vercel project linked and configured | Preserved |
+| .vercelignore created (exclude stale dirs) | Preserved |
+| middleware.ts created (Next.js entry point) | Preserved |
+| tsconfig.json: autolenis excluded from compilation | Preserved |
+| All env vars verified/added on Vercel project | Preserved |
+| Deployment from copilot/fix-vercel-deployment-issues branch | Production-live |
 
-#### CRITICAL: Column naming mismatches (snake_case vs camelCase)
-- **Severity**: Critical (would cause runtime errors on dealer flows)
-- **Affected tables**: 
-  - `Dealer` (12 columns)
-  - `dealer_agreements` (28 columns)
-  - `docusign_connect_events` (7 columns)
-- **Root cause**: Tables created by Supabase SQL used snake_case, but Prisma schema uses camelCase without @map annotations
-- **Fix**: Renamed all 47 snake_case columns to camelCase to match Prisma schema expectations
-- **Data preserved**: Yes (0 rows affected in dealer_agreements and docusign_connect_events; Dealer rows had null values for renamed columns)
+### Session 2: Database Alignment Fixes (Emergent)
+| Fix | Status |
+|-----|--------|
+| VehicleRequestCase: VIEW → TABLE (18 cols, FKs, indexes, RLS) | Applied to DB |
+| Transaction: added `type` column (TransactionType enum) | Applied to DB |
+| Dealer: 12 columns renamed snake_case → camelCase | Applied to DB |
+| dealer_agreements: 28 columns renamed snake_case → camelCase | Applied to DB |
+| docusign_connect_events: 7 columns renamed snake_case → camelCase | Applied to DB |
+| ConsentCaptureMethod enum: WRITTEN added to DB, IN_PERSON+ELECTRONIC added to Prisma | Applied |
 
-#### IMPORTANT: Missing `type` column on Transaction table
-- **Severity**: High
-- **Fix**: Added `type` column with TransactionType enum (PAYMENT, REFUND, CHARGEBACK, PAYOUT) and index
-- **Default**: `PAYMENT` for any existing rows
+### Session 3: Preservation Audit (Emergent)
+| Fix | Status |
+|-----|--------|
+| .gitignore: /autolenis/ added, duplicate env blocks cleaned | Applied to main |
+| eslint.config.mjs: autolenis/** added to ignores | Applied to main |
+| All copilot branch fixes recovered to main | Verified |
+| All PR fixes re-verified intact | Confirmed |
+| All DB fixes re-verified intact | Confirmed |
 
-#### MODERATE: ConsentCaptureMethod enum mismatch
-- **Severity**: Moderate
-- **Fix**: Added `WRITTEN` to DB enum; added `IN_PERSON` and `ELECTRONIC` to Prisma schema
+## Branch Status
+- **main**: Has ALL fixes (PRs + deployment + DB alignment + copilot recovery)
+- **copilot/fix-vercel-deployment-issues**: Has build exclusion fix, MISSING session 2-3 Prisma/schema fixes
+- **Production deployment**: From copilot branch, DB fixes applied directly to Supabase
 
-### Database Structure Verified
-- 214 tables (was 213 + VehicleRequestCase upgraded from VIEW to TABLE)
-- 69 Prisma enums all match DB
-- 257 foreign keys all valid
-- 23 triggers verified safe
-- RLS enabled on all tables
-- All Prisma model columns exist in DB
-
-### Backend Compatibility Verified
-- Auth signup/signin (400/401 responses - correct)
-- Inventory search (200 with DB query)
-- RBAC protection (307 redirects for unauthenticated)
-- All public pages (200)
-- Static assets (robots.txt, sitemap.xml)
-- Dealer, buyer, admin dashboard routes
-- 334 compiled routes
-
-### Remaining Risks
-- **P0**: Main branch still not deployable (stale autolenis/ dir). Merge copilot branch.
-- **P1**: MicroBilt sandbox endpoints in production
-- **P1**: DocuSign in sandbox mode
-- **P1**: Sentry not configured
-- **P2**: Prisma v7.6.0 available
-- **P2**: Empty inventory table
+## Remaining Action Items
+- **P0**: Deploy from main branch to production (main now has ALL fixes unified)
+- **P1**: Switch MicroBilt & DocuSign from sandbox to production
+- **P1**: Configure Sentry for error monitoring
