@@ -55,7 +55,7 @@ export function ResultStep({ preQual }: ResultStepProps) {
       SUBPRIME: { label: "Subprime", color: "text-orange-700", bgColor: "bg-orange-100" },
       GOOD: { label: "Good", color: "text-blue-700", bgColor: "bg-blue-100" },
       FAIR: { label: "Fair", color: "text-yellow-700", bgColor: "bg-yellow-100" },
-      POOR: { label: "Fair", color: "text-orange-700", bgColor: "bg-orange-100" },
+      POOR: { label: "Poor", color: "text-orange-700", bgColor: "bg-orange-100" },
     }
     return tiers[tier] || { label: tier, color: "text-gray-700", bgColor: "bg-muted" }
   }
@@ -63,7 +63,7 @@ export function ResultStep({ preQual }: ResultStepProps) {
   const tierInfo = getTierDisplay(preQual.creditTier)
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="prequal-success-result">
       {/* Success Banner */}
       <Card className="border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30">
         <CardHeader>
@@ -172,7 +172,7 @@ export function ResultStep({ preQual }: ResultStepProps) {
       </Card>
 
       {/* CTA Button */}
-      <Button onClick={() => router.push("/buyer/search")} className="w-full" size="lg">
+      <Button onClick={() => router.push("/buyer/search")} className="w-full" size="lg" data-testid="prequal-start-shopping-btn">
         <Car className="h-5 w-5 mr-2" />
         Start Shopping for Vehicles
         <ArrowRight className="h-5 w-5 ml-2" />

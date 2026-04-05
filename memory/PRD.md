@@ -1,74 +1,56 @@
-# AutoLenis Deployment & Dashboard Audit PRD
+# AutoLenis Platform — Product Requirements Document
 
-## Original Problem Statement
-1. Deploy AutoLenis multi-role automotive concierge platform to Vercel production
-2. Audit and fix all 4 dashboards (Buyer, Dealer, Affiliate, Admin) ensuring proper connections
-3. Ensure Admin dashboard has full visibility across all other dashboards
+## Problem Statement
+Upload, validate, configure, migrate, and deploy the complete AutoLenis Next.js 16 repository to Vercel. Ensure 100% working routes (no 500s/404s), validate all cron jobs, and preserve the existing architecture. Post-deployment, audit all 4 dashboards (Buyer, Dealer, Affiliate, Admin) to ensure Admin has full oversight and fix any broken links/APIs. Finally, review the entire pre-qualification system end-to-end, making all necessary corrections to UI, business logic, validation, state management, MicroBilt/iPredict API integrations, and system wiring to ensure the flow is fully operational.
 
 ## Architecture
-- **Framework**: Next.js 16.0.11 (App Router, Turbopack)
-- **Language**: TypeScript (strict mode)
-- **ORM**: Prisma 6.16.0 with PostgreSQL
-- **Database**: Supabase PostgreSQL
-- **Auth**: JWT + Supabase Auth, RBAC via proxy.ts middleware
-- **Payments**: Stripe (live keys)
-- **Email**: Resend
-- **E-Sign**: DocuSign (sandbox)
-- **Credit**: MicroBilt (sandbox)
-- **AI**: Groq SDK
-- **Deployment**: Vercel (autolenis-deploy project)
-
-## Platform Scale
-- 257 pages | 473 API routes | 118 service files | 10 cron jobs
-- 4,725-line Prisma schema | 2,240 total source files
-- 4 dashboard ecosystems: Buyer, Dealer, Affiliate, Admin
+- **Frontend**: Next.js 16 App Router, React, Tailwind CSS
+- **Backend**: Next.js API Routes, Prisma ORM
+- **Database**: PostgreSQL (Supabase)
+- **Deployment**: Vercel
+- **Architecture**: Strict RBAC, double-submit CSRF cookie pattern, `proxy.ts` middleware
+- **Key Integrations**: Supabase, Stripe, Resend, DocuSign, MicroBilt/iPredict, Groq AI SDK
 
 ## What's Been Implemented
 
-### Phase 1: Vercel Deployment (April 4, 2026)
-- [x] Repository ingested (2,240 files)
-- [x] Dependencies installed (pnpm)
-- [x] Prisma schema validated, client generated
-- [x] Database migration applied (baseline)
-- [x] TypeScript strict check passes (0 errors)
-- [x] Build succeeds (Next.js 16 Turbopack)
-- [x] Deployed to Vercel production
-- [x] All 10 cron jobs registered
-- [x] All routes verified (zero 500s, zero 404s)
-- Production URL: https://autolenis-deploy.vercel.app
+### Phase 1: Deployment & Configuration (DONE)
+- Vercel deployment and DB baseline
+- Fixed trailing newline bug in NEXT_PUBLIC_APP_URL causing 500 errors
+- All environment variables configured
+- DB migrations synced
+- 10/10 cron jobs verified and running
 
-### Phase 2: Dashboard Connection Audit (April 4, 2026)
-- [x] All 4 dashboard route structures audited
-- [x] All navigation links verified (zero broken links)
-- [x] All API route connections verified
-- [x] Auth guards and RBAC verified via proxy.ts
-- [x] Cross-dashboard data wiring confirmed
-- [x] Missing /api/admin/offers route created and deployed
-- [x] Admin → Buyer oversight: 43 pages, 7 key routes
-- [x] Admin → Dealer oversight: 35 pages, 7 key routes
-- [x] Admin → Affiliate oversight: 23 pages, 4 key routes
-- [x] Admin → Deal lifecycle: 7 key route groups
-- [x] Admin → Payments/Compliance: 7 key route groups
-- [x] Admin → System management: 8 key route groups
+### Phase 2: Dashboard Audit (DONE)
+- All 4 dashboards (Admin, Buyer, Dealer, Affiliate) audited
+- Zero broken navigation links
+- 100% working auth-guarded API routes
+- Created missing `/api/admin/offers` route
+- Fixed `mockSelectors.adminOffers` TypeScript error
 
-## Changes Made
-1. **package.json**: `engines.node` 24.x → >=20.x (Vercel compatibility)
-2. **Vercel env vars**: 43 variables set with printf (no trailing newlines)
-3. **NEW: app/api/admin/offers/route.ts**: Created missing admin offers API route
+### Phase 3: Pre-Qualification System Audit (DONE - Feb 2026)
+- **8 critical + 2 moderate issues found and fixed**
+- Rewired frontend to use session-based API (was calling dead 503 endpoint)
+- Implemented 3-step flow: Session → Consent → Run
+- Fixed SSN server-side encryption pipeline
+- Fixed FK violation on consent version (auto-create)
+- Fixed unique constraint on PreQualification (create → upsert)
+- Fixed invalid Prisma enum values in internal scorer
+- Added declined/failure UI with retry
+- Added proper field mapping and data transformation
+- **36/36 tests passing** (API routes, scoring, normalization, encryption)
+- Full audit report: `/app/autolenis/PREQUAL_AUDIT_REPORT.md`
 
-## Dashboard Route Summary
-- Buyer: 20 pages, 15+ API routes
-- Dealer: 22 pages, 30+ API routes  
-- Affiliate: 12 pages, 10+ API routes
-- Admin: 50+ pages, 214 API routes (full cross-dashboard visibility)
+## Prioritized Backlog
 
-## Remaining Operator Actions
-- P1: Point custom domain (autolenis.com) to Vercel deployment
-- P1: Register Stripe webhook URL
-- P2: Replace DocuSign/MicroBilt sandbox credentials for production
-- P2: Verify Resend sender domain
+### P0 (None remaining)
+All critical items completed.
 
-## Backlog
-- P0: Custom domain DNS configuration
-- P1: Stripe webhook registration
-- P2: Production DocuSign/MicroBilt credentials
+### P1
+- Full authenticated end-to-end testing with real buyer session
+- Verify consent version auto-creation in production DB
+
+### P2
+- Replace MicroBilt/DocuSign sandbox credentials with production credentials
+- Switch from INTERNAL to IPREDICT source type for LIVE mode
+- Add IBV (Instant Bank Verification) flow integration
+- Performance testing under concurrent prequal submissions

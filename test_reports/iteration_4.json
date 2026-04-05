@@ -1,0 +1,31 @@
+{
+  "timestamp": "2026-04-05T00:37:58.068Z",
+  "testSuite": "prequal-encryption",
+  "results": [
+    {
+      "test": "Encrypt/Decrypt roundtrip",
+      "status": "PASS",
+      "detail": "SSN recovered correctly, encrypted length: 62"
+    },
+    {
+      "test": "Different SSNs → different ciphertext",
+      "status": "PASS",
+      "detail": "Encryption is non-deterministic for different inputs"
+    },
+    {
+      "test": "AES-GCM random IV (same input → different output)",
+      "status": "PASS",
+      "detail": "Correctly uses random IV"
+    },
+    {
+      "test": "Ciphertext doesn't contain raw SSN",
+      "status": "PASS",
+      "detail": "Encrypted length: 62"
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4
+  }
+}

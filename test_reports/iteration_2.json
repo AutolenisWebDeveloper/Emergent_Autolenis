@@ -1,0 +1,51 @@
+{
+  "timestamp": "2026-04-05T00:37:09.487Z",
+  "testSuite": "prequal-scoring",
+  "results": [
+    {
+      "test": "High income + low housing",
+      "status": "PASS",
+      "detail": "Tier: EXCELLENT, Approved: $130880, Score: 767"
+    },
+    {
+      "test": "High DTI (>50%) decline",
+      "status": "PASS",
+      "detail": "DTI: 62.5%, correctly declined"
+    },
+    {
+      "test": "Moderate income",
+      "status": "PASS",
+      "detail": "Tier: GOOD, Approved: $43697, DTI: 24%"
+    },
+    {
+      "test": "Zero income decline",
+      "status": "PASS",
+      "detail": "DTI: 100%, correctly declined"
+    },
+    {
+      "test": "Very high income → EXCELLENT",
+      "status": "PASS",
+      "detail": "Score: 765, Approved: $238695"
+    },
+    {
+      "test": "Credit tier enum validation",
+      "status": "PASS",
+      "detail": "All tiers are valid Prisma enum values: EXCELLENT, GOOD, FAIR, FAIR"
+    },
+    {
+      "test": "DTI boundary (50%)",
+      "status": "PASS",
+      "detail": "DTI: 50% - passes (boundary is >50, not >=50)"
+    },
+    {
+      "test": "Frontend→Backend field mapping",
+      "status": "PASS",
+      "detail": "Annual $60000 → Monthly cents 500000, Housing $1200 → cents 120000. Tier: GOOD"
+    }
+  ],
+  "summary": {
+    "passed": 8,
+    "failed": 0,
+    "total": 8
+  }
+}

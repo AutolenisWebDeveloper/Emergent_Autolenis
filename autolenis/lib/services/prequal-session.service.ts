@@ -135,11 +135,14 @@ export class PrequalSessionService {
       throw new Error("Consent can only be captured for sessions in INITIATED state")
     }
 
+    // Ensure the consent version exists (auto-create default if needed)
+    const resolvedVersionId = await this.ensureConsentVersion(input.consentVersionId, input.consentText)
+
     // Create the consent artifact (immutable)
     const artifact = await prisma.prequalConsentArtifact.create({
       data: {
         userId,
-        consentVersionId: input.consentVersionId,
+        consentVersionId: resolvedVersionId,
         consentText: input.consentText,
         consentGiven: true,
         consentDate: new Date(),
@@ -322,43 +325,45 @@ export class PrequalSessionService {
     )
     const newStatus = providerResponse.success ? "ACTIVE" : "FAILED"
 
-    // Expire existing active prequalifications
-    await prisma.preQualification.updateMany({
-      where: { buyerId: userId, status: "ACTIVE", ...(workspaceId ? { workspaceId } : {}) },
-      data: { status: "EXPIRED", updatedAt: new Date() },
-    })
+    // Upsert PreQualification record (buyerId has @unique constraint)
+    const prequalData = {
+      status: newStatus,
+      creditTier: normalizedTier,
+      ...(workspaceId ? { workspaceId } : {}),
+      ...(session.consentArtifactId ? { consentArtifactId: session.consentArtifactId } : {}),
+      maxOtd: providerResponse.approvedAmountCents
+        ? providerResponse.approvedAmountCents / 100
+        : 0,
+      maxOtdAmountCents: providerResponse.approvedAmountCents || null,
+      estimatedMonthlyMin: providerResponse.minMonthlyPaymentCents
+        ? providerResponse.minMonthlyPaymentCents / 100
+        : 0,
+      minMonthlyPaymentCents: providerResponse.minMonthlyPaymentCents || null,
+      estimatedMonthlyMax: providerResponse.maxMonthlyPaymentCents
+        ? providerResponse.maxMonthlyPaymentCents / 100
+        : 0,
+      maxMonthlyPaymentCents: providerResponse.maxMonthlyPaymentCents || null,
+      dti: providerResponse.dtiRatio || null,
+      dtiRatio: providerResponse.dtiRatio || null,
+      source: this.toPreQualSource(sourceType),
+      providerName: this.getProviderName(sourceType),
+      providerReferenceId: providerResponse.providerReferenceId || null,
+      rawResponseJson: { ...providerResponse },
+      softPullCompleted: providerResponse.success,
+      softPullDate: new Date(),
+      consentGiven: true,
+      consentDate: new Date(),
+      expiresAt: providerResponse.success ? expiresAt : new Date(),
+      updatedAt: new Date(),
+    }
 
-    const prequal = await prisma.preQualification.create({
-      data: {
+    const prequal = await prisma.preQualification.upsert({
+      where: { buyerId: userId },
+      update: prequalData,
+      create: {
         buyerId: userId,
-        status: newStatus,
-        creditTier: normalizedTier,
-        ...(workspaceId ? { workspaceId } : {}),
-        maxOtd: providerResponse.approvedAmountCents
-          ? providerResponse.approvedAmountCents / 100
-          : 0,
-        maxOtdAmountCents: providerResponse.approvedAmountCents || null,
-        estimatedMonthlyMin: providerResponse.minMonthlyPaymentCents
-          ? providerResponse.minMonthlyPaymentCents / 100
-          : 0,
-        minMonthlyPaymentCents: providerResponse.minMonthlyPaymentCents || null,
-        estimatedMonthlyMax: providerResponse.maxMonthlyPaymentCents
-          ? providerResponse.maxMonthlyPaymentCents / 100
-          : 0,
-        maxMonthlyPaymentCents: providerResponse.maxMonthlyPaymentCents || null,
-        dti: providerResponse.dtiRatio || null,
-        dtiRatio: providerResponse.dtiRatio || null,
-        source: this.toPreQualSource(sourceType),
-        providerName: this.getProviderName(sourceType),
-        providerReferenceId: providerResponse.providerReferenceId || null,
-        rawResponseJson: { ...providerResponse },
-        softPullCompleted: providerResponse.success,
-        softPullDate: new Date(),
-        consentGiven: true,
-        consentDate: new Date(),
-        expiresAt: providerResponse.success ? expiresAt : new Date(),
+        ...prequalData,
         createdAt: new Date(),
-        updatedAt: new Date(),
       },
     })
 
@@ -491,6 +496,41 @@ export class PrequalSessionService {
   }
 
   // ─── Private Helpers ────────────────────────────────────────────────────────
+
+  /**
+   * Ensures a PrequalConsentVersion record exists for the given version ID.
+   * Auto-creates a default version if the specified one doesn't exist.
+   * Returns the resolved consent version ID.
+   */
+  private async ensureConsentVersion(versionId: string, consentText: string): Promise<string> {
+    // Check if the version already exists
+    const existing = await prisma.prequalConsentVersion.findUnique({
+      where: { id: versionId },
+    })
+    if (existing) return existing.id
+
+    // Also check by version string (the `version` field is @unique)
+    const existingByVersion = await prisma.prequalConsentVersion.findUnique({
+      where: { version: versionId },
+    })
+    if (existingByVersion) return existingByVersion.id
+
+    // Auto-create the consent version
+    const created = await prisma.prequalConsentVersion.create({
+      data: {
+        version: versionId,
+        bodyText: consentText,
+        consentText,
+        active: true,
+        effectiveAt: new Date(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    })
+
+    logger.info("[PrequalSession] Auto-created consent version", { versionId, id: created.id })
+    return created.id
+  }
 
   private getProviderName(sourceType: PrequalSourceType): string {
     switch (sourceType) {
@@ -710,13 +750,13 @@ export class PrequalSessionService {
       creditTier = "EXCELLENT"
       rateMultiplier = 1.0
     } else if (estimatedScore >= 700) {
-      creditTier = "PRIME"
+      creditTier = "GOOD"
       rateMultiplier = 0.9
     } else if (estimatedScore >= 650) {
-      creditTier = "NEAR_PRIME"
+      creditTier = "FAIR"
       rateMultiplier = 0.75
     } else {
-      creditTier = "SUBPRIME"
+      creditTier = "POOR"
       rateMultiplier = 0.5
     }
 
@@ -726,9 +766,9 @@ export class PrequalSessionService {
     const avgApr =
       creditTier === "EXCELLENT"
         ? 0.045
-        : creditTier === "PRIME"
+        : creditTier === "GOOD"
           ? 0.065
-          : creditTier === "NEAR_PRIME"
+          : creditTier === "FAIR"
             ? 0.085
             : 0.12
     const termMonths = 60

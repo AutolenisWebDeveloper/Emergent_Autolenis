@@ -1,0 +1,101 @@
+{
+  "timestamp": "2026-04-05T00:37:32.556Z",
+  "testSuite": "prequal-normalizer",
+  "results": [
+    {
+      "test": "normalizeCreditTier(\"EXCELLENT\")",
+      "status": "PASS",
+      "detail": "→ \"EXCELLENT\""
+    },
+    {
+      "test": "normalizeCreditTier(\"GOOD\")",
+      "status": "PASS",
+      "detail": "→ \"GOOD\""
+    },
+    {
+      "test": "normalizeCreditTier(\"FAIR\")",
+      "status": "PASS",
+      "detail": "→ \"FAIR\""
+    },
+    {
+      "test": "normalizeCreditTier(\"POOR\")",
+      "status": "PASS",
+      "detail": "→ \"POOR\""
+    },
+    {
+      "test": "normalizeCreditTier(\"DECLINED\")",
+      "status": "PASS",
+      "detail": "→ \"DECLINED\""
+    },
+    {
+      "test": "normalizeCreditTier(\"PRIME\")",
+      "status": "PASS",
+      "detail": "→ \"GOOD\""
+    },
+    {
+      "test": "normalizeCreditTier(\"NEAR_PRIME\")",
+      "status": "PASS",
+      "detail": "→ \"FAIR\""
+    },
+    {
+      "test": "normalizeCreditTier(\"SUBPRIME\")",
+      "status": "PASS",
+      "detail": "→ \"POOR\""
+    },
+    {
+      "test": "normalizeCreditTier(\"null\")",
+      "status": "PASS",
+      "detail": "→ \"POOR\""
+    },
+    {
+      "test": "normalizeCreditTier(\"undefined\")",
+      "status": "PASS",
+      "detail": "→ \"POOR\""
+    },
+    {
+      "test": "normalizeCreditTier(\"UNKNOWN_TIER\")",
+      "status": "PASS",
+      "detail": "→ \"POOR\""
+    },
+    {
+      "test": "normalizeCreditTier(\"excellent\")",
+      "status": "PASS",
+      "detail": "→ \"EXCELLENT\""
+    },
+    {
+      "test": "normalizeCreditTier(\"prime\")",
+      "status": "PASS",
+      "detail": "→ \"GOOD\""
+    },
+    {
+      "test": "All outputs are valid Prisma CreditTier",
+      "status": "PASS",
+      "detail": "13 outputs checked"
+    },
+    {
+      "test": "INTERNAL allowed in TEST mode",
+      "status": "PASS",
+      "detail": "No error thrown"
+    },
+    {
+      "test": "INTERNAL allowed with null workspace",
+      "status": "PASS",
+      "detail": "No error thrown"
+    },
+    {
+      "test": "INTERNAL blocked in LIVE mode",
+      "status": "PASS",
+      "detail": "COMPLIANCE_VIOLATION thrown"
+    },
+    {
+      "test": "IPREDICT allowed in LIVE mode",
+      "status": "PASS",
+      "detail": "No error thrown"
+    }
+  ],
+  "summary": {
+    "passed": 18,
+    "failed": 0,
+    "total": 18
+  }
+}

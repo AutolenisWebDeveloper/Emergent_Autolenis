@@ -12,14 +12,13 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { InfoIcon } from "lucide-react"
 
 interface ConsentStepProps {
-  onNext: (data: any) => void
+  onNext: (data: { ssn: string; consentGiven: boolean }) => void
   onBack: () => void
 }
 
 export function ConsentStep({ onNext, onBack }: ConsentStepProps) {
   const [formData, setFormData] = useState({
     ssn: "",
-    dob: "",
     consentGiven: false,
   })
 
@@ -51,6 +50,7 @@ export function ConsentStep({ onNext, onBack }: ConsentStepProps) {
             <Label htmlFor="ssn">Social Security Number</Label>
             <Input
               id="ssn"
+              data-testid="prequal-ssn-input"
               type="password"
               required
               pattern="\d{9}"
@@ -62,21 +62,11 @@ export function ConsentStep({ onNext, onBack }: ConsentStepProps) {
             <p className="text-xs text-muted-foreground">Enter 9 digits without dashes</p>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="dob">Date of birth</Label>
-            <Input
-              id="dob"
-              type="date"
-              required
-              value={formData.dob}
-              onChange={(e) => setFormData({ ...formData, dob: e.target.value })}
-            />
-          </div>
-
           <div className="space-y-4 rounded-lg border p-4">
             <div className="flex items-start gap-3">
               <Checkbox
                 id="consent"
+                data-testid="prequal-consent-checkbox"
                 checked={formData.consentGiven}
                 onCheckedChange={(checked) => setFormData({ ...formData, consentGiven: checked as boolean })}
               />
@@ -90,10 +80,10 @@ export function ConsentStep({ onNext, onBack }: ConsentStepProps) {
           </div>
 
           <div className="flex gap-3">
-            <Button type="button" variant="outline" onClick={onBack} className="flex-1 bg-transparent">
+            <Button type="button" variant="outline" onClick={onBack} className="flex-1 bg-transparent" data-testid="prequal-consent-back-btn">
               Back
             </Button>
-            <Button type="submit" disabled={!formData.consentGiven} className="flex-1" size="lg">
+            <Button type="submit" disabled={!formData.consentGiven} className="flex-1" size="lg" data-testid="prequal-submit-btn">
               Get pre-qualified
             </Button>
           </div>

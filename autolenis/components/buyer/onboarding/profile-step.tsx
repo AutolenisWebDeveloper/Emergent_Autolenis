@@ -17,6 +17,7 @@ export function ProfileStep({ onNext, initialData }: ProfileStepProps) {
   const [formData, setFormData] = useState({
     firstName: initialData?.firstName || "",
     lastName: initialData?.lastName || "",
+    dateOfBirth: initialData?.dateOfBirth || "",
     phone: initialData?.phone || "",
     address: initialData?.address || "",
     city: initialData?.city || "",
@@ -47,6 +48,7 @@ export function ProfileStep({ onNext, initialData }: ProfileStepProps) {
           setFormData((prev) => ({
             firstName: draft.firstName || prev.firstName,
             lastName: draft.lastName || prev.lastName,
+            dateOfBirth: draft.dateOfBirth || prev.dateOfBirth,
             phone: draft.phone || prev.phone,
             address: draft.address || prev.address,
             city: draft.city || prev.city,
@@ -138,6 +140,18 @@ export function ProfileStep({ onNext, initialData }: ProfileStepProps) {
                 onChange={(e) => updateField("lastName", e.target.value)}
               />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="dateOfBirth">Date of birth</Label>
+            <Input
+              id="dateOfBirth"
+              data-testid="prequal-dob-input"
+              type="date"
+              required
+              value={formData.dateOfBirth}
+              onChange={(e) => updateField("dateOfBirth", e.target.value)}
+            />
           </div>
 
           <div className="space-y-2">
@@ -268,7 +282,7 @@ export function ProfileStep({ onNext, initialData }: ProfileStepProps) {
             />
           </div>
 
-          <Button type="submit" className="w-full" size="lg">
+          <Button type="submit" className="w-full" size="lg" data-testid="prequal-profile-continue-btn">
             Continue
           </Button>
         </form>

@@ -1,0 +1,40 @@
+{
+  "timestamp": "2026-04-05T00:36:28.307Z",
+  "results": [
+    {
+      "test": "Session API - Auth guard",
+      "status": "PASS",
+      "detail": "Returns 401 when unauthenticated"
+    },
+    {
+      "test": "Consent API - Auth guard",
+      "status": "PASS",
+      "detail": "Returns 401 when unauthenticated"
+    },
+    {
+      "test": "Run API - Auth guard",
+      "status": "PASS",
+      "detail": "Returns 401 when unauthenticated"
+    },
+    {
+      "test": "Authorize API - Auth guard",
+      "status": "PASS",
+      "detail": "Returns 401 when unauthenticated"
+    },
+    {
+      "test": "Old Prequal POST - Auth guard",
+      "status": "PASS",
+      "detail": "Returns 401 when unauthenticated (503 only after auth)"
+    },
+    {
+      "test": "Onboarding Page",
+      "status": "PASS",
+      "detail": "Page returns 307"
+    }
+  ],
+  "summary": {
+    "passed": 6,
+    "failed": 0,
+    "total": 6
+  }
+}
