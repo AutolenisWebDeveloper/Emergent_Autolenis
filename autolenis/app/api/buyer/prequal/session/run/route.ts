@@ -100,9 +100,10 @@ export async function POST(request: Request) {
       )
     }
 
+    console.error("[PrequalSession/Run] Unhandled error:", message, error)
     const status = message === "Unauthorized" ? 401 : 500
     return NextResponse.json(
-      { success: false, error: { code: status === 401 ? "UNAUTHENTICATED" : "INTERNAL_ERROR", message: status === 401 ? "Unauthorized" : "Failed to run prequalification" } },
+      { success: false, error: { code: status === 401 ? "UNAUTHENTICATED" : "INTERNAL_ERROR", message: status === 401 ? "Unauthorized" : message } },
       { status },
     )
   }

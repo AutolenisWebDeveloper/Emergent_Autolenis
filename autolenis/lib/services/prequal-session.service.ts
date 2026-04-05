@@ -331,17 +331,8 @@ export class PrequalSessionService {
       creditTier: normalizedTier,
       ...(workspaceId ? { workspaceId } : {}),
       ...(session.consentArtifactId ? { consentArtifactId: session.consentArtifactId } : {}),
-      maxOtd: providerResponse.approvedAmountCents
-        ? providerResponse.approvedAmountCents / 100
-        : 0,
       maxOtdAmountCents: providerResponse.approvedAmountCents || null,
-      estimatedMonthlyMin: providerResponse.minMonthlyPaymentCents
-        ? providerResponse.minMonthlyPaymentCents / 100
-        : 0,
       minMonthlyPaymentCents: providerResponse.minMonthlyPaymentCents || null,
-      estimatedMonthlyMax: providerResponse.maxMonthlyPaymentCents
-        ? providerResponse.maxMonthlyPaymentCents / 100
-        : 0,
       maxMonthlyPaymentCents: providerResponse.maxMonthlyPaymentCents || null,
       dti: providerResponse.dtiRatio || null,
       dtiRatio: providerResponse.dtiRatio || null,

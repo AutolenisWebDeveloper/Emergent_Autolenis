@@ -17,7 +17,7 @@
  */
 
 // Type-only import works for TypeScript without Vite resolving it at runtime
-import type { InventoryStatus as _InventoryStatus } from ".prisma/client"
+import type { InventoryStatus as _InventoryStatus } from "@/lib/generated/prisma-client"
 
 /**
  * Re-exported InventoryStatus enum.

@@ -13,7 +13,7 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  serverExternalPackages: ['@prisma/client', '.prisma/client', 'prisma', 'cheerio', 'playwright'],
+  serverExternalPackages: ['@prisma/client', '.prisma/client', 'prisma', 'cheerio', 'playwright', '@/lib/generated/prisma-client'],
   async headers() {
     // Determine the allowed CORS origin.
     // Priority: explicit NEXT_PUBLIC_APP_URL > Vercel-provided URL > production default.

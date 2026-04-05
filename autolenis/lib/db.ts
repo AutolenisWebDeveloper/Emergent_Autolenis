@@ -117,9 +117,10 @@ export function getPrisma() {
   if (!_prismaLoadAttempted || (_prismaInstance === null && isPrismaConfigured())) {
     _prismaLoadAttempted = true
     try {
-      // Use eval to bypass Turbopack static analysis for Prisma v6
-      const mod = eval('require')(".prisma/client/index.js")
-      const PrismaClient = mod.PrismaClient
+      // Import from custom output path to avoid pnpm resolution issues with
+      // @prisma/client's default.js dummy stub. prisma generate outputs to
+      // lib/generated/prisma-client/ which is always the real generated client.
+      const { PrismaClient } = require("@/lib/generated/prisma-client")
       _prismaInstance = new PrismaClient()
       _prismaLoadError = null
       logger.info("Prisma client initialized successfully")
