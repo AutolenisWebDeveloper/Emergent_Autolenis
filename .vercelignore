@@ -1,0 +1,30 @@
+# Stale duplicate directory
+autolenis/
+autolenis_repo/
+
+# Dev/test files
+__tests__/
+e2e/
+mocks/
+test_reports/
+.pnpm-store/
+canon/
+docs/
+memory/
+
+# Build artifacts
+.next/
+node_modules/
+build/
+
+# Git
+.git/
+.github/
+•	.github/
+
+# Env
+.env*
+!.env.example
+
+# IDE
+.vscode/
