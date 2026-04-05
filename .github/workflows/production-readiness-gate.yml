@@ -29,6 +29,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
+      NODE_OPTIONS: "--max-old-space-size=4096"
       POSTGRES_PRISMA_URL: "postgresql://user:password@localhost:5432/placeholder?schema=public"
       POSTGRES_URL_NON_POOLING: "postgresql://user:password@localhost:5432/placeholder?schema=public"
 

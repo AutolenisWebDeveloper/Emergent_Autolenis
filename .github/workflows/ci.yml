@@ -12,6 +12,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
+      NODE_OPTIONS: "--max-old-space-size=4096"
       PRISMA_CHECKPOINT_DISABLE: "1"
       PRISMA_DISABLE_TELEMETRY: "1"
       # Deterministic Prisma placeholder URLs for CI (quoted to avoid YAML parsing edge cases)
