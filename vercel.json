@@ -1,6 +1,6 @@
 {
   "framework": "nextjs",
-  "buildCommand": "NODE_OPTIONS=--max-old-space-size=4096 pnpm build",
+  "buildCommand": "rm -rf autolenis && NODE_OPTIONS=--max-old-space-size=4096 pnpm build",
   "installCommand": "pnpm install --frozen-lockfile",
   "crons": [
     {

@@ -14,55 +14,67 @@ AutoLenis is a multi-role car-buying concierge platform with buyer, dealer, affi
 - https://www.autolenis.com
 - https://autolenis-deploy.vercel.app
 
-## Fix Inventory (All Sessions)
+## Complete Fix Inventory (All Sessions)
 
-### Session 0: PR Fixes (merged to main before Emergent sessions)
-| PR | Fix | Status |
-|----|-----|--------|
-| #23 | Env variable audit, Stripe live-key enforcement | Preserved |
-| #29 | AI copilot enhancements | Preserved |
-| #30 | iPredict CLV:INQ risk score extraction fix | Preserved |
-| #31 | Prequal email messaging via Resend | Preserved |
-| #32 | Inventory pipeline, field mappings, VIN handling | Preserved |
-| #33 | P0 prequal blockers: cron, workspace isolation, admin routes | Preserved |
-| #34 | Inventory search route Supabase error handling | Preserved |
-| #1  | Node.js heap size OOM fix (4GB) | Preserved |
+### Session 0: PR Fixes (merged to main before Emergent)
+| PR | Fix | Branch Status |
+|----|-----|---------------|
+| #23 | Env variable audit, Stripe live-key enforcement | main + copilot |
+| #29 | AI copilot enhancements | main + copilot |
+| #30 | iPredict CLV:INQ risk score extraction fix | main + copilot |
+| #31 | Prequal email messaging via Resend | main + copilot |
+| #32 | Inventory pipeline, field mappings, VIN handling | main + copilot |
+| #33 | P0 prequal blockers: cron, workspace isolation, admin routes | main + copilot |
+| #34 | Inventory search route Supabase error handling | main + copilot |
+| #1  | Node.js heap size OOM fix (4GB) | main + copilot |
 
 ### Session 1: Deployment Fixes (Emergent)
-| Fix | Status |
-|-----|--------|
-| Vercel project linked and configured | Preserved |
-| .vercelignore created (exclude stale dirs) | Preserved |
-| middleware.ts created (Next.js entry point) | Preserved |
-| tsconfig.json: autolenis excluded from compilation | Preserved |
-| All env vars verified/added on Vercel project | Preserved |
-| Deployment from copilot/fix-vercel-deployment-issues branch | Production-live |
+| Fix | Where Applied | Status |
+|-----|---------------|--------|
+| .vercelignore created | Local main (pending push) | Ready |
+| middleware.ts created | Local main (pending push) | Ready |
+| tsconfig.json: autolenis excluded | Local main + copilot | Preserved |
+| All env vars on Vercel project | Vercel project settings | Live |
+| Production deployment from copilot branch | Vercel production | Live |
 
 ### Session 2: Database Alignment Fixes (Emergent)
-| Fix | Status |
-|-----|--------|
-| VehicleRequestCase: VIEW → TABLE (18 cols, FKs, indexes, RLS) | Applied to DB |
-| Transaction: added `type` column (TransactionType enum) | Applied to DB |
-| Dealer: 12 columns renamed snake_case → camelCase | Applied to DB |
-| dealer_agreements: 28 columns renamed snake_case → camelCase | Applied to DB |
-| docusign_connect_events: 7 columns renamed snake_case → camelCase | Applied to DB |
-| ConsentCaptureMethod enum: WRITTEN added to DB, IN_PERSON+ELECTRONIC added to Prisma | Applied |
+| Fix | Where Applied | Status |
+|-----|---------------|--------|
+| VehicleRequestCase VIEW → TABLE (18 cols) | Supabase DB directly | Live |
+| Transaction.type column added | Supabase DB directly | Live |
+| Dealer: 12 cols snake_case → camelCase | Supabase DB directly | Live |
+| dealer_agreements: 28 cols renamed | Supabase DB directly | Live |
+| docusign_connect_events: 7 cols renamed | Supabase DB directly | Live |
+| ConsentCaptureMethod enum aligned | DB + Prisma schema | Live + pending push |
 
-### Session 3: Preservation Audit (Emergent)
-| Fix | Status |
-|-----|--------|
-| .gitignore: /autolenis/ added, duplicate env blocks cleaned | Applied to main |
-| eslint.config.mjs: autolenis/** added to ignores | Applied to main |
-| All copilot branch fixes recovered to main | Verified |
-| All PR fixes re-verified intact | Confirmed |
-| All DB fixes re-verified intact | Confirmed |
+### Session 3: Preservation Audit + Deployment Fix (Emergent)
+| Fix | Where Applied | Status |
+|-----|---------------|--------|
+| .gitignore: /autolenis/ recovered from copilot | Local main (committed) | Pending push |
+| eslint.config.mjs: autolenis/** recovered | Local main (committed) | Pending push |
+| .gitignore: 16 duplicate env blocks cleaned | Local main (committed) | Pending push |
+| vercel.json: `rm -rf autolenis` added to build | Local main (unstaged) | Pending commit+push |
+| Vercel project build command updated | Vercel project settings | Live |
+| All 20 prior fixes verified intact | Verification only | Confirmed |
 
-## Branch Status
-- **main**: Has ALL fixes (PRs + deployment + DB alignment + copilot recovery)
-- **copilot/fix-vercel-deployment-issues**: Has build exclusion fix, MISSING session 2-3 Prisma/schema fixes
-- **Production deployment**: From copilot branch, DB fixes applied directly to Supabase
+## Current State
+- **Production**: Deployed from copilot/fix-vercel-deployment-issues, stable
+- **Main branch (local)**: Contains ALL unified fixes, 3 commits + 1 unstaged change ahead of GitHub
+- **After Emergent push**: `main` can be deployed to production (vercel.json now has `rm -rf autolenis`)
 
-## Remaining Action Items
-- **P0**: Deploy from main branch to production (main now has ALL fixes unified)
-- **P1**: Switch MicroBilt & DocuSign from sandbox to production
-- **P1**: Configure Sentry for error monitoring
+## Pending Push to GitHub (8 files)
+| File | Change |
+|------|--------|
+| .gitignore | Cleaned duplicates + added /autolenis/ |
+| .vercelignore | New file (exclude stale dirs) |
+| eslint.config.mjs | Added autolenis/** ignore |
+| memory/PRD.md | Updated documentation |
+| middleware.ts | New file (Next.js entry point) |
+| prisma/schema.prisma | ConsentCaptureMethod: IN_PERSON + ELECTRONIC |
+| tsconfig.json | autolenis + autolenis_repo excluded |
+| vercel.json | Build command: rm -rf autolenis && ... |
+
+## Next Actions After Push
+1. Trigger deployment from `main` branch (will succeed with updated vercel.json)
+2. Switch MicroBilt & DocuSign from sandbox to production
+3. Configure Sentry for error monitoring
