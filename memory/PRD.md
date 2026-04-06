@@ -1,79 +1,67 @@
-# AutoLenis - Product Requirements Document
+# AutoLenis — Production Deployment PRD
 
 ## Original Problem Statement
-Build a Fortune 500 fintech-grade auto-buying concierge platform where buyers get pre-qualified, request specific vehicles, and receive competing dealer offers through a guided digital workflow. The platform includes buyer, dealer, admin, and affiliate portals.
+Deploy the complete AutoLenis repository (multi-role automotive concierge & reverse-auction platform) to Vercel production. The platform includes Buyer, Dealer, Affiliate, and Admin portals with a lifecycle spanning prequalification through deal completion.
 
-## Tech Stack
-- **Frontend:** Next.js 16 (App Router), TypeScript, Tailwind CSS, Shadcn UI
-- **Backend:** Next.js API Routes, Prisma ORM
-- **Database:** PostgreSQL (Supabase)
-- **Auth:** Supabase Auth + custom session cookies (bcrypt, JWT)
-- **Deployment:** Vercel
+## Architecture
+- **Stack**: Next.js 16 App Router, TypeScript strict mode, Prisma ORM, PostgreSQL/Supabase, Stripe, Resend, DocuSign, MicroBilt, Groq AI SDK
+- **Scale**: ~4,566 files, 10 cron jobs, 4,732-line Prisma schema
+- **Middleware**: proxy.ts (active)
+- **Package Manager**: pnpm 10.28.0
+- **Node.js**: 24.x
 
-## Core Portals
-1. **Buyer Portal** (`/buyer/*`) - Vehicle search, pre-qualification, auction, deal workflow, contracts
-2. **Dealer Portal** (`/dealer/*`) - Inventory management, requests, auctions, offers, deals, contracts
-3. **Admin Portal** (`/admin/*`) - Full platform management, user management, deal oversight, payments
-4. **Affiliate Portal** (`/affiliate/*`) - Referral tracking, payouts
+## What's Been Implemented (Jan 2026)
+1. **Repository ingested** from GitHub (AutolenisWebDeveloper/Emergent_Autolenis)
+2. **`.vercelignore` fixed**: Changed `mocks/` → `/mocks/` and `memory/` → `/memory/` to prevent excluding `lib/mocks/` and `lib/ai/memory/` during Vercel upload
+3. **All environment variables configured** on Vercel project (38+ vars including Supabase, Stripe, Resend, DocuSign, MicroBilt, Groq, CRON_SECRET, JWT, encryption keys)
+4. **Prisma validated** and database schema confirmed up-to-date (1 migration applied)
+5. **Build succeeded** on Vercel (Turbopack, zero type errors, zero missing modules)
+6. **Deployed to production**: https://autolenis-prod.vercel.app
+7. **10 cron jobs registered** on Vercel
+8. **All routes verified**:
+   - Public routes (/, /how-it-works, /pricing, /for-dealers, /affiliate) → 200
+   - Auth routes (/auth/signin, /auth/signup) → 200
+   - Protected portals (/buyer, /dealer, /affiliate/portal, /admin) → 307 (auth redirect)
+   - Webhooks (/api/webhooks/stripe, /api/webhooks/docusign) → 400/401 (expected)
 
-## What's Been Implemented
+## Changes Made
+| File | Change | Reason |
+|------|--------|--------|
+| `.vercelignore` | `mocks/` → `/mocks/` | Prevented excluding `lib/mocks/mockStore.ts` (build blocker) |
+| `.vercelignore` | `memory/` → `/memory/` | Prevented excluding `lib/ai/memory/session-store.ts` (build blocker) |
 
-### Infrastructure (Complete)
-- [x] Next.js App Router with file-based routing
-- [x] Prisma ORM with Supabase PostgreSQL
-- [x] Supabase Auth integration with custom session management
-- [x] DMS JSON and XML feed ingestion framework
-- [x] 27 canonical inventory records seeded and rendering
+## Deployment Details
+- **Vercel Project**: autolenis-prod (prj_HNlYKYDQjqjVBU3jsrEckAV4q1b4)
+- **Production URL**: https://autolenis-prod.vercel.app
+- **Build Command**: `rm -rf autolenis && NODE_OPTIONS=--max-old-space-size=4096 pnpm build`
+- **Install Command**: `pnpm install --frozen-lockfile`
 
-### Inventory Pipeline (Complete)
-- [x] `/api/inventory/search` - Canonical search API
-- [x] `/api/dealer/inventory` - Dealer inventory API
-- [x] `/api/admin/inventory/search` - Admin inventory API
-- [x] `/api/internal/test-feed` - DMS feed testing
+## Cron Jobs (All Registered)
+1. `/api/cron/auction-close` — every 5 min
+2. `/api/cron/release-expired-holds` — every 10 min
+3. `/api/cron/affiliate-reconciliation` — hourly
+4. `/api/cron/contract-shield-reconciliation` — hourly
+5. `/api/cron/session-cleanup` — every 6 hours
+6. `/api/cron/prequal/purge` — daily at 3AM
+7. `/api/cron/prequal/message-delivery` — every 5 min
+8. `/api/cron/prequal/stale-cleanup` — daily at 2AM
+9. `/api/cron/prequal/sla-escalation` — every 30 min
+10. `/api/cron/prequal/ibv-reminders` — hourly
 
-### Page Ecosystem Audit & Upgrade (Complete - April 6, 2026)
-**Pages rewritten from stubs to production-grade:**
-- [x] `buyer/deal/summary` - Deal summary with progress stepper, vehicle/dealer/financial cards
-- [x] `buyer/deal/contract` - Contract Shield with AI scan results, checks grid, flags
-- [x] `dealer/deals/[dealId]` - Deal detail with breadcrumbs, vehicle/buyer/financial/timeline cards
-- [x] `admin/deals/[dealId]` - Admin deal detail with 3-column grid, cross-links
-- [x] `admin/payouts/[payoutId]` - Payout detail with amount display, affiliate info
-- [x] `dealer/requests/[requestId]` - Request detail with vehicle preferences, buyer profile
+## Remaining Risks
+- DocuSign is in **sandbox** mode (`DOCUSIGN_ENV=sandbox`). Production approval needed for live e-sign flows.
+- MicroBilt URLs point to **apitest** endpoints. Production credentials needed for live prequalification.
+- `NEXT_PUBLIC_APP_URL` is set to `https://www.autolenis.com` — if the custom domain isn't pointed at this Vercel project, update accordingly.
 
-**data-testid coverage added to:**
-- [x] All 6 upgraded pages above
-- [x] dealer/leads/[leadId], dealer/offers/[offerId]
-- [x] admin/requests/[requestId], admin/users/[userId]
-- [x] admin/auctions/[auctionId], admin/buyers/[buyerId], admin/dealers/[dealerId]
+## Required Operator Actions
+1. **Custom Domain**: Point `autolenis.com` / `www.autolenis.com` DNS to this Vercel project if desired
+2. **Stripe Webhook**: Register `https://autolenis-prod.vercel.app/api/webhooks/stripe` in Stripe Dashboard
+3. **DocuSign Production**: Apply for DocuSign production keys when ready for live e-signatures
+4. **MicroBilt Production**: Obtain production MicroBilt credentials for live prequalification
+5. **Resend Domain Verification**: Ensure `autolenis.com` is verified in Resend for email delivery
 
-**Loading.tsx files added:** 7 new (buyer/referral, buyer/auctions, buyer/contracts/[contractId], buyer/prequal/external, buyer/deal/payment, buyer/vehicle-requests, ref/[code])
-
-### RBAC Validation (Complete - April 6, 2026)
-- [x] Buyer → Dealer/Admin: Blocked with redirect
-- [x] Dealer → Buyer/Admin: Blocked with redirect
-- [x] Admin → Buyer/Dealer: Blocked with redirect
-- [x] Cross-role API calls: Blocked (401/403)
-- [x] Invalid ID detail pages: Proper not-found error states
-- [x] Empty state handling: buyer/deal/summary, buyer/deal/contract
-- [x] Dealer API tenant scoping: `DealService.getDealForDealer(dealerUser.dealerId, dealId)`
-- [x] Fixed: dealer deals API returns proper 404 "Deal not found" for missing records
-
-### Testing Status
-- Iteration 7: Page ecosystem UI rendering - 100% pass
-- Iteration 8: RBAC + detail pages + cross-role blocking - 100% frontend pass
-- TypeScript: 0 compilation errors
-- Test accounts: Buyer, Dealer, Admin (all verified working)
-
-## Backlog
-
-### P0 (Next Up)
-- End-to-end deal workflow testing (buyer creates deal → dealer views → admin manages)
-
-### P1
-- Add data-testid to remaining dynamic route pages not explicitly specified
-- Error boundary components at portal level
-
-### P2
-- Setup Prisma schema drift detection CI
-- Setup MicroBilt/DocuSign production keys
-- Configure Sentry for error monitoring
+## Prioritized Backlog
+- P0: None (deployment complete)
+- P1: Custom domain configuration, Stripe webhook registration
+- P2: DocuSign production migration, MicroBilt production credentials
+- P3: Resend domain verification, monitoring/alerting setup
