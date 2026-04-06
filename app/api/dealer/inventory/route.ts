@@ -130,12 +130,41 @@ export async function POST(_req: NextRequest) {
 
     const priceCents = Math.round(Number(price) * 100)
 
+    // Create Vehicle record (required by DB NOT NULL vehicleId constraint)
+    const vehicleId = crypto.randomUUID()
+    const { error: vehicleError } = await supabase
+      .from("Vehicle")
+      .insert({
+        id: vehicleId,
+        vin,
+        year: Number(year),
+        make,
+        model,
+        trim: trim || null,
+        bodyStyle,
+        mileage: Number(mileage),
+        exteriorColor: exteriorColor || null,
+        interiorColor: interiorColor || null,
+        transmission: transmission || null,
+        fuelType: fuelType || null,
+        images: images || [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      })
+
+    if (vehicleError) {
+      console.error("[v0] Vehicle creation error:", vehicleError)
+      return NextResponse.json({ error: "Failed to create vehicle record" }, { status: 500 })
+    }
+
     const { data: inventoryItem, error: inventoryError } = await supabase
       .from("InventoryItem")
       .insert({
         dealerId: dealer.id,
+        vehicleId,
         workspaceId,
         priceCents,
+        price: Number(price),
         vin,
         stockNumber: stockNumber || `STK-${Date.now()}`,
         year: Number(year),
@@ -152,6 +181,9 @@ export async function POST(_req: NextRequest) {
         photosJson: images || [],
         status: InventoryStatus.AVAILABLE,
         source: "MANUAL",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        lastSyncedAt: new Date().toISOString(),
       })
       .select(`
         id,

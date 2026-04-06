@@ -18,6 +18,7 @@ export async function createSource(data: {
   sourceUrl?: string
   feedUrl?: string
   fetchIntervalMinutes?: number
+  workspaceId?: string
 }): Promise<unknown> {
   if (!data.sourceType || !VALID_SOURCE_TYPES.includes(data.sourceType)) {
     throw new Error(`sourceType must be one of: ${VALID_SOURCE_TYPES.join(", ")}`)
@@ -30,6 +31,7 @@ export async function createSource(data: {
     data: {
       prospectId: data.prospectId ?? null,
       dealerId: data.dealerId ?? null,
+      workspaceId: data.workspaceId ?? "ws_live_default",
       sourceType: data.sourceType as never,
       sourceUrl: data.sourceUrl ?? null,
       feedUrl: data.feedUrl ?? null,

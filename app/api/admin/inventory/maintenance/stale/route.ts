@@ -14,13 +14,13 @@ export async function POST(req: NextRequest) {
     const cutoff = new Date(Date.now() - 1000 * 60 * 60 * 24 * 7).toISOString()
 
     const { data, error } = await supabase
-      .from("inventory_listings_canonical")
+      .from("InventoryItem")
       .update({
-        status: "STALE",
-        updated_at: new Date().toISOString(),
+        status: "REMOVED",
+        updatedAt: new Date().toISOString(),
       })
-      .lt("last_seen_at", cutoff)
-      .in("status", ["ACTIVE", "BUYER_VISIBLE"])
+      .lt("lastSyncedAt", cutoff)
+      .eq("status", "AVAILABLE")
       .select("id")
 
     if (error) {

@@ -762,6 +762,8 @@ model Vehicle {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  inventoryItems InventoryItem[]
+
   @@index([vin])
   @@index([make, model])
 }
@@ -776,10 +778,12 @@ enum InventoryStatus {
 model InventoryItem {
   id                String          @id @default(cuid())
   dealerId          String
+  vehicleId         String
   workspaceId       String
 
   // Pricing — cents only, no Float price field
   priceCents        Int
+  price             Float?
   msrpCents         Int?
 
   // Vehicle identity
@@ -823,6 +827,7 @@ model InventoryItem {
   updatedAt         DateTime        @updatedAt
 
   // Relations
+  vehicle         Vehicle             @relation(fields: [vehicleId], references: [id])
   dealer          Dealer              @relation(fields: [dealerId], references: [id])
   deals           SelectedDeal[]
   importJob       InventoryImportJob? @relation(fields: [importJobId], references: [id])

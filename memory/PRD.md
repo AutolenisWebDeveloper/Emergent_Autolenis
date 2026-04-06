@@ -6,7 +6,7 @@ AutoLenis is a multi-role car-buying concierge platform with buyer, dealer, affi
 ## Architecture
 - **Framework**: Next.js 16 (App Router) + TypeScript + React
 - **ORM/Schema**: Prisma 6.16.0 (schema/types/migrations)
-- **Runtime DB**: Supabase as runtime persistence layer
+- **Runtime DB**: Supabase as runtime persistence layer (all queries via Supabase client)
 - **Database**: PostgreSQL via Supabase (PgBouncer pooled)
 - **Deployment**: Vercel Pro, Node 24.x, pnpm 10.28.0
 - **Middleware**: `proxy.ts` (NOT `middleware.ts` — Next.js 16 native)
@@ -15,64 +15,96 @@ AutoLenis is a multi-role car-buying concierge platform with buyer, dealer, affi
 - https://www.autolenis.com
 - https://autolenis-deploy.vercel.app
 
+## Inventory Pipeline Architecture
+
+### Canonical Source
+- **InventoryItem** table is the single source of truth for all website-visible inventory
+- All buyer search, dealer inventory, and admin inventory queries target `InventoryItem` via Supabase client
+- The previous `inventory_listings_canonical` Supabase view is DEPRECATED and no longer queried
+
+### Ingestion Paths
+1. **DMS Feed (JSON/XML/CSV)**: DealerSource → fetch-source API → parse → normalize → upsert InventoryItem
+2. **Manual Entry**: POST /api/dealer/inventory → creates Vehicle + InventoryItem
+3. **CSV Bulk Import**: POST /api/dealer/inventory/import → InventoryService.bulkImport
+
+### Data Flow
+```
+DealerSource (feed URL) 
+  → fetchAndSyncSource() [lib/services/inventory-fetch.service.ts]
+  → HTTP fetch feed URL
+  → parseFeedInventory() / parseXmlInventory() / parseCsvInventory()
+  → normalizeSighting()
+  → upsert InventoryItem (by VIN or stockNumber)
+```
+
+### DB Schema Notes
+- `InventoryItem` requires `vehicleId` (NOT NULL in DB) - Vehicle records must be created first
+- `InventoryItem.price` (Float) and `InventoryItem.priceCents` (Int) both exist - always set both
+- All inventory must have `workspaceId` set (default: `ws_live_default`)
+- Prisma schema updated to include `vehicleId` and `price` fields
+
+### Key Endpoints
+| Endpoint | Purpose |
+|----------|---------|
+| GET /api/inventory/search | Public buyer inventory search |
+| GET /api/inventory/filters | Available filter options (makes, body styles) |
+| GET /api/dealer/inventory | Dealer's own inventory |
+| POST /api/dealer/inventory | Manual inventory entry |
+| POST /api/dealer/inventory/import | CSV bulk import |
+| GET /api/admin/inventory | Admin inventory counts + source status |
+| GET /api/admin/inventory/search | Admin inventory search |
+| POST /api/admin/inventory/sync | Trigger feed sync |
+| POST /api/admin/inventory/[id]/action | Admin: suppress/restore/mark sold/hold |
+| POST /api/internal/inventory/fetch-source | Internal: trigger feed sync |
+
 ## Complete Fix Inventory (All Sessions)
 
-### Session 0: PR Fixes (merged to main before Emergent)
-| PR | Fix | Branch Status |
-|----|-----|---------------|
-| #23 | Env variable audit, Stripe live-key enforcement | main + copilot |
-| #29 | AI copilot enhancements | main + copilot |
-| #30 | iPredict CLV:INQ risk score extraction fix | main + copilot |
-| #31 | Prequal email messaging via Resend | main + copilot |
-| #32 | Inventory pipeline, field mappings, VIN handling | main + copilot |
-| #33 | P0 prequal blockers: cron, workspace isolation, admin routes | main + copilot |
-| #34 | Inventory search route Supabase error handling | main + copilot |
-| #1  | Node.js heap size OOM fix (4GB) | main + copilot |
-
-### Session 1: Deployment Fixes (Emergent)
+### Session 3-4: Inventory Pipeline Fix (Emergent - Apr 2026)
 | Fix | Where Applied | Status |
 |-----|---------------|--------|
-| .vercelignore created | main | Pushed |
-| middleware.ts deleted (conflicts with proxy.ts) | main | Pushed |
-| tsconfig.json: autolenis excluded | main + copilot | Preserved |
-| All env vars on Vercel project | Vercel project settings | Live |
-| Production deployment from copilot branch | Vercel production | Live (pending switch to main) |
+| Backfilled 3 existing InventoryItem records with Vehicle data | Supabase DB | Done |
+| Assigned all dealers to ws_live_default workspace | Supabase DB | Done |
+| Seeded 17 realistic inventory items (20 total with backfilled) | Supabase DB | Done |
+| Rewrote /api/inventory/search to query InventoryItem directly | Code | Done |
+| Rewrote /api/admin/inventory/search to query InventoryItem directly | Code | Done |
+| Rewrote /api/admin/inventory/[id]/action to use InventoryItem | Code | Done |
+| Rewrote /api/inventory/filters to use Supabase InventoryItem | Code | Done |
+| Fixed /api/admin/inventory/maintenance/stale to use InventoryItem | Code | Done |
+| Fixed analytics service to use InventoryItem | Code | Done |
+| Added vehicleId + price to Prisma InventoryItem schema | Code | Done |
+| Added Vehicle relation to InventoryItem model | Code | Done |
+| Implemented real DMS feed fetcher (JSON/XML/CSV) | Code | Done |
+| Created /api/admin/inventory/sync endpoint | Code | Done |
+| Created /api/admin/inventory route (counts + source status) | Code | Done |
+| Fixed dealer inventory POST to create Vehicle + InventoryItem properly | Code | Done |
+| Fixed price normalization (double-conversion bug) | Code | Done |
+| DMS JSON feed sync: 5 vehicles synced + upserted correctly | Validated | Done |
+| DMS XML feed sync: 2 vehicles synced + upserted correctly | Validated | Done |
+| Repeated sync updates existing records (no duplicates) | Validated | Done |
 
-### Session 2: Database Alignment Fixes (Emergent)
-| Fix | Where Applied | Status |
-|-----|---------------|--------|
-| VehicleRequestCase VIEW -> TABLE (18 cols) | Supabase DB directly | Live |
-| Transaction.type column added | Supabase DB directly | Live |
-| Dealer: 12 cols snake_case -> camelCase | Supabase DB directly | Live |
-| dealer_agreements: 28 cols renamed | Supabase DB directly | Live |
-| docusign_connect_events: 7 cols renamed | Supabase DB directly | Live |
-| ConsentCaptureMethod enum aligned | DB + Prisma schema | Live + Pushed |
-
-### Session 3: Preservation Audit + Main Branch Normalization (Emergent)
-| Fix | Where Applied | Status |
-|-----|---------------|--------|
-| .gitignore: /autolenis/ recovered from copilot | main | Pushed |
-| eslint.config.mjs: autolenis/** recovered | main | Pushed |
-| .gitignore: 16 duplicate env blocks cleaned | main | Pushed |
-| vercel.json: `rm -rf autolenis` added to build | main | Pushed |
-| middleware.ts: Deleted (proxy.ts conflict) | main | Pushed |
-| All 20 prior fixes verified intact | Verification only | Confirmed |
-| Local Next.js build: PASSES | Local | Verified |
-
-## Current State (Feb 2026)
-- **Production**: Live from Vercel, all routes responding correctly
-- **Main branch**: All unified fixes pushed to GitHub, local build passes
-- **Route verification**: All 7 core routes verified (/, /auth/signin, /buyer, /dealer, /admin/sign-in, /api/inventory/search, /prequal)
-- **Action required**: User must confirm on Vercel dashboard that `main` is the production branch (may need to switch from `copilot/fix-vercel-deployment-issues`)
+## Current State (Apr 2026)
+- **Inventory**: 27 vehicles (20 manual seed + 5 JSON feed + 2 XML feed)
+- **Search**: Fully functional with make/model/year/price/bodyStyle filters + sorting
+- **Feed Sync**: JSON and XML both working end-to-end
+- **Build**: Passes with zero TypeScript errors
 
 ## Critical Rules
 - DO NOT create `middleware.ts` — project uses `proxy.ts` natively (Next.js 16)
 - Prisma schema and DB are matched using camelCase — no `@map` annotations
 - `autolenis/` directory is stale — deleted during build via vercel.json
+- ALL database queries go through Supabase client, NOT Prisma (Prisma used only for types/schema)
+- `inventory_listings_canonical` view is DEPRECATED — do not query it
 
-## Next Actions
-1. Confirm Vercel production is deploying from `main` (switch if needed)
-2. Permanently remove `autolenis/` from git history (P1)
-3. Set up Prisma schema drift detection CI (P2)
-4. Switch MicroBilt & DocuSign from sandbox to production (P2)
-5. Configure Sentry for error monitoring (P2)
+## Remaining Tasks
+### P0 (Immediate)
+- Push code changes to GitHub via "Save to Github" and verify Vercel deployment
+
+### P1
+- Permanently remove `autolenis/` from git history
+- Add `sourceReferenceId` to InventoryItem for per-source stale detection
+- Update test feed URLs to use production URLs before deploying feed sources
+
+### P2
+- Set up Prisma schema drift detection CI
+- Switch MicroBilt & DocuSign from sandbox to production
+- Configure Sentry for error monitoring

@@ -21,12 +21,10 @@ export async function GET(req: NextRequest) {
     const sp = req.nextUrl.searchParams
 
     const q = (sp.get("q") || "").trim()
-    const source = (sp.get("source") || "").trim()
-    const state = (sp.get("state") || "").trim()
-    const zip = (sp.get("zip") || "").trim()
     const make = (sp.get("make") || "").trim()
     const model = (sp.get("model") || "").trim()
     const status = (sp.get("status") || "").trim()
+    const source = (sp.get("source") || "").trim()
     const hasVin = parseBoolean(sp.get("hasVin"))
     const hasPrice = parseBoolean(sp.get("hasPrice"))
     const limit = Math.min(Number(sp.get("limit") || 50), 200)
@@ -34,28 +32,58 @@ export async function GET(req: NextRequest) {
 
     const supabase = getSupabase()
 
+    // Query InventoryItem directly with Dealer join
     let query = supabase
-      .from("inventory_listings_canonical")
-      .select("*", { count: "exact" })
-      .order("last_seen_at", { ascending: false })
+      .from("InventoryItem")
+      .select(`
+        id,
+        priceCents,
+        mileage,
+        year,
+        make,
+        model,
+        trim,
+        vin,
+        bodyStyle,
+        exteriorColor,
+        transmission,
+        fuelType,
+        isNew,
+        photosJson,
+        stockNumber,
+        source,
+        status,
+        workspaceId,
+        locationCity,
+        locationState,
+        createdAt,
+        updatedAt,
+        lastSyncedAt,
+        dealerId,
+        Dealer!InventoryItem_dealerId_fkey (
+          id,
+          businessName,
+          phone,
+          city,
+          state,
+          zip
+        )
+      `, { count: "exact" })
+      .order("createdAt", { ascending: false })
       .range(offset, offset + limit - 1)
 
-    if (source) query = query.eq("source", source)
-    if (state) query = query.eq("state", state.toUpperCase())
-    if (zip) query = query.eq("zip", zip)
-    if (make) query = query.ilike("make", make)
-    if (model) query = query.ilike("model", model)
     if (status) query = query.eq("status", status)
+    if (source) query = query.eq("source", source)
+    if (make) query = query.ilike("make", `%${make}%`)
+    if (model) query = query.ilike("model", `%${model}%`)
 
     if (hasVin === true) query = query.not("vin", "is", null)
     if (hasVin === false) query = query.is("vin", null)
 
-    if (hasPrice === true) query = query.gt("price", 0)
-    if (hasPrice === false) query = query.or("price.is.null,price.eq.0")
+    if (hasPrice === true) query = query.gt("priceCents", 0)
+    if (hasPrice === false) query = query.or("priceCents.is.null,priceCents.eq.0")
 
     if (q) {
-      // Sanitize search input: escape PostgREST filter-syntax characters
-      // to prevent filter injection via the .or() clause.
       const sanitized = q.replace(/[%_\\,().]/g, "\\$&")
       query = query.or(
         [
@@ -63,8 +91,7 @@ export async function GET(req: NextRequest) {
           `make.ilike.%${sanitized}%`,
           `model.ilike.%${sanitized}%`,
           `trim.ilike.%${sanitized}%`,
-          `dealer_name.ilike.%${sanitized}%`,
-          `zip.ilike.%${sanitized}%`,
+          `stockNumber.ilike.%${sanitized}%`,
         ].join(","),
       )
     }
@@ -80,8 +107,37 @@ export async function GET(req: NextRequest) {
       )
     }
 
+    // Map to admin-friendly shape
+    const items = (data || []).map((item: any) => ({
+      id: item.id,
+      price: item.priceCents ? item.priceCents / 100 : null,
+      priceCents: item.priceCents,
+      mileage: item.mileage,
+      year: item.year,
+      make: item.make,
+      model: item.model,
+      trim: item.trim,
+      vin: item.vin,
+      bodyStyle: item.bodyStyle,
+      stockNumber: item.stockNumber,
+      source: item.source,
+      status: item.status,
+      isNew: item.isNew,
+      workspaceId: item.workspaceId,
+      dealer_name: item.Dealer?.businessName ?? null,
+      dealer_city: item.Dealer?.city ?? null,
+      dealer_state: item.Dealer?.state ?? null,
+      dealer_zip: item.Dealer?.zip ?? null,
+      city: item.Dealer?.city ?? item.locationCity ?? null,
+      state: item.Dealer?.state ?? item.locationState ?? null,
+      zip: item.Dealer?.zip ?? null,
+      last_seen_at: item.updatedAt ?? item.createdAt ?? null,
+      createdAt: item.createdAt,
+      lastSyncedAt: item.lastSyncedAt,
+    }))
+
     return NextResponse.json({
-      items: data || [],
+      items,
       total: count || 0,
       limit,
       offset,

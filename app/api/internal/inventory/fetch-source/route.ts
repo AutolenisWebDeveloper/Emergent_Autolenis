@@ -5,7 +5,7 @@ import { timingSafeEqual } from "node:crypto"
 export const dynamic = "force-dynamic"
 
 // POST /api/internal/inventory/fetch-source
-// Internal job route: Fetch raw inventory data from a dealer source
+// Internal job route: Fetch, parse, normalize, and upsert inventory from dealer sources
 export async function POST(req: NextRequest) {
   try {
     const authHeader = req.headers.get("authorization")
@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json().catch(() => ({}))
 
     if (body.sourceId) {
-      const result = await inventoryFetchService.fetchSource(body.sourceId)
+      const result = await inventoryFetchService.fetchAndSyncSource(body.sourceId)
       return NextResponse.json({ success: true, data: result })
     }
 
@@ -33,6 +33,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, data: result })
   } catch (error) {
     console.error("[job:fetch-source] Error:", error)
-    return NextResponse.json({ error: "Job failed" }, { status: 500 })
+    return NextResponse.json({
+      error: "Job failed",
+      message: error instanceof Error ? error.message : String(error),
+    }, { status: 500 })
   }
 }

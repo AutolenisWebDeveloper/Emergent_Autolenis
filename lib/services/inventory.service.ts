@@ -356,10 +356,12 @@ export class InventoryService {
     return prisma.inventoryItem.create({
       data: {
         dealerId,
+        vehicleId: vehicle?.id || "",
         workspaceId,
         vin: data.vin,
         stockNumber: data.stockNumber || `STK-${Date.now()}`,
         priceCents: data.priceCents,
+        price: data.priceCents / 100,
         year: data.year,
         make: data.make,
         model: data.model,

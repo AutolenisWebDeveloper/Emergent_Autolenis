@@ -1,40 +1,60 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { requireAuth, isAdminRole } from "@/lib/auth-server"
-import { InventoryService } from "@/lib/services/inventory.service"
+import { getSessionUser, isAdminRole } from "@/lib/auth-server"
+import { getSupabase } from "@/lib/db"
 
 export const dynamic = "force-dynamic"
 
-// GET /api/admin/inventory - Admin inventory oversight
+// GET /api/admin/inventory — Get inventory summary/counts
 export async function GET(req: NextRequest) {
   try {
-    const session = await requireAuth()
-    if (!isAdminRole(session.role)) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    const user = await getSessionUser()
+    if (!user || !isAdminRole(user.role)) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { searchParams } = new URL(req.url)
+    const supabase = getSupabase()
 
-    const filters = {
-      dealerId: searchParams.get("dealerId") || undefined,
-      status: searchParams.get("status") || undefined,
-      makes: searchParams.get("makes")?.split(",").filter(Boolean),
-      models: searchParams.get("models")?.split(",").filter(Boolean),
-      minYear: searchParams.get("minYear") ? Number.parseInt(searchParams.get("minYear")!, 10) : undefined,
-      maxYear: searchParams.get("maxYear") ? Number.parseInt(searchParams.get("maxYear")!, 10) : undefined,
-      search: searchParams.get("search") || undefined,
-      page: searchParams.get("page") ? Number.parseInt(searchParams.get("page")!, 10) : 1,
-      pageSize: searchParams.get("pageSize") ? Number.parseInt(searchParams.get("pageSize")!, 10) : 50,
-      sortBy: (searchParams.get("sortBy") || undefined) as "price_asc" | "price_desc" | "year_desc" | "year_asc" | "mileage_asc" | "mileage_desc" | undefined,
+    // Get total counts by status
+    const [availableRes, holdRes, soldRes, removedRes, totalRes] = await Promise.all([
+      supabase.from("InventoryItem").select("id", { count: "exact", head: true }).eq("status", "AVAILABLE"),
+      supabase.from("InventoryItem").select("id", { count: "exact", head: true }).eq("status", "HOLD"),
+      supabase.from("InventoryItem").select("id", { count: "exact", head: true }).eq("status", "SOLD"),
+      supabase.from("InventoryItem").select("id", { count: "exact", head: true }).eq("status", "REMOVED"),
+      supabase.from("InventoryItem").select("id", { count: "exact", head: true }),
+    ])
+
+    // Get counts by source type
+    const { data: sourceData } = await supabase
+      .from("InventoryItem")
+      .select("source")
+      .not("source", "is", null)
+
+    const sourceCounts: Record<string, number> = {}
+    for (const row of (sourceData || []) as Array<{ source: string }>) {
+      sourceCounts[row.source] = (sourceCounts[row.source] || 0) + 1
     }
 
-    const result = await InventoryService.search(filters)
+    // Get dealer source sync status
+    const { data: dealerSources } = await supabase
+      .from("DealerSource")
+      .select("id, sourceType, status, feedUrl, sourceUrl, lastFetchedAt, errorCount, lastErrorMessage, dealerId")
+      .order("createdAt", { ascending: false })
+      .limit(20)
 
     return NextResponse.json({
       success: true,
-      ...result,
+      counts: {
+        total: totalRes.count || 0,
+        available: availableRes.count || 0,
+        hold: holdRes.count || 0,
+        sold: soldRes.count || 0,
+        removed: removedRes.count || 0,
+      },
+      sourceCounts,
+      dealerSources: dealerSources || [],
     })
-  } catch (error: unknown) {
-    console.error("[v0] Admin inventory error:", error)
+  } catch (error) {
+    console.error("[AdminInventory] Error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

@@ -60,7 +60,7 @@ export async function getInventorySourceBreakdown(): Promise<
   const supabase = getSupabase()
 
   const { data, error } = await supabase
-    .from("inventory_listings_canonical")
+    .from("InventoryItem")
     .select("source, status")
 
   if (error) {
