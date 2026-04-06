@@ -41,9 +41,10 @@ export async function GET() {
     // Get or create shortlist
     let { data: shortlist } = await supabase
       .from("Shortlist")
-      .select("id, name, active")
+      .select("id, name")
       .eq("buyerId", buyer.id)
-      .eq("active", true)
+      .order("createdAt", { ascending: false })
+      .limit(1)
       .maybeSingle()
 
     if (!shortlist) {
@@ -53,11 +54,10 @@ export async function GET() {
         .insert({
           buyerId: buyer.id,
           name: "My Shortlist",
-          active: true,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         })
-        .select("id, name, active")
+        .select("id, name")
         .single()
 
       if (createError) {
@@ -67,42 +67,29 @@ export async function GET() {
       shortlist = newShortlist
     }
 
-    // Get shortlist items with vehicle and dealer info
+    // Get shortlist items with vehicle info
     const { data: items, error: itemsError } = await supabase
       .from("ShortlistItem")
       .select(`
         id,
         inventoryItemId,
-        notes,
-        is_primary_choice,
         addedAt,
-        removed_at,
-        inventoryItem:InventoryItem(
+        inventoryItem:InventoryItem!ShortlistItem_inventoryItemId_fkey(
           id,
           priceCents,
-          price_cents,
           status,
-          photos_json,
           photosJson,
           year,
           make,
           model,
           trim,
           bodyStyle,
-          body_style,
           vin,
           mileage,
-          dealer:Dealer(
-            id,
-            businessName,
-            name,
-            city,
-            state
-          )
+          dealerId
         )
       `)
       .eq("shortlistId", shortlist.id)
-      .is("removed_at", null)
       .order("addedAt", { ascending: false })
 
     if (itemsError) {
@@ -125,9 +112,7 @@ export async function GET() {
     // Transform items
     const transformedItems = (items || []).map((item: any) => {
       const inv = item.inventoryItem
-      const vehicle = inv?.vehicle
-      const dealer = inv?.dealer
-      const priceCents = inv?.priceCents || inv?.price_cents || Math.floor((inv?.price || 0) * 100)
+      const priceCents = inv?.priceCents || 0
 
       let withinBudget: boolean | null = null
       if (maxOtdCents && priceCents > 0) {
@@ -135,36 +120,32 @@ export async function GET() {
       }
 
       const photos: string[] = []
-      if (inv?.photos_json && Array.isArray(inv.photos_json)) {
-        photos.push(...inv.photos_json)
-      } else if (vehicle?.images_json && Array.isArray(vehicle.images_json)) {
-        photos.push(...vehicle.images_json)
-      } else if (vehicle?.images && Array.isArray(vehicle.images)) {
-        photos.push(...vehicle.images)
+      if (inv?.photosJson && Array.isArray(inv.photosJson)) {
+        photos.push(...inv.photosJson)
       }
 
       return {
         shortlistItemId: item.id,
         inventoryItemId: item.inventoryItemId,
         vehicle: {
-          year: vehicle?.year || 0,
-          make: vehicle?.make || "",
-          model: vehicle?.model || "",
-          trim: vehicle?.trim || null,
-          bodyStyle: vehicle?.bodyStyle || vehicle?.body_style || null,
+          year: inv?.year || 0,
+          make: inv?.make || "",
+          model: inv?.model || "",
+          trim: inv?.trim || null,
+          bodyStyle: inv?.bodyStyle || inv?.body_style || null,
         },
         dealer: {
-          id: dealer?.id || "",
-          name: dealer?.businessName || dealer?.name || null,
-          city: dealer?.city || null,
-          state: dealer?.state || null,
+          id: inv?.dealerId || "",
+          name: null,
+          city: null,
+          state: null,
         },
         priceCents,
         status: inv?.status || "UNKNOWN",
         withinBudget,
         isValidForAuction: inv?.status === InventoryStatus.AVAILABLE,
-        isPrimaryChoice: item.is_primary_choice || false,
-        notes: item.notes || null,
+        isPrimaryChoice: false,
+        notes: null,
         photos,
         addedAt: item.addedAt,
       }
@@ -176,7 +157,7 @@ export async function GET() {
         shortlist: {
           id: shortlist.id,
           name: shortlist.name,
-          active: shortlist.active,
+          active: true,
           items: transformedItems,
         },
         preQualification: preQual
@@ -221,7 +202,8 @@ export async function POST(request: Request) {
       .from("Shortlist")
       .select("id")
       .eq("buyerId", buyer.id)
-      .eq("active", true)
+      .order("createdAt", { ascending: false })
+      .limit(1)
       .maybeSingle()
 
     if (!shortlist) {
@@ -230,7 +212,6 @@ export async function POST(request: Request) {
         .insert({
           buyerId: buyer.id,
           name: "My Shortlist",
-          active: true,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         })
@@ -264,7 +245,6 @@ export async function POST(request: Request) {
       .select("id")
       .eq("shortlistId", shortlist.id)
       .eq("inventoryItemId", body.inventoryItemId)
-      .is("removed_at", null)
       .maybeSingle()
 
     if (existing) {
@@ -277,7 +257,6 @@ export async function POST(request: Request) {
       .from("ShortlistItem")
       .select("id", { count: "exact", head: true })
       .eq("shortlistId", shortlist.id)
-      .is("removed_at", null)
 
     if ((count || 0) >= MAX_SHORTLIST_ITEMS) {
       return NextResponse.json(
@@ -290,10 +269,7 @@ export async function POST(request: Request) {
     const { error: insertError } = await supabase.from("ShortlistItem").insert({
       shortlistId: shortlist.id,
       inventoryItemId: body.inventoryItemId,
-      notes: body.notes || null,
-      is_primary_choice: false,
       addedAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
     })
 
     if (insertError) {
@@ -337,26 +313,23 @@ export async function DELETE(request: Request) {
       .from("Shortlist")
       .select("id")
       .eq("buyerId", buyer.id)
-      .eq("active", true)
+      .order("createdAt", { ascending: false })
+      .limit(1)
       .maybeSingle()
 
     if (!shortlist) {
       return NextResponse.json({ success: false, error: "Shortlist not found" }, { status: 404 })
     }
 
-    // Soft delete item
-    const { error: updateError } = await supabase
+    // Delete item (hard delete since no removed_at column)
+    const { error: deleteError } = await supabase
       .from("ShortlistItem")
-      .update({
-        removed_at: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      })
+      .delete()
       .eq("shortlistId", shortlist.id)
       .eq("inventoryItemId", inventoryItemId)
-      .is("removed_at", null)
 
-    if (updateError) {
-      console.error("[Shortlist API] Delete error:", updateError)
+    if (deleteError) {
+      console.error("[Shortlist API] Delete error:", deleteError)
       return NextResponse.json({ success: false, error: "Failed to remove item" }, { status: 500 })
     }
 

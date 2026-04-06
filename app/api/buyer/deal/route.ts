@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { getSessionUser } from "@/lib/auth-server"
-import { createClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/admin"
 import { dealContextService } from "@/lib/services/deal-context.service"
 
 export const dynamic = "force-dynamic"
@@ -13,8 +13,23 @@ export async function GET() {
       return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
     }
 
-    const supabase = await createClient()
+    const supabase = createAdminClient()
 
+    // Look up BuyerProfile first since SelectedDeal.buyerId references BuyerProfile.id
+    const { data: buyerProfile } = await supabase
+      .from("BuyerProfile")
+      .select("id")
+      .eq("userId", user.userId)
+      .single()
+
+    if (!buyerProfile) {
+      return NextResponse.json({
+        success: true,
+        data: { deal: null },
+      })
+    }
+
+    // Query with simplified joins to avoid ambiguous FK issues
     const { data: deal, error } = await supabase
       .from("SelectedDeal")
       .select(`
@@ -22,37 +37,17 @@ export async function GET() {
         auctionOffer:AuctionOffer(
           *,
           financingOptions:AuctionOfferFinancingOption(*),
-          auction:Auction(
-            *,
-            shortlist:Shortlist(
-              *,
-              items:ShortlistItem(
-                *,
-                inventoryItem:InventoryItem(*)
-              )
-            )
-          ),
-          dealer:Dealer(*)
+          inventoryItem:InventoryItem(*)
         ),
         insurancePolicy:InsurancePolicy(*)
       `)
-      .eq("buyerId", user.userId)
-      .in("status", [
-        "SELECTED",
-        "FINANCING_APPROVED",
-        "FEE_PENDING",
-        "FEE_PAID",
-        "INSURANCE_PENDING",
-        "INSURANCE_COMPLETE",
-        "CONTRACT_PENDING",
-        "CONTRACT_REVIEW",
-        "SIGNING_PENDING",
-      ])
+      .eq("buyerId", buyerProfile.id)
       .order("createdAt", { ascending: false })
       .limit(1)
-      .single()
+      .maybeSingle()
 
-    if (error && error.code !== "PGRST116") {
+    if (error) {
+      console.error("[Buyer Deal] Query error:", error)
       throw error
     }
 
@@ -63,7 +58,6 @@ export async function GET() {
         deal.id,
       )
       if (ctx) {
-        // Attach normalized sourced deal data so the UI can render consistently
         ;(deal as Record<string, unknown>)["sourcedDealContext"] = {
           source: ctx.source,
           vehicle: ctx.vehicle,

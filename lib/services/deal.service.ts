@@ -252,9 +252,9 @@ export class DealService {
       await tx.complianceEvent.create({
         data: {
           eventType: "DEAL_SELECTED",
-          type: "DEAL_CREATED",
+          action: "DEAL_CREATED",
           userId,
-          relatedId: deal.id,
+          dealId: deal.id,
           details: {
             auctionId,
             offerId: offer.id,
@@ -526,9 +526,9 @@ export class DealService {
     await prisma.complianceEvent.create({
       data: {
         eventType: "FINANCING_UPDATED",
-        type: "FINANCING_CHOICE",
+        action: "FINANCING_CHOICE",
         userId,
-        relatedId: dealId,
+        dealId: dealId,
         details: {
           paymentType,
           apr: updateData.apr,
@@ -663,9 +663,9 @@ export class DealService {
     await prisma.complianceEvent.create({
       data: {
         eventType: "INSURANCE_SELECTED",
-        type: "INSURANCE_AUTOLENIS",
+        action: "INSURANCE_AUTOLENIS",
         userId,
-        relatedId: dealId,
+        dealId: dealId,
         details: {
           quoteId,
           carrier: policy.carrier,
@@ -736,9 +736,9 @@ export class DealService {
     await prisma.complianceEvent.create({
       data: {
         eventType: "INSURANCE_UPLOADED",
-        type: "INSURANCE_EXTERNAL",
+        action: "INSURANCE_EXTERNAL",
         userId,
-        relatedId: dealId,
+        dealId: dealId,
         details: {
           carrierName,
           policyNumber,
@@ -888,9 +888,9 @@ export class DealService {
       await tx.complianceEvent.create({
         data: {
           eventType: "DEAL_CANCELLED",
-          type: "DEAL_CANCELLATION",
+          action: "DEAL_CANCELLATION",
           userId: userId || deal.user_id || deal.buyerId,
-          relatedId: dealId,
+          dealId: dealId,
           details: {
             reason,
             actorRole,
@@ -933,9 +933,9 @@ export class DealService {
       await tx.complianceEvent.create({
         data: {
           eventType: "ADMIN_OVERRIDE",
-          type: "STATUS_OVERRIDE",
+          action: "STATUS_OVERRIDE",
           userId: adminUserId,
-          relatedId: dealId,
+          dealId: dealId,
           details: {
             previousStatus: currentStatus,
             newStatus,
@@ -1080,7 +1080,7 @@ export class DealService {
     `) as Record<string, unknown>[]
 
     const complianceEvents = await prisma.complianceEvent.findMany({
-      where: { relatedId: dealId },
+      where: { dealId: dealId },
       orderBy: { createdAt: "desc" },
       take: 50,
     })

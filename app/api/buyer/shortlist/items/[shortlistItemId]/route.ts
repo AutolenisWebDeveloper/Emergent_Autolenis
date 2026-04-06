@@ -30,7 +30,6 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
       .eq("id", shortlistItemId)
       .is("removed_at", null)
       .eq("shortlist.buyerId", buyer.id)
-      .eq("shortlist.active", true)
       .single()
 
     if (itemError || !item) {
