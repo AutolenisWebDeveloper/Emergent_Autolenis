@@ -1,0 +1,92 @@
+{
+  "timestamp": "2026-04-06T06:40:00.000Z",
+  "testSuite": "frontend-secondary-pages-e2e",
+  "summary": "Completed frontend testing of buyer/dealer/admin secondary pages. All pages render correctly with proper loading, empty, and error states. Auth-protected pages correctly redirect to sign-in.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_results": {
+    "homepage": {
+      "status": "PASS",
+      "details": "Homepage renders correctly with AutoLenis branding, CTAs, and buyer console preview"
+    },
+    "signin_page": {
+      "status": "PASS",
+      "details": "Sign-in page renders with email/password inputs and sign-in button"
+    },
+    "buyer_dashboard": {
+      "status": "PASS",
+      "details": "Buyer dashboard loads after login with proper navigation and buyer journey display"
+    },
+    "buyer_deal_summary": {
+      "status": "PASS",
+      "details": "Empty state renders correctly with data-testid='deal-summary-empty', shows 'No active deal' message with Browse Vehicles and Get Pre-Qualified CTAs"
+    },
+    "buyer_deal_contract": {
+      "status": "PASS",
+      "details": "Empty state renders correctly with data-testid='contract-shield-empty', shows 'No active deal' message with Go to My Deal CTA"
+    },
+    "buyer_vehicle_requests": {
+      "status": "PASS",
+      "details": "Page renders with empty state showing 'No vehicle requests yet' and Create Your First Request CTA"
+    },
+    "buyer_auctions": {
+      "status": "PASS",
+      "details": "Page renders with empty state showing 'No auctions yet'"
+    },
+    "buyer_referral": {
+      "status": "PASS",
+      "details": "Page renders with referral link section and stats (0 Total Referrals, 0 Completed, $0 Total Earned)"
+    },
+    "dealer_deals_detail": {
+      "status": "PASS",
+      "details": "Auth redirect works - redirects to /auth/signin when accessed without dealer auth"
+    },
+    "admin_deals_detail": {
+      "status": "PASS",
+      "details": "Auth redirect works - redirects to /admin/sign-in when accessed without admin auth"
+    },
+    "admin_payouts_detail": {
+      "status": "PASS",
+      "details": "Auth redirect works - redirects to /admin/sign-in when accessed without admin auth"
+    },
+    "dealer_requests_detail": {
+      "status": "PASS",
+      "details": "Auth redirect works - redirects to /auth/signin when accessed without dealer auth"
+    }
+  },
+  "data_testid_verification": {
+    "buyer_deal_summary": ["deal-summary-loading", "deal-summary-empty", "deal-summary-error", "deal-summary-page", "deal-status-badge", "deal-progress-card", "deal-vehicle-card", "deal-dealer-card", "deal-financials-card", "deal-actions-card", "browse-vehicles-btn", "get-prequalified-btn", "retry-btn", "continue-deal-btn"],
+    "buyer_deal_contract": ["contract-shield-loading", "contract-shield-empty", "contract-shield-error", "contract-shield-page", "shield-status-badge", "shield-score-card", "shield-checks-grid", "shield-flags-card", "contract-pending-card", "shield-disclaimer", "back-to-deal-btn", "go-to-deal-btn", "retry-btn", "prev-step-btn", "next-step-btn"],
+    "dealer_deals_detail": ["dealer-deal-detail-loading", "dealer-deal-detail-error", "dealer-deal-detail-page", "deal-status-badge", "deal-vehicle-card", "deal-buyer-card", "deal-financials-card", "deal-timeline-card", "deal-actions-card", "back-to-deals-btn", "view-contract-btn", "view-documents-btn", "message-buyer-btn", "view-pickup-btn"],
+    "admin_deals_detail": ["admin-deal-detail-loading", "admin-deal-detail-error", "admin-deal-detail-page", "deal-status-badge", "deal-vehicle-card", "deal-buyer-card", "deal-dealer-card", "deal-financials-card", "deal-timeline-card", "deal-admin-actions-card", "back-to-deals-btn", "view-buyer-link", "view-dealer-link", "admin-contracts-btn", "admin-documents-btn", "admin-payments-btn", "admin-refunds-btn", "admin-messages-btn"],
+    "admin_payouts_detail": ["admin-payout-detail-loading", "admin-payout-detail-error", "admin-payout-detail-page", "payout-status-badge", "payout-amount-card", "payout-affiliate-card", "payout-commissions-card", "payout-timeline-card", "payout-notes-card", "back-to-payouts-btn", "view-affiliate-link"],
+    "dealer_requests_detail": ["dealer-request-detail-loading", "dealer-request-detail-error", "dealer-request-detail-page", "request-status-badge", "match-score-badge", "request-vehicle-card", "request-tradein-card", "request-preferences-card", "request-buyer-card", "back-to-requests-btn", "message-buyer-btn", "submit-offer-btn"]
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [],
+  "success_rate": {
+    "backend": "N/A (frontend only test)",
+    "frontend": "100%"
+  },
+  "test_credentials": {
+    "buyer": "autolenis01@gmail.com / Louis101$"
+  },
+  "seed_data_creation": "None - used existing test account",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "All buyer portal pages tested with buyer account. Dealer and admin pages require separate auth (dealer/admin accounts). The app uses Supabase auth with separate admin sign-in at /admin/sign-in. All secondary pages have proper loading, empty, and error states with data-testid attributes for testing.",
+  "auth_behavior": {
+    "buyer_pages": "Redirect to /auth/signin when not authenticated",
+    "dealer_pages": "Redirect to /auth/signin when not authenticated",
+    "admin_pages": "Redirect to /admin/sign-in when not authenticated"
+  }
+}

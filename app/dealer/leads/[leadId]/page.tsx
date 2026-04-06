@@ -46,7 +46,7 @@ export default function DealerLeadDetailPage({
   const vehicle = lead.inventoryItem
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="dealer-lead-detail-page">
       <PageHeader
         title={`${vehicle?.year || ""} ${vehicle?.make || ""} ${vehicle?.model || ""}`}
         subtitle={`Lead ID: ${leadId.slice(0, 8)}`}

@@ -99,7 +99,7 @@ export default function AdminAuctionDetailPage({ params }: { params: Promise<{ a
   const auction = data.auction
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="admin-auction-detail-page">
       {/* Header */}
       <div className="flex items-center gap-4">
         <Link href="/admin/auctions">

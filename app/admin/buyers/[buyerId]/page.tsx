@@ -134,7 +134,7 @@ export default function AdminBuyerDetailPage({ params }: { params: Promise<{ buy
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="admin-buyer-detail-page">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div className="flex items-center gap-4">

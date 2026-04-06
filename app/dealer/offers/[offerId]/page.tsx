@@ -46,7 +46,7 @@ export default function DealerOfferDetailPage({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="dealer-offer-detail-page">
       <PageHeader
         title={`Offer for ${vehicle?.year || ""} ${vehicle?.make || ""} ${vehicle?.model || ""}`}
         subtitle={`Offer ID: ${offerId.slice(0, 8)}`}

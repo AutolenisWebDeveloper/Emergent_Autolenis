@@ -46,7 +46,7 @@ export default function AdminRequestDetailPage({ params }: { params: Promise<{ r
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="admin-request-detail-page">
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem><BreadcrumbLink href="/admin/dashboard">Dashboard</BreadcrumbLink></BreadcrumbItem>

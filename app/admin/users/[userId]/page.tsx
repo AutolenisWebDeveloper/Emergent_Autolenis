@@ -65,7 +65,7 @@ export default function AdminUserDetailPage() {
   const user = data.user
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="admin-user-detail-page">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="sm" onClick={() => router.back()}>
           <ArrowLeft className="h-4 w-4 mr-2" /> Back
