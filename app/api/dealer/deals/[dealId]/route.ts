@@ -22,12 +22,16 @@ export async function GET(_request: Request, { params }: { params: Promise<{ dea
 
     const dealData = await DealService.getDealForDealer(dealerUser.dealerId, dealId)
 
+    if (!dealData) {
+      return NextResponse.json({ success: false, error: "Deal not found" }, { status: 404 })
+    }
+
     return NextResponse.json({
       success: true,
       data: dealData,
     })
   } catch (error) {
     console.error("[Dealer Deal] Error:", error)
-    return NextResponse.json({ success: false, error: "Request failed" }, { status: 400 })
+    return NextResponse.json({ success: false, error: "Deal not found or access denied" }, { status: 400 })
   }
 }

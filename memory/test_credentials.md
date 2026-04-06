@@ -1,32 +1,42 @@
 # AutoLenis Test Credentials
 
 ## Buyer Test Account
-
 - **Email:** autolenis01@gmail.com
 - **Password:** Louis101$
 - **Role:** BUYER
 - **User ID:** cmie2i2wh0000ju04613b8x03
-- **Profile ID:** cmie2i2wh0001ju04fgdpg42c
+- **Login Endpoint:** POST /api/auth/signin
 
-## Status
-- Email verified: Yes
-- MFA enrolled: Yes (TOTP)
-- Package tier: STANDARD
+## Admin Test Account (RBAC Validation)
+- **Email:** rbac_admin@autolenis-test.com
+- **Password:** TestPass123$
+- **Role:** ADMIN
+- **User ID:** 7d129d9e-1fb1-4769-92f0-59a2ecc5ab08
+- **Login Endpoint:** POST /api/admin/auth/signin
 
-## Last Successful Prequal Test (2026-04-05)
-- **Prequal ID:** prequal_1775372693490_qi5apn3pv
-- **Session ID:** psess_1775372693339_l3bhf6o8q
-- **Credit Tier:** EXCELLENT
-- **Max OTD:** $53,040
-- **Monthly Range:** $432 - $864
-- **DTI Ratio:** 21.18%
+## Dealer Test Account (RBAC Validation)
+- **Email:** rbac_dealer@autolenis-test.com
+- **Password:** TestPass123$
+- **Role:** DEALER
+- **User ID:** 7fdff8fe-891f-4b2c-9c96-b181164c4fd8
+- **Dealer Entity ID:** b7e777aa-5ebe-4213-b168-f6bc8f6f8dac
+- **Login Endpoint:** POST /api/auth/signin
+
+## Auth Flow
+- Buyer/Dealer: Login at /auth/signin (UI) or POST /api/auth/signin (API)
+- Admin: Login at /admin/sign-in (UI) or POST /api/admin/auth/signin (API)
+- Session stored in httpOnly `session` cookie
+- Admin session stored in httpOnly `admin_session` cookie
 
 ## Database Connection
 - Supabase URL: https://vpwnjibcrqujclqalkgy.supabase.co
-- Connection verified: ✅
+- Connection verified: Yes
 
-## Tables Verified
-- PreQualification: ✅ Persisted
-- PrequalSession: ✅ Persisted
-- PrequalConsentArtifact: ✅ Persisted
-- BuyerProfile: ✅ Updated
+## RBAC Validation Status (2026-04-06)
+- Buyer → Dealer pages: Blocked (redirect)
+- Buyer → Admin pages: Blocked (access denied)
+- Dealer → Buyer pages: Blocked (redirect)
+- Dealer → Admin pages: Blocked (access denied)
+- Admin → Buyer pages: Blocked (redirect)
+- Admin → Dealer pages: Blocked (redirect)
+- Cross-role API calls: Blocked (401/403)
