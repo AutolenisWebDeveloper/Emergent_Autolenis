@@ -148,6 +148,14 @@ export async function GET(req: NextRequest) {
     }))
 
     return NextResponse.json({
+      success: true,
+      data: {
+        items,
+        total: count || 0,
+        limit,
+        offset,
+      },
+      // Flat aliases for backward compat with simpler consumers
       items,
       total: count || 0,
       limit,
