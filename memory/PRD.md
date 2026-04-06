@@ -1,96 +1,77 @@
-# AutoLenis - Production Readiness Document
+# AutoLenis - Product Requirements Document
 
-## Project Overview
-AutoLenis is a multi-role car-buying concierge platform with buyer, dealer, affiliate, and admin portals.
+## Original Problem Statement
+Build a Fortune 500 fintech-grade auto-buying concierge platform where buyers get pre-qualified, request specific vehicles, and receive competing dealer offers through a guided digital workflow. The platform includes buyer, dealer, admin, and affiliate portals.
 
-## Architecture
-- **Framework**: Next.js 16 (App Router) + TypeScript + React
-- **ORM/Schema**: Prisma 6.16.0 (schema/types/migrations)
-- **Runtime DB**: Supabase as runtime persistence layer (all queries via Supabase client)
-- **Database**: PostgreSQL via Supabase (PgBouncer pooled)
-- **Deployment**: Vercel Pro, Node 24.x, pnpm 10.28.0
-- **Middleware**: `proxy.ts` (NOT `middleware.ts` — Next.js 16 native)
+## Current Objective (Phase 3-4)
+Inspect the entire feature ecosystem and ensure all secondary pages, supporting screens, operational states, and connected subflows are fully created, correctly wired, production-ready, and consistent with Fortune 500 fintech standard. Zero dead ends, zero placeholder gaps.
 
-## Production URLs
-- https://www.autolenis.com
-- https://autolenis-deploy.vercel.app
+## Tech Stack
+- **Frontend:** Next.js 16 (App Router), TypeScript, Tailwind CSS, Shadcn UI
+- **Backend:** Next.js API Routes, Prisma ORM
+- **Database:** PostgreSQL (Supabase)
+- **Auth:** Supabase Auth
+- **Deployment:** Vercel
 
-## Inventory Pipeline Architecture
+## Core Portals
+1. **Buyer Portal** (`/buyer/*`) - Vehicle search, pre-qualification, auction, deal workflow, contracts
+2. **Dealer Portal** (`/dealer/*`) - Inventory management, requests, auctions, offers, deals, contracts
+3. **Admin Portal** (`/admin/*`) - Full platform management, user management, deal oversight, payments
+4. **Affiliate Portal** (`/affiliate/*`) - Referral tracking, payouts
 
-### Canonical Source
-- **InventoryItem** table is the single source of truth for all website-visible inventory
-- All buyer search, dealer inventory, and admin inventory queries target `InventoryItem` via Supabase client
-- `inventory_listings_canonical` Supabase view is DEPRECATED (write-only by old promote.service.ts, no active reader)
+## What's Been Implemented
 
-### DB Schema: InventoryItem Required Columns
-- `id` (PK, cuid)
-- `dealerId` (FK → Dealer, NOT NULL)
-- `vehicleId` (FK → Vehicle, NOT NULL — DB enforced, added to Prisma schema)
-- `workspaceId` (NOT NULL, default: ws_live_default)
-- `vin`, `make`, `model`, `year`, `trim`, `bodyStyle` (vehicle identity)
-- `priceCents` (Int), `price` (Float — DB legacy, always set both)
-- `mileage`, `exteriorColor`, `interiorColor`, `transmission`, `fuelType`
-- `isNew`, `status` (AVAILABLE/HOLD/SOLD/REMOVED), `source` (MANUAL/API_FEED)
-- `stockNumber`, `photosJson`, `lastSyncedAt`, `createdAt`, `updatedAt`
+### Infrastructure (Complete)
+- [x] Next.js App Router with file-based routing
+- [x] Prisma ORM with Supabase PostgreSQL
+- [x] Supabase Auth integration
+- [x] DMS JSON and XML feed ingestion framework
+- [x] 27 canonical inventory records seeded and rendering
 
-### Ingestion Paths
-1. **DMS Feed (JSON/XML/CSV)**: DealerSource → fetchAndSyncSource() → parse → normalize → upsert InventoryItem
-2. **Manual Entry**: POST /api/dealer/inventory → creates Vehicle + InventoryItem
-3. **CSV Bulk Import**: POST /api/dealer/inventory/import → InventoryService.bulkImport
+### Inventory Pipeline (Complete)
+- [x] `/api/inventory/search` - Canonical search API
+- [x] `/api/dealer/inventory` - Dealer inventory API
+- [x] `/api/admin/inventory/search` - Admin inventory API
+- [x] `/api/internal/test-feed` - DMS feed testing
 
-### Feed Sync Pipeline
-```
-DealerSource (feed URL)
-  → fetchAndSyncSource() [lib/services/inventory-fetch.service.ts]
-  → HTTP fetch feed URL
-  → parseFeedInventory() / parseXmlInventory() / parseCsvInventory()
-  → normalizeSighting()
-  → upsert InventoryItem (by VIN + dealerId, or stockNumber + dealerId)
-  → create Vehicle record if new (vehicleId NOT NULL constraint)
-```
+### Page Ecosystem Audit & Upgrade (Complete - April 6, 2026)
+**Rewritten from redirect stubs to production-grade standalone pages:**
+- [x] `buyer/deal/summary` - Full deal summary with progress stepper, vehicle/dealer/financial cards, loading/empty/error states
+- [x] `buyer/deal/contract` - Contract Shield page with AI scan results, checks grid, flags summary, loading/empty/error states
 
-### Key Endpoints
-| Endpoint | Purpose | Auth |
-|----------|---------|------|
-| GET /api/inventory/search | Buyer inventory search | Public |
-| GET /api/inventory/filters | Filter options (makes, body styles) | Public |
-| GET /api/dealer/inventory | Dealer's own inventory | Dealer |
-| POST /api/dealer/inventory | Manual inventory entry | Dealer |
-| POST /api/dealer/inventory/import | CSV bulk import | Dealer |
-| GET /api/admin/inventory | Inventory counts + source status | Admin |
-| GET /api/admin/inventory/search | Admin inventory search | Admin |
-| POST /api/admin/inventory/sync | Trigger feed sync | Admin |
-| POST /api/admin/inventory/[id]/action | Lifecycle: suppress/restore/sold/hold | Admin |
-| POST /api/internal/inventory/fetch-source | Internal: trigger feed sync | Internal |
+**Upgraded from thin implementations to production quality:**
+- [x] `dealer/deals/[dealId]` - Full deal detail with vehicle/buyer/financial/timeline cards, breadcrumbs, action buttons
+- [x] `admin/deals/[dealId]` - Admin deal detail with 3-column grid, buyer/dealer cross-links, admin actions
+- [x] `admin/payouts/[payoutId]` - Payout detail with amount display, affiliate info, commissions list, timeline
+- [x] `dealer/requests/[requestId]` - Request detail with vehicle preferences, trade-in info, buyer profile, CTA actions
 
-## Current Inventory State (Apr 2026)
-- **Total**: 27 vehicles (20 manual seed + 5 JSON feed + 2 XML feed)
-- **Status**: All AVAILABLE
-- **Workspace**: All in ws_live_default
-- **Data completeness**: 0 NULL vins, 0 NULL makes, all required fields populated
-- **Build**: Production build passes with zero TypeScript errors
+**data-testid attributes added to all specified detail pages:**
+- [x] dealer/leads/[leadId], dealer/offers/[offerId]
+- [x] admin/requests/[requestId], admin/users/[userId]
+- [x] admin/auctions/[auctionId], admin/buyers/[buyerId], admin/dealers/[dealerId]
 
-## Critical Rules
-- DO NOT create `middleware.ts` — project uses `proxy.ts` natively (Next.js 16)
-- Prisma schema and DB are matched using camelCase — no `@map` annotations
-- `autolenis/` directory is stale — deleted during build via vercel.json
-- ALL database queries go through Supabase client, NOT Prisma runtime
-- `inventory_listings_canonical` view is DEPRECATED — do not READ from it
-- InventoryItem requires `vehicleId` (NOT NULL in DB) — create Vehicle record first
-- Always set BOTH `priceCents` (Int cents) AND `price` (Float dollars) on InventoryItem
+**Loading.tsx files added:**
+- [x] buyer/referral, buyer/auctions, buyer/contracts/[contractId]
+- [x] buyer/prequal/external, buyer/deal/payment, buyer/vehicle-requests
+- [x] ref/[code]
 
-## Remaining Tasks
-### P0 (Immediate)
-- Push code changes via "Save to Github" → Vercel auto-deploy
-- Verify Vercel production branch is `main`
-- Update DealerSource feed URLs from localhost to production URLs
+## Testing Status
+- Testing agent iteration 7: 100% pass rate (all frontend tests)
+- TypeScript: 0 compilation errors
+- All auth-protected pages properly redirect
+- All detail pages have loading, empty, and error states
+
+## Backlog
+
+### P0 (Next Up)
+- Validate role-based access for admin and dealer portals
+- End-to-end deal workflow testing (buyer -> dealer -> admin)
 
 ### P1
-- Add `sourceReferenceId` to InventoryItem for per-source stale detection
-- Permanently remove `autolenis/` from git history
-- Set up real dealer DMS feed URLs when available
+- Add data-testid to remaining dynamic route pages not explicitly specified
+- Error boundary components at portal level
 
 ### P2
-- Set up Prisma schema drift detection CI
-- Switch MicroBilt & DocuSign from sandbox to production
+- Setup Prisma schema drift detection CI
+- Setup MicroBilt/DocuSign production keys
 - Configure Sentry for error monitoring
