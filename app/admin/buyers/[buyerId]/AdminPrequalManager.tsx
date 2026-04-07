@@ -106,7 +106,7 @@ export function AdminPrequalManager({ buyerId, preQual, onUpdate }: AdminPrequal
 
     setLoading(true)
     try {
-      const res = await fetch(`/api/admin/buyers/${buyerId}/prequal/manual`, {
+      const res = await fetch(`/api/admin/buyers/${buyerId}/prequal`, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...csrfHeaders() },
         body: JSON.stringify({
