@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { requireAuth } from "@/lib/auth-server"
 import { supabase } from "@/lib/db"
+import { handleRouteError } from "@/lib/utils/route-error"
 
 export const dynamic = "force-dynamic"
 
@@ -42,7 +43,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ dea
     return NextResponse.json({ success: true, data: requests })
   } catch (error) {
     console.error("[Buyer DocRequest] GET error:", error)
-    return NextResponse.json({ success: false, error: "Failed to fetch document requests" }, { status: 500 })
+    return handleRouteError(error, "Failed to fetch document requests")
   }
 }
 
@@ -114,6 +115,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ dea
     return NextResponse.json({ success: true, data: updated })
   } catch (error) {
     console.error("[Buyer DocRequest] POST error:", error)
-    return NextResponse.json({ success: false, error: "Failed to upload document" }, { status: 500 })
+    return handleRouteError(error, "Failed to upload document")
   }
 }

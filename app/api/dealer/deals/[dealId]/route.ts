@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { requireAuth } from "@/lib/auth-server"
 import { DealService } from "@/lib/services/deal.service"
 import { createClient } from "@/lib/supabase/server"
+import { handleRouteError } from "@/lib/utils/route-error"
 
 export async function GET(_request: Request, { params }: { params: Promise<{ dealId: string }> }) {
   try {
@@ -32,6 +33,6 @@ export async function GET(_request: Request, { params }: { params: Promise<{ dea
     })
   } catch (error) {
     console.error("[Dealer Deal] Error:", error)
-    return NextResponse.json({ success: false, error: "Deal not found or access denied" }, { status: 400 })
+    return handleRouteError(error, "Deal not found or access denied")
   }
 }

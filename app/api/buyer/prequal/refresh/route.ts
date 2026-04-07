@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { requireAuth } from "@/lib/auth-server"
 import { PreQualService } from "@/lib/services/prequal.service"
+import { handleRouteError } from "@/lib/utils/route-error"
 
 // POST /api/buyer/prequal/refresh - Refresh/re-run pre-qualification
 export async function POST(request: Request) {
@@ -19,8 +20,7 @@ export async function POST(request: Request) {
       data: { preQualification: result },
     })
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : ""
     console.error("[PreQual Refresh] Error:", error)
-    return NextResponse.json({ success: false, error: "Failed to refresh pre-qualification" }, { status: message === "Unauthorized" ? 401 : 500 })
+    return handleRouteError(error, "Failed to refresh pre-qualification")
   }
 }

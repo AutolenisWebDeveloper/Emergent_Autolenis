@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { requireAuth } from "@/lib/auth-server"
 import { prequalSessionService } from "@/lib/services/prequal-session.service"
+import { handleRouteError } from "@/lib/utils/route-error"
 
 // GET /api/admin/compliance/prequal/artifacts?userId=xxx&sessionId=xxx
 // Export consent artifacts and provider evidence for compliance review
@@ -29,17 +30,6 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ success: true, data })
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Internal error"
-    const status = message === "Unauthorized" ? 401 : message === "Forbidden" ? 403 : 500
-    return NextResponse.json(
-      {
-        success: false,
-        error: {
-          code: status === 401 ? "UNAUTHENTICATED" : status === 403 ? "FORBIDDEN" : "INTERNAL_ERROR",
-          message: status === 500 ? "Failed to retrieve artifacts" : message,
-        },
-      },
-      { status },
-    )
+    return handleRouteError(error, "Internal server error")
   }
 }

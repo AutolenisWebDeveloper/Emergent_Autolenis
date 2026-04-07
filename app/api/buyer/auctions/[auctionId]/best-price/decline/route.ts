@@ -3,6 +3,7 @@ import { requireAuth } from "@/lib/auth-server"
 import { createClient } from "@/lib/supabase/server"
 import { BestPriceService } from "@/lib/services/best-price.service"
 import { logger } from "@/lib/logger"
+import { handleRouteError } from "@/lib/utils/route-error"
 
 export async function POST(request: Request, { params }: { params: Promise<{ auctionId: string }> }) {
   try {
@@ -60,6 +61,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ auc
     })
   } catch (error) {
     logger.error("[Best Price Decline] Error:", error)
-    return NextResponse.json({ success: false, error: "Failed to decline offer" }, { status: 500 })
+    return handleRouteError(error, "Failed to decline offer")
   }
 }

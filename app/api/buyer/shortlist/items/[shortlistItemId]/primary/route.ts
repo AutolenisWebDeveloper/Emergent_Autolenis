@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { requireAuth } from "@/lib/auth-server"
 import { createClient } from "@/lib/supabase/server"
 import { ShortlistService } from "@/lib/services/shortlist.service"
+import { handleRouteError } from "@/lib/utils/route-error"
 
 // POST - Set/unset primary choice
 export async function POST(request: Request, { params }: { params: Promise<{ shortlistItemId: string }> }) {
@@ -34,6 +35,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ sho
     })
   } catch (error) {
     console.error("[v0] Error setting primary shortlist choice:", error)
-    return NextResponse.json({ success: false, error: "Failed to set primary choice" }, { status: 500 })
+    return handleRouteError(error, "Failed to set primary choice")
   }
 }

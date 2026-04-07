@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { requireAuth } from "@/lib/auth-server"
 import { seoService } from "@/lib/services/seo.service"
+import { handleRouteError } from "@/lib/utils/route-error"
 
 export async function GET(_request: Request, { params }: { params: Promise<{ pageKey: string }> }) {
   try {
@@ -15,7 +16,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ pag
     return NextResponse.json({ schemas })
   } catch (error) {
     console.error("[v0] Error fetching schemas:", error)
-    return NextResponse.json({ error: "Failed to fetch schemas" }, { status: 500 })
+    return handleRouteError(error, "Failed to fetch schemas")
   }
 }
 
@@ -34,6 +35,6 @@ export async function POST(_request: Request, { params }: { params: Promise<{ pa
     return NextResponse.json({ schema })
   } catch (error) {
     console.error("[v0] Error updating schema:", error)
-    return NextResponse.json({ error: "Failed to update schema" }, { status: 500 })
+    return handleRouteError(error, "Failed to update schema")
   }
 }

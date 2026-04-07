@@ -5,6 +5,7 @@ import { affiliateService } from "@/lib/services/affiliate.service"
 import { isTestWorkspace } from "@/lib/app-mode"
 import { mockActions, mockSelectors } from "@/lib/mocks/mockStore"
 import { logger } from "@/lib/logger"
+import { handleRouteError } from "@/lib/utils/route-error"
 
 export const dynamic = "force-dynamic"
 
@@ -48,7 +49,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     })
   } catch (error) {
     logger.error("[Admin Affiliate Payouts API] Error:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    return handleRouteError(error, "Internal server error")
   }
 }
 
@@ -86,11 +87,6 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
     })
   } catch (error) {
     logger.error("[Admin Create Payout API] Error:", error)
-    return NextResponse.json(
-      {
-        error: "Internal server error",
-      },
-      { status: 500 },
-    )
+    return handleRouteError(error, "Internal server error")
   }
 }

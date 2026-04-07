@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { requireAuth } from "@/lib/auth-server"
 import { DealService } from "@/lib/services/deal.service"
 import { uuidSchema, financingChoiceSchema } from "@/lib/validators/api"
+import { handleRouteError } from "@/lib/utils/route-error"
 
 export async function POST(request: Request, { params }: { params: Promise<{ dealId: string }> }) {
   try {
@@ -59,6 +60,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ dea
     })
   } catch (error) {
     console.error("Error updating financing:", error)
-    return NextResponse.json({ success: false, error: "Failed to update financing" }, { status: 500 })
+    return handleRouteError(error, "Failed to update financing")
   }
 }

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { requireAuth } from "@/lib/auth-server"
 import { createClient } from "@/lib/supabase/server"
 import { supabase } from "@/lib/db"
+import { handleRouteError } from "@/lib/utils/route-error"
 
 export async function POST(request: Request, { params }: { params: Promise<{ dealId: string }> }) {
   try {
@@ -76,7 +77,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ dea
     return NextResponse.json({ success: true, data: docRequest })
   } catch (error) {
     console.error("[Dealer DocRequest] POST error:", error)
-    return NextResponse.json({ success: false, error: "Request failed" }, { status: 400 })
+    return handleRouteError(error, "Request failed")
   }
 }
 
@@ -132,6 +133,6 @@ export async function GET(_request: Request, { params }: { params: Promise<{ dea
     return NextResponse.json({ success: true, data: requests })
   } catch (error) {
     console.error("[Dealer DocRequest] GET error:", error)
-    return NextResponse.json({ success: false, error: "Request failed" }, { status: 400 })
+    return handleRouteError(error, "Request failed")
   }
 }

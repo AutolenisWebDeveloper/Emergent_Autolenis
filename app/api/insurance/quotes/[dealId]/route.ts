@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { requireAuth } from "@/lib/auth-server"
 import { prisma } from "@/lib/db"
+import { handleRouteError } from "@/lib/utils/route-error"
 
 export async function GET(_request: Request, { params }: { params: Promise<{ dealId: string }> }) {
   try {
@@ -33,6 +34,6 @@ export async function GET(_request: Request, { params }: { params: Promise<{ dea
     })
   } catch (error: unknown) {
     console.error("[Insurance Quotes] GET error:", error)
-    return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 })
+    return handleRouteError(error, "Internal server error")
   }
 }

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { requireAuth } from "@/lib/auth-server"
 import { publicPages } from "@/lib/seo/registry"
 import { getSiteUrl } from "@/lib/seo/site-url"
+import { handleRouteError } from "@/lib/utils/route-error"
 
 // In-memory cache (survives within the same serverless invocation / cold start)
 let cachedReport: AuditReport | null = null
@@ -75,7 +76,7 @@ export async function POST() {
     return NextResponse.json(report)
   } catch (error) {
     console.error("[SEO Audit] Error:", error)
-    return NextResponse.json({ error: "Audit failed" }, { status: 500 })
+    return handleRouteError(error, "Audit failed")
   }
 }
 

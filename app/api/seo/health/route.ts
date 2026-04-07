@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { requireAuth } from "@/lib/auth-server"
 import { seoService } from "@/lib/services/seo.service"
+import { handleRouteError } from "@/lib/utils/route-error"
 
 export async function GET() {
   try {
@@ -13,6 +14,6 @@ export async function GET() {
     return NextResponse.json(summary)
   } catch (error) {
     console.error("[v0] Error fetching SEO health:", error)
-    return NextResponse.json({ error: "Failed to fetch health data" }, { status: 500 })
+    return handleRouteError(error, "Failed to fetch health data")
   }
 }

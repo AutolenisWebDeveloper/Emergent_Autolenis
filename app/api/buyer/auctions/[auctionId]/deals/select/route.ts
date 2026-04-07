@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { requireAuth } from "@/lib/auth-server"
 import { DealService } from "@/lib/services/deal.service"
 import { logger } from "@/lib/logger"
+import { handleRouteError } from "@/lib/utils/route-error"
 
 export async function POST(request: Request, { params }: { params: Promise<{ auctionId: string }> }) {
   try {
@@ -30,6 +31,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ auc
     })
   } catch (error) {
     logger.error("Error selecting deal:", error)
-    return NextResponse.json({ success: false, error: "Failed to select deal" }, { status: 500 })
+    return handleRouteError(error, "Failed to select deal")
   }
 }

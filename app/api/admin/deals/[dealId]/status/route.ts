@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { requireAuth } from "@/lib/auth-server"
 import { DealService, DealStatus, type DealStatus as DealStatusType } from "@/lib/services/deal.service"
 import { supabase } from "@/lib/db"
+import { handleRouteError } from "@/lib/utils/route-error"
 
 export async function POST(request: Request, { params }: { params: Promise<{ dealId: string }> }) {
   try {
@@ -53,6 +54,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ dea
     })
   } catch (error: unknown) {
     console.error("Error updating deal status:", error)
-    return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 })
+    return handleRouteError(error, "Internal server error")
   }
 }

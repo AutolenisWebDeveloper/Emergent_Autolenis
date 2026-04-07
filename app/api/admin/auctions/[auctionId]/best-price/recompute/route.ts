@@ -3,6 +3,7 @@ import { requireAuth } from "@/lib/auth-server"
 import { createClient } from "@/lib/supabase/server"
 import { BestPriceService } from "@/lib/services/best-price.service"
 import { logger } from "@/lib/logger"
+import { handleRouteError } from "@/lib/utils/route-error"
 
 export async function POST(_request: Request, { params }: { params: Promise<{ auctionId: string }> }) {
   const correlationId = crypto.randomUUID()
@@ -68,9 +69,6 @@ export async function POST(_request: Request, { params }: { params: Promise<{ au
     })
   } catch (error) {
     logger.error("[Admin Recompute]", { error, correlationId })
-    return NextResponse.json(
-      { error: { code: "INTERNAL_ERROR", message: "Internal server error" }, correlationId },
-      { status: 500 },
-    )
+    return handleRouteError(error, "Internal server error")
   }
 }

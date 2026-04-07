@@ -6,6 +6,7 @@ import { prisma, getSupabase } from "@/lib/db"
 import { stripe } from "@/lib/stripe"
 import type Stripe from "stripe"
 import { logger } from "@/lib/logger"
+import { handleRouteError } from "@/lib/utils/route-error"
 
 export async function GET(_request: Request, { params }: { params: Promise<{ dealId: string }> }) {
   try {
@@ -25,7 +26,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ dea
     return NextResponse.json({ success: true, data: { dealId, refunds: [] } })
   } catch (error: unknown) {
     console.error("[Admin Deal Refunds API]", error)
-    return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 })
+    return handleRouteError(error, "Internal server error")
   }
 }
 
@@ -98,10 +99,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ dea
       })
     } catch (stripeErr) {
       console.error("[Admin Refund] Stripe refund failed:", (stripeErr as Error).message)
-      return NextResponse.json(
-        { error: "Stripe refund failed. Please verify the payment and try again." },
-        { status: 502 },
-      )
+      return handleRouteError(stripeErr, "Stripe refund failed. Please verify the payment and try again.")
     }
 
     // 3. Only persist DB record after Stripe confirms
@@ -176,6 +174,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ dea
     return NextResponse.json({ success: true, data: refund })
   } catch (error: unknown) {
     console.error("[Admin Deal Refunds POST]", error)
-    return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 })
+    return handleRouteError(error, "Internal server error")
   }
 }

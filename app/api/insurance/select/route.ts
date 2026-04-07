@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { requireAuth } from "@/lib/auth-server"
 import { InsuranceService } from "@/lib/services/insurance.service"
+import { handleRouteError } from "@/lib/utils/route-error"
 
 export async function POST(request: Request) {
   try {
@@ -15,6 +16,6 @@ export async function POST(request: Request) {
     })
   } catch (error: unknown) {
     console.error("[Insurance Select]", error)
-    return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 })
+    return handleRouteError(error, "Internal server error")
   }
 }

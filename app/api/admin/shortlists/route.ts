@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { requireAuth } from "@/lib/auth-server"
 import { ShortlistService } from "@/lib/services/shortlist.service"
+import { handleRouteError } from "@/lib/utils/route-error"
 
 // GET - Admin: List all shortlists with filters
 export async function GET(request: Request) {
@@ -23,9 +24,6 @@ export async function GET(request: Request) {
     })
   } catch (error: unknown) {
     console.error("[Admin Shortlists]", error)
-    return NextResponse.json(
-      { success: false, error: "Internal server error" },
-      { status: 500 },
-    )
+    return handleRouteError(error, "Internal server error")
   }
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { requireAuth } from "@/lib/auth-server"
 import { externalPreApprovalService } from "@/lib/services/external-preapproval.service"
+import { handleRouteError } from "@/lib/utils/route-error"
 
 export const dynamic = "force-dynamic"
 
@@ -27,10 +28,6 @@ export async function GET(request: Request) {
       data: { submissions },
     })
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Unknown error"
-    return NextResponse.json(
-      { success: false, error: message },
-      { status: message === "Unauthorized" ? 401 : message === "Forbidden" ? 403 : 500 },
-    )
+    return handleRouteError(error, "Unauthorized")
   }
 }

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { requireAuth } from "@/lib/auth-server"
 import { createClient } from "@/lib/supabase/server"
 import { BestPriceService } from "@/lib/services/best-price.service"
+import { handleRouteError } from "@/lib/utils/route-error"
 
 export async function POST(request: Request) {
   try {
@@ -40,6 +41,6 @@ export async function POST(request: Request) {
     })
   } catch (error) {
     console.error("[Auction Decline] Error:", error)
-    return NextResponse.json({ success: false, error: "Failed to decline offer" }, { status: 500 })
+    return handleRouteError(error, "Failed to decline offer")
   }
 }

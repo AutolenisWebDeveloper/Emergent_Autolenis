@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server"
 import { isTestWorkspace } from "@/lib/app-mode"
 import { mockActions, mockDb } from "@/lib/mocks/mockStore"
 import { logger } from "@/lib/logger"
+import { handleRouteError } from "@/lib/utils/route-error"
 
 // POST - Mark a payout as processed/paid
 export async function POST(request: NextRequest, { params }: { params: Promise<{ payoutId: string }> }) {
@@ -79,11 +80,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     })
   } catch (error) {
     logger.error("[Admin Process Payout API] Error:", error)
-    return NextResponse.json(
-      {
-        error: "Internal server error",
-      },
-      { status: 500 },
-    )
+    return handleRouteError(error, "Internal server error")
   }
 }

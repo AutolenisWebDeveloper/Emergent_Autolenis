@@ -3,6 +3,7 @@ import { requireAuth } from "@/lib/auth-server"
 import { supabase } from "@/lib/db"
 import { isTestWorkspace } from "@/lib/app-mode"
 import { mockActions, mockSelectors } from "@/lib/mocks/mockStore"
+import { handleRouteError } from "@/lib/utils/route-error"
 
 export async function POST(request: Request, { params }: { params: Promise<{ dealId: string }> }) {
   try {
@@ -73,7 +74,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ dea
     return NextResponse.json({ success: true, data: docRequest })
   } catch (error: unknown) {
     console.error("[Admin DocRequest] POST error:", error)
-    return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 })
+    return handleRouteError(error, "Internal server error")
   }
 }
 
@@ -121,6 +122,6 @@ export async function GET(_request: Request, { params }: { params: Promise<{ dea
     return NextResponse.json({ success: true, data: requests })
   } catch (error: unknown) {
     console.error("[Admin DocRequest] GET error:", error)
-    return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 })
+    return handleRouteError(error, "Internal server error")
   }
 }

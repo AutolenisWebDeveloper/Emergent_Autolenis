@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { requireAuth } from "@/lib/auth-server"
 import { createClient } from "@/lib/supabase/server"
 import { ShortlistService } from "@/lib/services/shortlist.service"
+import { handleRouteError } from "@/lib/utils/route-error"
 
 // DELETE - Remove specific shortlist item by ID
 export async function DELETE(_request: Request, { params }: { params: Promise<{ shortlistItemId: string }> }) {
@@ -57,7 +58,7 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
     })
   } catch (error) {
     console.error("[Shortlist Item Delete] Error:", error)
-    return NextResponse.json({ success: false, error: "Failed to delete shortlist item" }, { status: 500 })
+    return handleRouteError(error, "Failed to delete shortlist item")
   }
 }
 
@@ -87,6 +88,6 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ sh
     })
   } catch (error) {
     console.error("[Shortlist Item Patch] Error:", error)
-    return NextResponse.json({ success: false, error: "Failed to update shortlist item" }, { status: 500 })
+    return handleRouteError(error, "Failed to update shortlist item")
   }
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { requireAuth } from "@/lib/auth-server"
 import { InsuranceService } from "@/lib/services/insurance.service"
+import { handleRouteError } from "@/lib/utils/route-error"
 
 export async function POST(request: Request, { params }: { params: Promise<{ dealId: string }> }) {
   try {
@@ -33,6 +34,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ dea
     })
   } catch (error) {
     console.error("Error uploading external insurance:", error)
-    return NextResponse.json({ success: false, error: "Failed to upload external insurance proof" }, { status: 500 })
+    return handleRouteError(error, "Failed to upload external insurance proof")
   }
 }

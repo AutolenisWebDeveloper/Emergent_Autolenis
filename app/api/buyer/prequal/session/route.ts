@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { requireAuth } from "@/lib/auth-server"
 import { prequalSessionService } from "@/lib/services/prequal-session.service"
+import { handleRouteError } from "@/lib/utils/route-error"
 
 // POST /api/buyer/prequal/session - Create a new prequal session
 export async function POST(request: Request) {
@@ -19,12 +20,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, data: result })
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Internal error"
-    const status = message === "Unauthorized" ? 401 : 500
-    return NextResponse.json(
-      { success: false, error: { code: status === 401 ? "UNAUTHENTICATED" : "INTERNAL_ERROR", message: status === 401 ? "Unauthorized" : "Failed to create session" } },
-      { status },
-    )
+    return handleRouteError(error, "Internal server error")
   }
 }
 

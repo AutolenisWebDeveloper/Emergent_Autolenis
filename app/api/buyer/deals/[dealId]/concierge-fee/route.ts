@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { requireAuth } from "@/lib/auth-server"
 import { PaymentService } from "@/lib/services/payment.service"
 import { DealService } from "@/lib/services/deal.service"
+import { handleRouteError } from "@/lib/utils/route-error"
 
 export const dynamic = "force-dynamic"
 
@@ -27,6 +28,6 @@ export async function GET(_request: Request, { params }: { params: Promise<{ dea
     })
   } catch (error) {
     console.error("Error fetching concierge fee:", error)
-    return NextResponse.json({ success: false, error: "Failed to fetch concierge fee" }, { status: 500 })
+    return handleRouteError(error, "Failed to fetch concierge fee")
   }
 }

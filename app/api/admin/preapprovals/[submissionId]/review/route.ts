@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { requireAuth } from "@/lib/auth-server"
 import { externalPreApprovalService } from "@/lib/services/external-preapproval.service"
 import { externalPreApprovalReviewSchema } from "@/lib/validators/external-preapproval"
+import { handleRouteError } from "@/lib/utils/route-error"
 
 export const dynamic = "force-dynamic"
 
@@ -39,20 +40,7 @@ export async function POST(
       data: result,
     })
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Unknown error"
-    console.error("[Admin PreApproval Review] Error:", message)
-    return NextResponse.json(
-      { success: false, error: message },
-      {
-        status:
-          message === "Unauthorized"
-            ? 401
-            : message === "Forbidden"
-              ? 403
-              : message === "Submission not found"
-                ? 404
-                : 400,
-      },
-    )
+    console.error("[Admin PreApproval Review] Error:", error)
+    return handleRouteError(error, "Unauthorized")
   }
 }

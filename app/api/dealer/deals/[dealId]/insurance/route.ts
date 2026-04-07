@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { requireAuth } from "@/lib/auth-server"
 import { createClient } from "@/lib/supabase/server"
 import { InsuranceService } from "@/lib/services/insurance.service"
+import { handleRouteError } from "@/lib/utils/route-error"
 
 export async function GET(_request: Request, { params }: { params: Promise<{ dealId: string }> }) {
   try {
@@ -28,6 +29,6 @@ export async function GET(_request: Request, { params }: { params: Promise<{ dea
     })
   } catch (error) {
     console.error("[Dealer Insurance] Error:", error)
-    return NextResponse.json({ success: false, error: "Request failed" }, { status: 400 })
+    return handleRouteError(error, "Request failed")
   }
 }

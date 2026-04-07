@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { requireAuth } from "@/lib/auth-server"
 import { seoService } from "@/lib/services/seo.service"
+import { handleRouteError } from "@/lib/utils/route-error"
 
 export async function GET(_request: Request, { params }: { params: Promise<{ pageKey: string }> }) {
   try {
@@ -15,7 +16,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ pag
     return NextResponse.json({ keywords })
   } catch (error) {
     console.error("[v0] Error fetching keywords:", error)
-    return NextResponse.json({ error: "Failed to fetch keywords" }, { status: 500 })
+    return handleRouteError(error, "Failed to fetch keywords")
   }
 }
 
@@ -34,6 +35,6 @@ export async function PUT(_request: Request, { params }: { params: Promise<{ pag
     return NextResponse.json({ keywords })
   } catch (error) {
     console.error("[v0] Error updating keywords:", error)
-    return NextResponse.json({ error: "Failed to update keywords" }, { status: 500 })
+    return handleRouteError(error, "Failed to update keywords")
   }
 }

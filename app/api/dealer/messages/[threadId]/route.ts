@@ -3,6 +3,7 @@ import { requireAuth } from "@/lib/auth-server"
 import { supabase } from "@/lib/db"
 import { requireDatabase } from "@/lib/require-database"
 import { isTestWorkspace } from "@/lib/app-mode"
+import { handleRouteError } from "@/lib/utils/route-error"
 
 export const dynamic = "force-dynamic"
 
@@ -63,7 +64,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ threadId: 
     })
   } catch (error) {
     console.error("[DealerMessages GET] Error:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    return handleRouteError(error, "Internal server error")
   }
 }
 
@@ -104,6 +105,6 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ threadId: 
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error("[DealerMessages POST] Error:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    return handleRouteError(error, "Internal server error")
   }
 }

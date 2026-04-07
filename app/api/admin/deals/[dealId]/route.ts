@@ -4,6 +4,7 @@ import { DealService } from "@/lib/services/deal.service"
 import { isTestWorkspace } from "@/lib/app-mode"
 import { mockSelectors } from "@/lib/mocks/mockStore"
 import { supabase } from "@/lib/db"
+import { handleRouteError } from "@/lib/utils/route-error"
 
 export async function GET(_request: Request, { params }: { params: Promise<{ dealId: string }> }) {
   try {
@@ -45,6 +46,6 @@ export async function GET(_request: Request, { params }: { params: Promise<{ dea
     })
   } catch (error: unknown) {
     console.error("Error fetching deal for admin:", error)
-    return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 })
+    return handleRouteError(error, "Internal server error")
   }
 }

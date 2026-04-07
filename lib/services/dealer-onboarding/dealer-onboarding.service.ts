@@ -518,51 +518,61 @@ export class DealerOnboardingService {
 
     let dealerId = application.dealerId
 
-    // Create dealer entity if not already linked
-    if (!dealerId && application.applicantUserId) {
-      const dealer = await prisma.dealer.create({
-        data: {
-          userId: application.applicantUserId,
-          businessName: application.legalBusinessName,
-          legalName: application.legalBusinessName,
-          licenseNumber: application.dealerLicenseNumber,
-          phone: application.businessPhone || "",
-          email: application.businessEmail,
-          address: application.addressLine1 || "",
-          city: application.city || "",
-          state: application.licenseState,
-          zip: application.zipCode || "",
-          verified: true,
-          active: true,
-          onboardingStatus: DealerApplicationStatus.APPROVED,
-          accessState: DealerAccessState.FULLY_ACTIVE,
-          agreementSigned: !!application.agreementSignedAt,
-          agreementSignedAt: application.agreementSignedAt,
-          agreementDocumentId: application.agreementDocumentId,
-          complianceApproved: true,
-          complianceReviewedAt: new Date(),
-          activatedAt: new Date(),
-          workspaceId: application.workspaceId,
-        },
-      })
-      dealerId = dealer.id
-    } else if (dealerId) {
-      // Update existing dealer
+    // The real business/license data from the onboarding application
+    const activationData = {
+      businessName: application.legalBusinessName,
+      legalName: application.legalBusinessName,
+      licenseNumber: application.dealerLicenseNumber,
+      phone: application.businessPhone || "",
+      email: application.businessEmail,
+      address: application.addressLine1 || "",
+      addressLine2: application.addressLine2 || null,
+      city: application.city || "",
+      state: application.licenseState,
+      zip: application.zipCode || "",
+      country: "US",
+      verified: true,
+      active: true,
+      onboardingStatus: DealerApplicationStatus.APPROVED,
+      accessState: DealerAccessState.FULLY_ACTIVE,
+      agreementSigned: !!application.agreementSignedAt,
+      agreementSignedAt: application.agreementSignedAt,
+      agreementDocumentId: application.agreementDocumentId,
+      complianceApproved: true,
+      complianceReviewedAt: new Date(),
+      activatedAt: new Date(),
+    }
+
+    if (dealerId) {
+      // Application already linked to a Dealer — update with real onboarding data
       await prisma.dealer.update({
         where: { id: dealerId },
-        data: {
-          verified: true,
-          active: true,
-          onboardingStatus: DealerApplicationStatus.APPROVED,
-          accessState: DealerAccessState.FULLY_ACTIVE,
-          agreementSigned: !!application.agreementSignedAt,
-          agreementSignedAt: application.agreementSignedAt,
-          agreementDocumentId: application.agreementDocumentId,
-          complianceApproved: true,
-          complianceReviewedAt: new Date(),
-          activatedAt: new Date(),
-        },
+        data: activationData,
       })
+    } else if (application.applicantUserId) {
+      // Check if a Dealer already exists for this user (created during signup)
+      const existingDealer = await prisma.dealer.findUnique({
+        where: { userId: application.applicantUserId },
+      })
+
+      if (existingDealer) {
+        // Update the existing placeholder Dealer with real onboarding data
+        await prisma.dealer.update({
+          where: { id: existingDealer.id },
+          data: activationData,
+        })
+        dealerId = existingDealer.id
+      } else {
+        // No Dealer exists yet — create one
+        const dealer = await prisma.dealer.create({
+          data: {
+            userId: application.applicantUserId,
+            workspaceId: application.workspaceId,
+            ...activationData,
+          },
+        })
+        dealerId = dealer.id
+      }
     }
 
     // Ensure DealerUser mapping exists

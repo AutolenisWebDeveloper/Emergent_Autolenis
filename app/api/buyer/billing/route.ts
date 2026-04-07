@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { requireAuth } from "@/lib/auth-server"
 import { createClient } from "@/lib/supabase/server"
+import { handleRouteError } from "@/lib/utils/route-error"
 
 export const dynamic = "force-dynamic"
 
@@ -53,6 +54,6 @@ export async function GET() {
     })
   } catch (error) {
     console.error("[Buyer Billing] Error:", error)
-    return NextResponse.json({ success: false, error: "Failed to fetch billing information" }, { status: 500 })
+    return handleRouteError(error, "Failed to fetch billing information")
   }
 }

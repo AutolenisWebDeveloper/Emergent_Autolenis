@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { requireAuth } from "@/lib/auth-server"
 import { DealService } from "@/lib/services/deal.service"
+import { handleRouteError } from "@/lib/utils/route-error"
 
 export async function POST(request: Request, { params }: { params: Promise<{ dealId: string }> }) {
   try {
@@ -22,6 +23,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ dea
     })
   } catch (error) {
     console.error("Error selecting insurance:", error)
-    return NextResponse.json({ success: false, error: "Failed to select insurance" }, { status: 500 })
+    return handleRouteError(error, "Failed to select insurance")
   }
 }

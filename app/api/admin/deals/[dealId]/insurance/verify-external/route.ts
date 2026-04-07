@@ -4,6 +4,7 @@ import { InsuranceService } from "@/lib/services/insurance.service"
 import { isTestWorkspace } from "@/lib/app-mode"
 import { mockActions } from "@/lib/mocks/mockStore"
 import { supabase } from "@/lib/db"
+import { handleRouteError } from "@/lib/utils/route-error"
 
 export async function POST(request: Request, { params }: { params: Promise<{ dealId: string }> }) {
   try {
@@ -54,6 +55,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ dea
     })
   } catch (error: unknown) {
     console.error("Error verifying external policy:", error)
-    return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 })
+    return handleRouteError(error, "Internal server error")
   }
 }

@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server"
 import { requireAuth, isAdminRole } from "@/lib/auth-server"
 import { affiliateService } from "@/lib/services/affiliate.service"
 import { logger } from "@/lib/logger"
+import { handleRouteError } from "@/lib/utils/route-error"
 
 export const dynamic = "force-dynamic"
 
@@ -30,7 +31,7 @@ export async function GET(_request: NextRequest) {
     return NextResponse.json({ logs: logs || [] })
   } catch (error) {
     logger.error("[Admin Reconciliation Logs API] Error:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    return handleRouteError(error, "Internal server error")
   }
 }
 
@@ -50,6 +51,6 @@ export async function POST(_request: NextRequest) {
     })
   } catch (error) {
     logger.error("[Admin Manual Reconciliation API] Error:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    return handleRouteError(error, "Internal server error")
   }
 }

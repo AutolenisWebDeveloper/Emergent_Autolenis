@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { requireAuth } from "@/lib/auth-server"
 import { seoService } from "@/lib/services/seo.service"
+import { handleRouteError } from "@/lib/utils/route-error"
 
 export async function GET(_request: Request, { params }: { params: Promise<{ pageKey: string }> }) {
   try {
@@ -14,7 +15,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ pag
     return NextResponse.json({ page })
   } catch (error) {
     console.error("[v0] Error fetching SEO page:", error)
-    return NextResponse.json({ error: "Failed to fetch page" }, { status: 500 })
+    return handleRouteError(error, "Failed to fetch page")
   }
 }
 
@@ -36,6 +37,6 @@ export async function PUT(_request: Request, { params }: { params: Promise<{ pag
     return NextResponse.json({ page: updatedPage })
   } catch (error) {
     console.error("[v0] Error updating SEO page:", error)
-    return NextResponse.json({ error: "Failed to update page" }, { status: 500 })
+    return handleRouteError(error, "Failed to update page")
   }
 }

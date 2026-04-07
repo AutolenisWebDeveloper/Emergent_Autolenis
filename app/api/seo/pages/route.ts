@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { requireAuth } from "@/lib/auth-server"
 import { seoService } from "@/lib/services/seo.service"
+import { handleRouteError } from "@/lib/utils/route-error"
 
 export async function GET() {
   try {
@@ -13,6 +14,6 @@ export async function GET() {
     return NextResponse.json({ pages })
   } catch (error) {
     console.error("[v0] Error fetching SEO pages:", error)
-    return NextResponse.json({ error: "Failed to fetch pages" }, { status: 500 })
+    return handleRouteError(error, "Failed to fetch pages")
   }
 }
