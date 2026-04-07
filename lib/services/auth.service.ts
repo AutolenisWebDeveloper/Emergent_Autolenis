@@ -117,13 +117,22 @@ export class AuthService {
           // Non-fatal: audit log failure should never block signup
         }
       } else if (input.role === "DEALER") {
+        const dealerId = crypto.randomUUID()
         const { error: profileError } = await supabase.from("Dealer").insert({
-          id: crypto.randomUUID(),
+          id: dealerId,
           userId: user.id,
           businessName: input.businessName || "",
           name: input.businessName || "",
+          licenseNumber: `PENDING-${dealerId.slice(0, 8)}`,
+          phone: "",
+          address: "",
+          city: "",
+          state: "",
+          zip: "",
           verified: false,
           active: true,
+          onboardingStatus: "DRAFT",
+          accessState: "NO_ACCESS",
           createdAt: now,
           updatedAt: now,
         })

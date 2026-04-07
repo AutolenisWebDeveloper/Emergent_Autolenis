@@ -17,6 +17,7 @@ const { mockPrisma, mockWriteEventAsync, mockCreateDocumentTrustRecordAsync, moc
     dealer: {
       create: vi.fn(),
       update: vi.fn(),
+      findUnique: vi.fn(),
     },
     dealerUser: {
       findFirst: vi.fn(),
@@ -322,6 +323,7 @@ describe("DealerOnboardingService", () => {
         workspaceId: null,
       })
       mockPrisma.dealer.create.mockResolvedValue({ id: "dealer-1" })
+      mockPrisma.dealer.findUnique.mockResolvedValue(null)
       mockPrisma.dealerUser.findFirst.mockResolvedValue(null)
       mockPrisma.dealerUser.create.mockResolvedValue({ id: "du-1" })
       mockPrisma.dealerApplication.update.mockResolvedValue({

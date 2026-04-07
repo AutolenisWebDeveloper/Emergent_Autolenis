@@ -5,18 +5,14 @@ Upload, validate, configure, and deploy the complete AutoLenis Next.js repositor
 
 ## Architecture
 - **Stack**: Next.js 16 App Router, TypeScript, Supabase Auth, Prisma ORM
-- **Auth**: Custom JWT-based auth via `lib/services/auth.service.ts`
 - **Deployment**: Vercel
 - **DB**: PostgreSQL via Supabase + Prisma ORM
 
 ## Completed Work
 
-### Session 1–2 (Deployment, Core Fixes, Signup Repair)
-- Deployed to Vercel, fixed FK constraints, E2E passing
-- All 3 signup flows validated
-
-### Session 3 (requireAuth & Dealer Onboarding)
-- `handleRouteError()` in 66 route files for proper 401/403
+### Session 1–3 (Deployment, Signup, Auth Fixes)
+- Deployed to Vercel, E2E passing, all 3 signup flows validated
+- `handleRouteError()` in 66 routes for proper 401/403
 - `activateDealer()` fixed for existing Dealer update
 
 ### Session 4 (Admin-Managed Prequalification)
@@ -25,47 +21,49 @@ Upload, validate, configure, and deploy the complete AutoLenis Next.js repositor
 - Bug fix: inventory search `prequalStatus` → `status`, `"APPROVED"` → `"ACTIVE"`
 
 ### Session 5 (P1 FK Fix)
+- Prisma schema: `PreQualification.buyer` relation changed from `references: [id]` to `references: [userId]`
+- Migration: `0002_fix_prequal_buyer_fk/migration.sql`
+- Fixed auction validation Prisma `include` join
+
+### Session 6 (P2: Dealer License Placeholder Flow)
 
 #### Problem
-`PreQualification.buyerId` stores `User.id` (convention in `prequal.service.ts`, 7 write sites). But the Prisma schema FK declared `references: [BuyerProfile.id]`. This caused:
-- `prisma.buyerProfile.findUnique({ include: { preQualification: true } })` to generate `WHERE buyerId = <BuyerProfile.id>` — which NEVER matched since `BuyerProfile.id != User.id`
-- Auction validation (`auction.service.ts` lines 16, 390) always returned null for prequal, blocking all prequalified buyers from auctions
+Dealer signup inserted to `Dealer` table without providing required non-nullable columns (`licenseNumber`, `phone`, `address`, `city`, `state`, `zip`). The `licenseNumber` column is `@unique` and has no default.
 
-#### Fix Applied
-1. **Prisma schema**: Changed `PreQualification.buyer` relation from `references: [id]` to `references: [userId]`
-2. **Migration**: Created `0002_fix_prequal_buyer_fk/migration.sql` — drops incorrect FK, creates correct FK referencing `BuyerProfile.userId`
-3. **Prisma client**: Regenerated successfully
-4. **Build**: `tsc --noEmit` 0 errors, `pnpm build` clean
-5. **Tests**: 16278 passed, 65 failed (identical to pre-change — zero regressions)
+#### Fix
+1. **Signup** (`lib/services/auth.service.ts`): Dealer insert now includes all required fields:
+   - `licenseNumber: "PENDING-{uuid8}"` — unique placeholder
+   - `phone`, `address`, `city`, `state`, `zip` — empty strings (filled during onboarding)
+   - `onboardingStatus: "DRAFT"`, `accessState: "NO_ACCESS"` — correct initial state
+2. **Onboarding activation** (`activateDealer`): Already correctly overwrites placeholder with real `dealerLicenseNumber` from the onboarding application (line 525)
+3. **Test fix**: Added `dealer.findUnique` to mock in `dealer-onboarding-service.test.ts` (our Session 3 change added a `findUnique` check that the test mock didn't cover)
 
-#### Scope Verification
-Only `PreQualification` had the wrong convention. All other buyer-FK models (Shortlist, Auction, SelectedDeal, ExternalPreApproval) correctly store `BuyerProfile.id` and their FK `references: [id]` is correct:
-- `Shortlist.buyerId` ← from `buyer.id` (BuyerProfile.id) in shortlist API routes
-- `Auction.buyerId` ← from `buyer.id` (BuyerProfile.id) in auction API route
-- `SelectedDeal.buyerId` ← from `buyer.id` (BuyerProfile.id) in deal creation service
-
-#### Consumers Now Correct
-| Consumer | Query Type | Status |
-|----------|-----------|--------|
-| `auction.service.ts:16` | Prisma include | Fixed (now joins on userId) |
-| `auction.service.ts:390` | Prisma include | Fixed (now joins on userId) |
-| `inventory/search` | Supabase `.eq("buyerId", userId)` | Was already correct |
-| `prequal.service.ts` | Prisma findFirst/findUnique | Was already correct |
-| Admin prequal routes | Prisma findUnique | Was already correct |
+#### Complete Lifecycle
+```
+Signup → Dealer(licenseNumber: "PENDING-abc12345", accessState: "NO_ACCESS")
+  ↓
+Onboarding Application → DealerApplication(dealerLicenseNumber: "DL-12345-TX")
+  ↓
+Admin Approval → activateDealer() → Dealer(licenseNumber: "DL-12345-TX", accessState: "FULLY_ACTIVE")
+```
 
 #### Files Changed
 | File | Change |
 |------|--------|
-| `prisma/schema.prisma` line 539 | `references: [id]` → `references: [userId]` |
-| `prisma/migrations/0002_fix_prequal_buyer_fk/migration.sql` | NEW: drop + recreate FK |
+| `lib/services/auth.service.ts` | Dealer signup: added all required fields + PENDING license |
+| `autolenis/__tests__/dealer-onboarding-service.test.ts` | Added `dealer.findUnique` mock |
 
 ### Build Health
 - `tsc --noEmit`: 0 errors
 - `pnpm build`: 0 errors
-- Tests: 16278/16343 pass (65 pre-existing failures, 0 new)
+- `dealer-onboarding-service.test.ts`: 12/12 pass
+- `auth-behavioral.test.ts`: 51/51 pass
+- `auth-flow-remediation.test.ts`: 5/5 pass
+
+## Deployment Note
+Migration `0002_fix_prequal_buyer_fk` must be run on Supabase DB before or during next Vercel deploy. Use `prisma migrate deploy` or apply the SQL manually via Supabase dashboard.
 
 ## Backlog
-- P2: Dealer licenseNumber placeholder flow
-- P2: Run migration 0002 on Supabase DB (requires Vercel deploy or direct DB access)
 - P3: Affiliate auto-enrollment cookie flow validation
 - P3: Full E2E regression of dealer onboarding lifecycle
+- P3: Verify-email resend flow
