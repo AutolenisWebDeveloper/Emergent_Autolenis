@@ -122,7 +122,6 @@ export class AuthService {
           id: dealerId,
           userId: user.id,
           businessName: input.businessName || "",
-          name: input.businessName || "",
           licenseNumber: `PENDING-${dealerId.slice(0, 8)}`,
           phone: "",
           address: "",

@@ -26,15 +26,22 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ inv
 
     const supabase = await createClient()
 
+    // Resolve BuyerProfile.id for PreQualification FK
+    const { data: buyerProfile } = await supabase
+      .from("BuyerProfile")
+      .select("id")
+      .eq("userId", user.userId)
+      .maybeSingle()
+
     const { data: prequal } = await supabase
       .from("PreQualification")
       .select("*")
-      .eq("buyerId", user.userId)
+      .eq("buyerId", buyerProfile?.id || "")
       .gt("expiresAt", new Date().toISOString())
       .eq("status", "ACTIVE")
       .order("createdAt", { ascending: false })
       .limit(1)
-      .single()
+      .maybeSingle()
 
     const maxBudgetCents = prequal?.maxOtdAmountCents || (prequal?.maxOtd ? Math.round(prequal.maxOtd * 100) : null)
     const withinBudget = maxBudgetCents ? item.priceCents <= maxBudgetCents : null

@@ -40,16 +40,16 @@ export async function GET(
       )
     }
 
-    // Convention: PreQualification.buyerId stores User.id (see FK assessment)
+    // PreQualification.buyerId stores BuyerProfile.id (FK constraint)
     const currentPrequal = await prisma.preQualification.findUnique({
-      where: { buyerId: buyerId },
+      where: { buyerId: buyer.id },
     })
 
     const history = await prequalService.getPreQualHistoryForUser(buyerId, workspaceId)
 
     const auditEvents = await prisma.complianceEvent.findMany({
       where: {
-        buyerId: buyerId,
+        buyerId: buyer.id,
         eventType: {
           in: [
             "ADMIN_MANUAL_PREQUAL",
@@ -131,8 +131,8 @@ export async function POST(
       )
     }
 
-    // Convention: PreQualification.buyerId stores User.id (see FK assessment)
-    const prequalBuyerId = buyerId
+    // Convention: PreQualification.buyerId stores BuyerProfile.id (FK constraint)
+    const prequalBuyerId = buyer.id
 
     // ── Validate input ──────────────────────────────────────────────────────
     const {
@@ -242,7 +242,7 @@ export async function POST(
           eventType: "ADMIN_MANUAL_PREQUAL",
           action: `ADMIN_MANUAL_PREQUAL_${action}`,
           userId: buyerId,
-          buyerId: buyerId,
+          buyerId: buyer.id,
           severity: "INFO",
           details: {
             action,

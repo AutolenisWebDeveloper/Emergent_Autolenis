@@ -51,23 +51,34 @@ export async function GET(req: NextRequest) {
     const supabase = await createClient()
 
     if (filters.budgetOnly) {
-      // 1. Try AutoLenis pre-qualification first
-      const { data: prequal } = await supabase
-        .from("PreQualification")
-        .select("maxOtdAmountCents, maxOtd")
-        .eq("buyerId", user.userId)
-        .gt("expiresAt", new Date().toISOString())
-        .eq("status", "ACTIVE")
-        .order("createdAt", { ascending: false })
-        .limit(1)
+      // Resolve BuyerProfile.id for PreQualification FK
+      const { data: buyerProfile } = await supabase
+        .from("BuyerProfile")
+        .select("id")
+        .eq("userId", user.userId)
         .maybeSingle()
 
-      if (prequal?.maxOtdAmountCents) {
-        buyerMaxOtdCents = prequal.maxOtdAmountCents
-        approvalType = "autolenis"
-      } else if (prequal?.maxOtd) {
-        buyerMaxOtdCents = Math.round(prequal.maxOtd * 100)
-        approvalType = "autolenis"
+      const profileId = buyerProfile?.id
+
+      // 1. Try AutoLenis pre-qualification first
+      if (profileId) {
+        const { data: prequal } = await supabase
+          .from("PreQualification")
+          .select("maxOtdAmountCents, maxOtd")
+          .eq("buyerId", profileId)
+          .gt("expiresAt", new Date().toISOString())
+          .eq("status", "ACTIVE")
+          .order("createdAt", { ascending: false })
+          .limit(1)
+          .maybeSingle()
+
+        if (prequal?.maxOtdAmountCents) {
+          buyerMaxOtdCents = prequal.maxOtdAmountCents
+          approvalType = "autolenis"
+        } else if (prequal?.maxOtd) {
+          buyerMaxOtdCents = Math.round(prequal.maxOtd * 100)
+          approvalType = "autolenis"
+        }
       }
 
       // 2. Try external pre-approval if no AutoLenis prequal

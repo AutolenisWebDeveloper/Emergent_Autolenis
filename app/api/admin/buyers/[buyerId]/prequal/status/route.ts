@@ -51,9 +51,9 @@ export async function PATCH(
       )
     }
 
-    // Find existing prequal — convention: buyerId = User.id
+    // Find existing prequal — FK convention: buyerId = BuyerProfile.id
     const existing = await prisma.preQualification.findUnique({
-      where: { buyerId: buyerId },
+      where: { buyerId: buyer.id },
     })
 
     if (!existing) {
@@ -84,7 +84,7 @@ export async function PATCH(
           eventType: "ADMIN_PREQUAL_STATUS_CHANGE",
           action: "ADMIN_PREQUAL_STATUS_CHANGE",
           userId: buyerId,
-          buyerId: buyerId,
+          buyerId: buyer.id,
           severity: status === "REVOKED" ? "WARN" : "INFO",
           details: {
             adminId,
