@@ -1,71 +1,92 @@
-# AutoLenis — Deployment + Lifecycle Fix PRD
+# AutoLenis — Signup System PRD
 
 ## Original Problem Statement
-Deploy AutoLenis to Vercel and close 5 required items: Prisma client validation, buyer deal query fix, dealer deal route fix, E2E POST requests with CSRF, and full buyer→dealer→admin lifecycle rerun.
+Inspect, test, repair, and validate the entire sign-in, signup, and account-setup system for Buyer, Dealer, and Affiliate roles. Make all 3 signup flows production-ready with fintech-grade quality.
 
 ## Architecture
-- **Stack**: Next.js 16 App Router, TypeScript, Prisma ORM, PostgreSQL/Supabase, Stripe, Resend, DocuSign, MicroBilt, Groq AI SDK
+- **Stack**: Next.js 16 App Router, TypeScript, Supabase Auth, Prisma ORM
+- **Auth**: Custom JWT-based auth via `lib/services/auth.service.ts`
 - **Deployment**: Vercel (autolenis-prod.vercel.app / www.autolenis.com)
-- **Package Manager**: pnpm 10.28.0, Node.js 24.x
 
-## What's Been Implemented
+## What Was Implemented (Jan 2026)
 
 ### Session 1 (Deployment)
-- Repository cloned and deployed to Vercel
-- `.vercelignore` fixed (`mocks/` → `/mocks/`, `memory/` → `/memory/`)
-- 38+ environment variables configured on Vercel
-- Prisma validated, database schema up-to-date
-- 10 cron jobs registered
+- Deployed to Vercel with all env vars configured
+- Fixed `.vercelignore`, dropped 30 duplicate FK constraints
+- Full buyer→dealer→admin lifecycle E2E passing (25/25)
 
-### Session 2 (5 Required Items - Jan 2026)
+### Session 2 (Signup System Repair)
 
-#### Item 1: Prisma Client ✅
-- Prisma schema validated with env vars
-- `prisma generate` succeeds
-- Runtime mismatch identified: deal routes used Prisma `include` names that didn't match schema relation names
-- Resolution: Converted critical routes from Prisma to Supabase PostgREST
+#### P0 Bugs Found and Fixed
 
-#### Item 2: Buyer Deal Query ✅
-- **Root cause**: 24 duplicate FK constraints in the database (from parallel Prisma + manual Supabase migrations) caused PostgREST PGRST201 ambiguity errors
-- **Fix 1**: Dropped all 24 duplicate FK constraints, keeping Prisma-generated ones
-- **Fix 2**: Rewrote `/api/buyer/deals/[dealId]/route.ts` to use `createAdminClient()` with explicit PostgREST joins
-- Both `/api/buyer/deal` and `/api/buyer/deals/{id}` now work correctly
+**1. Dealer Signup — COMPLETELY BROKEN** (3 root causes)
+- `auth.service.ts` Dealer INSERT used non-existent `name` column → crash
+- Missing 6 NOT NULL columns (licenseNumber, phone, address, city, state, zip) → crash
+- No DealerUser record created → dashboard inaccessible
+- No workspaceId → workspace isolation broken
+- **Fix**: Rewrote Dealer bootstrap to insert all required columns with safe defaults, create DealerUser junction record (OWNER, isPrimary), and set workspaceId
 
-#### Item 3: Dealer Deal Route ✅
-- **Root cause**: DealerUser lookup used RLS-aware `createClient()` which fails under RLS policies
-- **Fix**: Rewrote `/api/dealer/deals/[dealId]/route.ts` to use `createAdminClient()` (service-role) for DealerUser lookup
-- Authorization preserved: deal.dealerId checked against dealerUser.dealerId
-- Unauthorized access returns 403
+**2. Buyer Signup — BuyerProfile INSERT FAILED** (1 root cause)
+- Missing 4 NOT NULL package columns (package_tier, package_selected_at, package_selection_source, package_version) → INSERT crashes before RPC can set them
+- **Fix**: Added all 4 package columns to the BuyerProfile INSERT with values from the signup request
 
-#### Item 4: E2E POST Requests with CSRF ✅
-- **Root cause**: E2E test didn't extract/send CSRF tokens on mutating requests
-- **Fix**: Updated `e2e_lifecycle_test.js` to extract `csrf_token` from login response cookies and send as `x-csrf-token` header on all POST requests
-- All 13 status transitions succeed via API (0 DB fallback)
+**3. Affiliate Signup — Prisma create() CRASHED** (1 root cause)
+- `affiliate.service.ts` createAffiliate() used 7 fields not in Prisma schema or DB (refCode, ref_code, landing_slug, landingSlug, available_balance_cents, lifetime_earnings_cents, lifetime_paid_cents)
+- **Fix**: Removed invalid fields, kept only schema-valid ones
 
-#### Item 5: Full Buyer→Dealer→Admin Lifecycle ✅
-- **Result**: 25/25 PASS, 0 FAIL, 0 INFO/WARN
-- Full lifecycle: auth → inventory → shortlist → auction seed → buyer deal view → dealer deal view → admin deal view → 13 status transitions → terminal state guard → cross-role blocking → post-completion view
+**4. Workspace Isolation Missing** (all roles)
+- User, BuyerProfile, Dealer, Affiliate INSERTs all lacked `workspaceId`
+- **Fix**: Added `workspaceId: "ws_live_default"` to all bootstrap writes
 
-## Exact Files Changed
-| File | Change |
-|------|--------|
-| `app/api/buyer/deals/[dealId]/route.ts` | Rewritten: Prisma→Supabase, added ownership check |
-| `app/api/dealer/deals/[dealId]/route.ts` | Rewritten: RLS→service-role for DealerUser, Supabase for deal, auth preserved |
-| `app/api/admin/deals/[dealId]/route.ts` | Rewritten: Supabase for full deal query with relations |
-| `app/api/admin/deals/[dealId]/status/route.ts` | Rewritten: Supabase for status updates, terminal state guard, compliance logging |
-| `test_reports/e2e_lifecycle_test.js` | Updated: CSRF token extraction/sending, HTTPS support, enhanced logging |
-| `.vercelignore` | Fixed: `/mocks/` and `/memory/` root-only patterns |
+**5. Dealer Onboarding Route — RLS Client Failure**
+- Used `createClient()` (RLS) for DealerUser lookup → blocked by RLS
+- **Fix**: Switched to `createAdminClient()` (service-role)
 
-## Database Changes
-- Dropped 24+6 = 30 duplicate FK constraints that caused PostgREST PGRST201 ambiguity
-- No schema changes, no new columns, no data modifications
+**6. Affiliate Onboarding — Invalid field reference**
+- Referenced `affiliate.refCode` which doesn't exist
+- **Fix**: Changed to `affiliate.referralCode`
+
+### Validation Results (All 3 Roles)
+
+#### Buyer Signup ✅
+- API: POST /api/auth/signup → 200 success
+- User record: id=cd68..., email=test_buyer@..., role=BUYER, workspace=ws_live_default
+- BuyerProfile: tier=STANDARD, version=2025-01-v1, workspace=ws_live_default
+- Signin after verify: → redirect /buyer/dashboard
+
+#### Dealer Signup ✅
+- API: POST /api/auth/signup → 200 success
+- User record: role=DEALER, workspace=ws_live_default
+- Dealer record: businessName="Test Auto Group", licenseNumber=PENDING-873D4EE8, workspace=ws_live_default
+- DealerUser: roleLabel=OWNER, isPrimary=true, linked to Dealer
+- Signin after verify: → redirect /dealer/dashboard
+
+#### Affiliate Signup ✅
+- API: POST /api/auth/signup → 200 success
+- User record: role=AFFILIATE, workspace=ws_live_default
+- Affiliate: referralCode=ALA34BB1A4, workspace=ws_live_default, status=ACTIVE
+- Signin after verify: → redirect /affiliate/portal/dashboard
+
+### Files Changed
+| File | Change | Severity |
+|------|--------|----------|
+| `lib/services/auth.service.ts` | Fixed Dealer bootstrap (6 missing columns, DealerUser creation, workspace), fixed Buyer package columns, fixed Affiliate workspace | P0 |
+| `lib/services/affiliate.service.ts` | Removed 7 invalid Prisma fields from createAffiliate() | P0 |
+| `app/api/dealer/onboarding/route.ts` | RLS → service-role client | P1 |
+| `app/api/affiliate/onboarding/route.ts` | Fixed refCode → referralCode reference | P1 |
+
+### UX Quality Verification
+- Signup page: Professional with trust signals, role selector, package tier ✅
+- Dealer signup: Business name field, consent, Terms/Privacy ✅
+- Verify email page: Clear messaging, resend button, help tips ✅
+- Signin page: Clean with proper error messages ✅
 
 ## Remaining Risks
-- Cross-role blocking returns 500 (instead of 401/403) for buyer→admin and dealer→admin — the `requireAuth` throws an unhandled exception
-- DocuSign in sandbox mode
-- MicroBilt using test API endpoints
+- P2: Verify-email resend requires email to be passed via query param or session
+- P2: Dealer licenseNumber is a placeholder — needs onboarding step to collect real value
+- P3: MicroBilt/DocuSign in test mode
 
 ## Backlog
-- P1: Fix requireAuth to return proper 401/403 instead of 500
-- P2: DocuSign production migration
-- P3: MicroBilt production credentials
+- P1: Fix requireAuth to return 401/403 instead of 500 for cross-role access
+- P2: Dealer onboarding step to collect real license number
+- P3: Affiliate auto-enrollment cookie flow validation (proxy.ts ref= tracking)
