@@ -24,6 +24,7 @@ import {
 import useSWR from "swr"
 import Link from "next/link"
 import { csrfHeaders } from "@/lib/csrf-client"
+import { AdminPrequalManager } from "./AdminPrequalManager"
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
@@ -495,141 +496,13 @@ export default function AdminBuyerDetailPage({ params }: { params: Promise<{ buy
           </div>
         </TabsContent>
 
-        {/* B. Pre-Qualification */}
+        {/* B. Pre-Qualification — Admin Manual Prequal Manager */}
         <TabsContent value="prequal">
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <CreditCard className="h-5 w-5" />
-                  Pre-Qualification Details
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {preQual ? (
-                  <div className="grid gap-6 md:grid-cols-2">
-                    <dl className="space-y-3">
-                      <div>
-                        <dt className="text-sm text-muted-foreground">Status</dt>
-                        <dd>
-                          <span
-                            className={`px-2 py-1 text-xs rounded-full font-medium ${
-                              preQual.status === "APPROVED" || preQual.status === "ACTIVE"
-                                ? "bg-green-100 text-green-800"
-                                : preQual.status === "DENIED" || preQual.status === "REVOKED"
-                                  ? "bg-red-100 text-red-800"
-                                  : "bg-yellow-100 text-yellow-800"
-                            }`}
-                          >
-                            {preQual.status || "PENDING"}
-                          </span>
-                        </dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm text-muted-foreground">Max OTD Amount</dt>
-                        <dd className="text-xl font-bold text-green-600">
-                          {formatCurrency(preQual.maxOtd || (preQual.maxOtdAmountCents || 0) / 100)}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm text-muted-foreground">Score Band / Credit Tier</dt>
-                        <dd className="font-medium">
-                          {preQual.scoreBand || preQual.creditTier || "-"}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm text-muted-foreground">DTI Ratio</dt>
-                        <dd className="font-medium">
-                          {preQual.dti ? `${(preQual.dti * 100).toFixed(1)}%` : "-"}
-                        </dd>
-                      </div>
-                    </dl>
-                    <dl className="space-y-3">
-                      <div>
-                        <dt className="text-sm text-muted-foreground">Monthly Payment Range</dt>
-                        <dd className="font-medium">
-                          {formatCurrency(preQual.estimatedMonthlyMin || 0)} –{" "}
-                          {formatCurrency(preQual.estimatedMonthlyMax || 0)}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm text-muted-foreground">Soft Pull Date</dt>
-                        <dd className="font-medium">
-                          {preQual.softPullDate ? formatDate(preQual.softPullDate) : "-"}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm text-muted-foreground">Expires</dt>
-                        <dd className="font-medium">
-                          {preQual.expiresAt ? formatDate(preQual.expiresAt) : "-"}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm text-muted-foreground">Created</dt>
-                        <dd className="font-medium">
-                          {preQual.createdAt ? formatDate(preQual.createdAt) : "-"}
-                        </dd>
-                      </div>
-                    </dl>
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground">
-                    This buyer has not completed pre-qualification.
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Financing Preferences</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {preferences ? (
-                  <div className="grid gap-6 md:grid-cols-2">
-                    <dl className="space-y-3">
-                      <div>
-                        <dt className="text-sm text-muted-foreground">Down Payment</dt>
-                        <dd className="font-medium">
-                          {preferences.downPayment != null
-                            ? formatCurrency(preferences.downPayment)
-                            : "-"}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm text-muted-foreground">Preferred Term</dt>
-                        <dd className="font-medium">
-                          {preferences.preferredTerm
-                            ? `${preferences.preferredTerm} months`
-                            : "-"}
-                        </dd>
-                      </div>
-                    </dl>
-                    <dl className="space-y-3">
-                      <div>
-                        <dt className="text-sm text-muted-foreground">Max Monthly Payment</dt>
-                        <dd className="font-medium">
-                          {preferences.maxMonthlyPayment != null
-                            ? formatCurrency(preferences.maxMonthlyPayment)
-                            : "-"}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm text-muted-foreground">Trade-In</dt>
-                        <dd className="font-medium">
-                          {preferences.hasTradeIn ? "Yes" : "No"}
-                        </dd>
-                      </div>
-                    </dl>
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground">
-                    No financing preferences recorded for this buyer.
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+          <AdminPrequalManager
+            buyerId={buyerId}
+            preQual={preQual}
+            onUpdate={() => mutate()}
+          />
         </TabsContent>
 
         {/* C. Vehicle Preferences / Shortlist */}

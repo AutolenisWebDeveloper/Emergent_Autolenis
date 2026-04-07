@@ -31,7 +31,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ inv
       .select("*")
       .eq("buyerId", user.userId)
       .gt("expiresAt", new Date().toISOString())
-      .eq("prequalStatus", "APPROVED")
+      .eq("status", "ACTIVE")
       .order("createdAt", { ascending: false })
       .limit(1)
       .single()

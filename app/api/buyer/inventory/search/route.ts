@@ -57,7 +57,7 @@ export async function GET(req: NextRequest) {
         .select("maxOtdAmountCents, maxOtd")
         .eq("buyerId", user.userId)
         .gt("expiresAt", new Date().toISOString())
-        .eq("prequalStatus", "APPROVED")
+        .eq("status", "ACTIVE")
         .order("createdAt", { ascending: false })
         .limit(1)
         .maybeSingle()
