@@ -1518,6 +1518,65 @@ export class EmailService {
     )
   }
 
+  /**
+   * General dealer network invitation — admin invites a dealer to join AutoLenis.
+   * Not tied to a specific sourcing case or buyer.
+   */
+  async sendDealerNetworkInviteEmail(
+    dealerEmail: string,
+    dealerName: string,
+    claimToken: string,
+  ): Promise<SendEmailResult> {
+    const appUrl = getAppUrl()
+    const safeDealerName = escapeHtml(dealerName)
+    const claimUrl = `${appUrl}/dealer/invite/claim?token=${encodeURIComponent(claimToken)}`
+
+    const html = `
+      <div style="font-family: system-ui, -apple-system, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+        <div style="text-align: center; margin-bottom: 40px;">
+          <h1 style="color: oklch(0.38 0.14 278); margin: 0; font-size: 28px; font-weight: 700;">AutoLenis</h1>
+        </div>
+        <div style="background: white; border-radius: 12px; padding: 32px; border: 1px solid oklch(0.915 0.008 260); box-shadow: 0 1px 3px rgba(0,0,0,0.06);">
+          <h2 style="margin: 0 0 16px 0; font-size: 24px; font-weight: 700; color: oklch(0.13 0.02 260);">Join the AutoLenis Dealer Network</h2>
+          <p style="margin: 0 0 16px 0; color: oklch(0.42 0.02 260); line-height: 1.6; font-size: 16px;">
+            Hi ${safeDealerName},
+          </p>
+          <p style="margin: 0 0 16px 0; color: oklch(0.42 0.02 260); line-height: 1.6; font-size: 16px;">
+            You&apos;ve been invited to join the AutoLenis dealer network. AutoLenis connects buyers with trusted dealerships through our concierge vehicle-sourcing platform.
+          </p>
+          <div style="background: oklch(0.96 0.006 260); padding: 20px; border-radius: 8px; margin-bottom: 24px;">
+            <p style="margin: 0 0 8px 0; color: oklch(0.42 0.02 260); font-size: 14px; font-weight: 600;">Why join?</p>
+            <ul style="margin: 0; padding-left: 20px; color: oklch(0.42 0.02 260); font-size: 14px; line-height: 1.8;">
+              <li>Receive pre-qualified buyer leads</li>
+              <li>Streamlined deal flow with digital contracts</li>
+              <li>Transparent concierge fee structure</li>
+            </ul>
+          </div>
+          <p style="margin: 0 0 24px 0; color: oklch(0.42 0.02 260); line-height: 1.6; font-size: 14px;">
+            This invitation expires in 72 hours. Click below to accept and set up your dealer account.
+          </p>
+          <a href="${claimUrl}" style="display: inline-block; background: oklch(0.38 0.14 278); color: white; padding: 14px 32px; text-decoration: none; border-radius: 10px; font-weight: 600; font-size: 16px;">
+            Accept Invitation
+          </a>
+        </div>
+        <div style="text-align: center; margin-top: 32px;">
+          <p style="margin: 0; color: oklch(0.55 0.02 260); font-size: 13px;">
+            &copy; ${new Date().getFullYear()} <span style="color: oklch(0.65 0.18 278);">AutoLenis</span>. All rights reserved.
+          </p>
+        </div>
+      </div>
+    `
+
+    return this.send(
+      {
+        to: dealerEmail,
+        subject: `You're Invited to Join the AutoLenis Dealer Network`,
+        html,
+      },
+      { templateKey: "dealer_network_invite" },
+    )
+  }
+
 }
 export const emailService = new EmailService()
 export default emailService

@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto"
 import { requireAuth } from "@/lib/auth-server"
 import { sourcingService, SourcingService } from "@/lib/services/sourcing.service"
 import { emailService } from "@/lib/services/email.service"
+import { prisma } from "@/lib/db"
 import { logger } from "@/lib/logger"
 
 export const dynamic = "force-dynamic"
@@ -18,6 +19,16 @@ export async function POST(
     const { offerId } = await params
 
     const result = await sourcingService.presentOffer(offerId, session.userId)
+
+    // AdminAuditLog for compliance
+    void prisma.adminAuditLog.create({
+      data: {
+        userId: session.userId,
+        workspaceId: session.workspace_id ?? null,
+        action: "OFFER_PRESENTED_TO_BUYER",
+        details: { offerId, caseId: result.caseId, status: result.status },
+      },
+    }).catch((err: unknown) => logger.error("[AUDIT] Offer present audit failed", { error: String(err) }))
 
     // Fire-and-forget buyer notification email (never block the response)
     void (async () => {

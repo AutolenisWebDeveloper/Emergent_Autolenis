@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto"
 import { requireAuth } from "@/lib/auth-server"
 import { sourcingService } from "@/lib/services/sourcing.service"
 import { emailService } from "@/lib/services/email.service"
+import { prisma } from "@/lib/db"
 import { logger } from "@/lib/logger"
 
 export const dynamic = "force-dynamic"
@@ -18,6 +19,19 @@ export async function POST(
     const { caseId } = await params
     const body = await request.json()
 
+    if (!body.offerId) {
+      return NextResponse.json(
+        { error: { code: 400, message: "offerId is required to invite a dealer" }, correlationId },
+        { status: 400 },
+      )
+    }
+    if (!body.dealerEmail || !body.dealerName) {
+      return NextResponse.json(
+        { error: { code: 400, message: "dealerEmail and dealerName are required" }, correlationId },
+        { status: 400 },
+      )
+    }
+
     const result = await sourcingService.createDealerInvite(
       caseId,
       body.offerId,
@@ -25,6 +39,22 @@ export async function POST(
       body.dealerName,
       session.userId,
     )
+
+    // AdminAuditLog for compliance
+    void prisma.adminAuditLog.create({
+      data: {
+        userId: session.userId,
+        workspaceId: session.workspace_id ?? null,
+        action: "SOURCING_DEALER_INVITE_SENT",
+        details: {
+          inviteId: result.invite.id,
+          caseId,
+          offerId: body.offerId,
+          dealerEmail: body.dealerEmail,
+          dealerName: body.dealerName,
+        },
+      },
+    }).catch((err: unknown) => logger.error("[AUDIT] Dealer invite audit failed", { error: String(err) }))
 
     // Fire-and-forget dealer invite email (never block the response)
     const vehicleSummary = body.vehicleSummary || "Vehicle"

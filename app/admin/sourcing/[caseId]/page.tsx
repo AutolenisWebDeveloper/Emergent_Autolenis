@@ -386,20 +386,40 @@ export default function CaseDetailPage({
       toast.error("Dealer email and name are required")
       return
     }
+    // Find the accepted offer to link the invite
+    const acceptedOffer = caseData?.offers.find((o) => o.status === "ACCEPTED")
+    if (!acceptedOffer) {
+      toast.error("No accepted offer found — a buyer must accept an offer before inviting a dealer")
+      return
+    }
+    // Build vehicle summary for the invite email
+    const vehicleSummary =
+      [acceptedOffer.year, acceptedOffer.make, acceptedOffer.modelName, acceptedOffer.trim]
+        .filter(Boolean)
+        .join(" ") || "Vehicle"
+
     setSubmittingInvite(true)
     try {
       const res = await fetch(`/api/admin/sourcing/cases/${caseId}/invite-dealer`, {
         method: "POST",
         headers: csrfHeaders(),
-        body: JSON.stringify(inviteForm),
+        body: JSON.stringify({
+          ...inviteForm,
+          offerId: acceptedOffer.id,
+          vehicleSummary,
+          marketZip: caseData?.marketZip || "",
+        }),
       })
-      if (!res.ok) throw new Error("Failed to invite dealer")
-      toast.success("Dealer invite sent")
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}))
+        throw new Error(errData?.error?.message || "Failed to invite dealer")
+      }
+      toast.success("Dealer invite sent successfully")
       setInviteForm({ dealerEmail: "", dealerName: "" })
       await fetchCase()
     } catch (err) {
       console.error(err)
-      toast.error("Failed to invite dealer")
+      toast.error(err instanceof Error ? err.message : "Failed to invite dealer")
     } finally {
       setSubmittingInvite(false)
     }
@@ -478,8 +498,9 @@ export default function CaseDetailPage({
 
   const showDealerInvite =
     caseData.status === "OFFER_SELECTED" ||
-    caseData.status === "DEAL_IN_PROGRESS" ||
-    caseData.status === "CLOSED"
+    caseData.status === "DEALER_INVITED" ||
+    caseData.status === "IN_PLATFORM_TRANSACTION" ||
+    caseData.status === "CLOSED_WON"
 
   return (
     <ProtectedRoute allowedRoles={["ADMIN"]}>

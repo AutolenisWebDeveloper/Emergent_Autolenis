@@ -112,6 +112,7 @@ export async function proxy(request: NextRequest) {
     "/insurance",
     "/for-dealers",
     "/ref",
+    "/dealer/invite",
   ]
   const isPublicRoute =
     (publicRoutes.some((route) => pathname === route || pathname.startsWith(route + "/")) ||
@@ -153,6 +154,8 @@ export async function proxy(request: NextRequest) {
     "/api/admin/auth/signin",
     "/api/admin/auth/signup",
     "/api/admin/auth/signout",
+    "/api/dealer/invite/claim",
+    "/api/dealer/invite/complete",
   ]
 
   const isSensitiveApi =
