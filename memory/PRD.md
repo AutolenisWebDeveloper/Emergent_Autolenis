@@ -6,77 +6,66 @@ Upload, validate, configure, and deploy the complete AutoLenis Next.js repositor
 ## Architecture
 - **Stack**: Next.js 16 App Router, TypeScript, Supabase Auth, Prisma ORM
 - **Auth**: Custom JWT-based auth via `lib/services/auth.service.ts`
-- **Deployment**: Vercel (autolenis-prod.vercel.app / www.autolenis.com)
+- **Deployment**: Vercel
 - **DB**: PostgreSQL via Supabase + Prisma ORM
 
 ## Completed Work
 
-### Session 1 (Deployment & Core Fixes)
-- Deployed to Vercel with all env vars configured
-- Fixed `.vercelignore`, dropped 30 duplicate FK constraints
-- Full buyer-to-dealer-to-admin lifecycle E2E passing (25/25)
-- Fixed Prisma client, Buyer deal query, Dealer deal route, E2E POST CSRF
-
-### Session 2 (Signup System Repair)
-- Fixed Dealer/Buyer/Affiliate signup flows
-- Fixed workspace isolation across all roles
+### Session 1–2 (Deployment, Core Fixes, Signup Repair)
+- Deployed to Vercel, fixed FK constraints, E2E passing
+- All 3 signup flows validated
 
 ### Session 3 (requireAuth & Dealer Onboarding)
-- Created `lib/utils/route-error.ts` with `handleRouteError()`
-- Updated 66 API route files (80 catch blocks) for proper 401/403 status codes
-- Fixed `activateDealer()` to update existing Dealer with real onboarding data
+- `handleRouteError()` in 66 route files for proper 401/403
+- `activateDealer()` fixed for existing Dealer update
 
 ### Session 4 (Admin-Managed Prequalification)
+- Route contract: GET+POST `/prequal`, PATCH `/prequal/status`
+- Admin UI: `AdminPrequalManager.tsx` in buyer detail tab
+- Bug fix: inventory search `prequalStatus` → `status`, `"APPROVED"` → `"ACTIVE"`
 
-#### Route Contract (Final)
-| Route | Method | Purpose |
-|-------|--------|---------|
-| `/api/admin/buyers/[buyerId]/prequal` | GET | Full prequal state + buyer info + audit trail |
-| `/api/admin/buyers/[buyerId]/prequal` | POST | Create/update buyer PreQualification (transaction-safe, idempotent) |
-| `/api/admin/buyers/[buyerId]/prequal/status` | PATCH | Update prequal status only + audit log |
-| `/api/admin/buyers/[buyerId]/prequal/revoke` | POST | Revoke active prequal (pre-existing) |
+### Session 5 (P1 FK Fix)
 
-#### Admin UI
-- `AdminPrequalManager.tsx` embedded in buyer detail page "Pre-Qualification" tab (matches existing tabbed admin pattern)
+#### Problem
+`PreQualification.buyerId` stores `User.id` (convention in `prequal.service.ts`, 7 write sites). But the Prisma schema FK declared `references: [BuyerProfile.id]`. This caused:
+- `prisma.buyerProfile.findUnique({ include: { preQualification: true } })` to generate `WHERE buyerId = <BuyerProfile.id>` — which NEVER matched since `BuyerProfile.id != User.id`
+- Auction validation (`auction.service.ts` lines 16, 390) always returned null for prequal, blocking all prequalified buyers from auctions
 
-#### Bug Fixes
-- Inventory search: `prequalStatus` -> `status`, `"APPROVED"` -> `"ACTIVE"` in search/route.ts and [inventoryItemId]/route.ts
+#### Fix Applied
+1. **Prisma schema**: Changed `PreQualification.buyer` relation from `references: [id]` to `references: [userId]`
+2. **Migration**: Created `0002_fix_prequal_buyer_fk/migration.sql` — drops incorrect FK, creates correct FK referencing `BuyerProfile.userId`
+3. **Prisma client**: Regenerated successfully
+4. **Build**: `tsc --noEmit` 0 errors, `pnpm build` clean
+5. **Tests**: 16278 passed, 65 failed (identical to pre-change — zero regressions)
 
-#### Status-to-Gating Map
-| Status | Shopping | Shortlist | Auction | Budget Filter |
-|--------|----------|-----------|---------|---------------|
-| ACTIVE | Yes | Yes | Yes | maxOtdAmountCents applied |
-| EXPIRED | No | No | No | Blocked |
-| REVOKED | No | No | No | Blocked |
-| FAILED | No | No | No | Blocked |
-| PENDING | No | No | No | Blocked |
+#### Scope Verification
+Only `PreQualification` had the wrong convention. All other buyer-FK models (Shortlist, Auction, SelectedDeal, ExternalPreApproval) correctly store `BuyerProfile.id` and their FK `references: [id]` is correct:
+- `Shortlist.buyerId` ← from `buyer.id` (BuyerProfile.id) in shortlist API routes
+- `Auction.buyerId` ← from `buyer.id` (BuyerProfile.id) in auction API route
+- `SelectedDeal.buyerId` ← from `buyer.id` (BuyerProfile.id) in deal creation service
 
-#### FK Structural Risk Assessment
-PreQualification.buyerId stores User.id (convention in prequal.service.ts) but Prisma schema declares `references: [BuyerProfile.id]`. Classification: **Pre-existing structural defect**. Direct queries (findFirst/findUnique with where clause, Supabase .eq) work correctly. Prisma `include: { preQualification: true }` in auction.service.ts generates a join on BuyerProfile.id which will NOT match data stored as User.id. Fix: change schema to `references: [userId]` + migration. Does NOT affect admin prequal feature (uses direct queries).
+#### Consumers Now Correct
+| Consumer | Query Type | Status |
+|----------|-----------|--------|
+| `auction.service.ts:16` | Prisma include | Fixed (now joins on userId) |
+| `auction.service.ts:390` | Prisma include | Fixed (now joins on userId) |
+| `inventory/search` | Supabase `.eq("buyerId", userId)` | Was already correct |
+| `prequal.service.ts` | Prisma findFirst/findUnique | Was already correct |
+| Admin prequal routes | Prisma findUnique | Was already correct |
 
-#### Validation Evidence (10 items)
-1. Admin creates prequal for buyer with no prequal: POST handler creates via `tx.preQualification.create` when `findUnique` returns null
-2. Admin updates existing prequal without duplicate: POST handler uses `tx.preQualification.update` when existing found; `@unique` on buyerId prevents duplicates
-3. Admin changes prequal status and buyer gating updates immediately: PATCH writes to same PreQualification table that inventory search reads
-4. Buyer with approved prequal passes search budget filter: Inventory search queries `status = "ACTIVE"` + `maxOtdAmountCents` using same buyerId convention
-5. RBAC: All routes guarded by `requireAuth(["ADMIN"])`; non-admin roles get 403 via handleRouteError
-6. Audit log: ComplianceEvent created in same transaction with adminId, changedFields, previousValues, note, source=ADMIN_OVERRIDE
-7. TypeScript: `tsc --noEmit` passes with 0 errors; `pnpm build` succeeds
-8. Existing tests: 446/492 files pass (16278/16343 tests); all 46 failures are pre-existing (no test file was modified)
-9. Idempotent: repeated save hits UPDATE path (existing check); @unique constraint on buyerId is structural guard
-10. Transaction safety: `prisma.$transaction` wraps both PreQualification and ComplianceEvent writes; rollback on any failure
+#### Files Changed
+| File | Change |
+|------|--------|
+| `prisma/schema.prisma` line 539 | `references: [id]` → `references: [userId]` |
+| `prisma/migrations/0002_fix_prequal_buyer_fk/migration.sql` | NEW: drop + recreate FK |
 
 ### Build Health
 - `tsc --noEmit`: 0 errors
 - `pnpm build`: 0 errors
-
-## Known Pre-Existing Issues
-- P1: PreQualification.buyerId FK references BuyerProfile.id but stores User.id (affects auction include join)
-- P2: ComplianceEvent schema lacks `severity` column in Prisma (existing service writes it)
-- P3: MicroBilt/DocuSign in sandbox mode
+- Tests: 16278/16343 pass (65 pre-existing failures, 0 new)
 
 ## Backlog
-- P1: Fix PreQualification FK to reference BuyerProfile.userId + migration
 - P2: Dealer licenseNumber placeholder flow
+- P2: Run migration 0002 on Supabase DB (requires Vercel deploy or direct DB access)
 - P3: Affiliate auto-enrollment cookie flow validation
 - P3: Full E2E regression of dealer onboarding lifecycle

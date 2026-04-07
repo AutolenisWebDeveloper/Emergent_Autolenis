@@ -536,7 +536,7 @@ enum ConsentCaptureMethod {
 model PreQualification {
   id      String       @id @default(cuid())
   buyerId String       @unique
-  buyer   BuyerProfile @relation(fields: [buyerId], references: [id], onDelete: Restrict)
+  buyer   BuyerProfile @relation(fields: [buyerId], references: [userId], onDelete: Restrict)
 
   // Workspace / tenant isolation
   workspaceId String?
