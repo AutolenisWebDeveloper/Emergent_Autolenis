@@ -31,10 +31,10 @@ export default function DealInsuranceOverviewPage() {
 
         const insRes = await fetch(`/api/buyer/deals/${dealData.data.deal.id}/insurance`)
         const insData = await insRes.json()
-      if (insData.success) {
-        setInsurance(insData.data)
-      }
-    } catch {
+        if (insData.success) {
+          setInsurance(insData.data)
+        }
+      } catch {
       toast({ variant: "destructive", title: "Error", description: "Failed to load insurance information." })
     } finally {
       setLoading(false)

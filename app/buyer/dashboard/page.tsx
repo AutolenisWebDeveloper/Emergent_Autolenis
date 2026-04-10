@@ -32,6 +32,7 @@ import {
 import useSWR from "swr"
 import { useUser } from "@/hooks/use-user"
 import { INSURANCE_DASHBOARD_CONFIG } from "@/lib/constants/insurance"
+import type { BuyerEligibility } from "@/lib/constants/buyer-eligibility"
 
 // ── Insurance variant style mapping (module-level for performance) ───────────
 
@@ -89,6 +90,7 @@ interface DashboardProfile {
 interface DashboardData {
   profile?: DashboardProfile | null
   preQual?: PreQualData | null
+  buyerEligibility?: BuyerEligibility | null
   stats?: DashboardStats
   recentActivity?: ActivityItem[]
   insuranceStatus?: string | null
@@ -202,6 +204,7 @@ type NextActionResult = {
 function getNextAction(data: DashboardData | undefined): NextActionResult {
   const preQual = data?.preQual
   const stats: DashboardStats = data?.stats ?? {}
+  const eligibility = data?.buyerEligibility
   const qualified = !!preQual && !preQual.isExpired
 
   if (!qualified) {
@@ -212,9 +215,37 @@ function getNextAction(data: DashboardData | undefined): NextActionResult {
       icon: CheckCircle2,
     }
   }
-  // TODO: Wire buyerEligibility flags (allowed_to_shop, allowed_to_shortlist,
-  // allowed_to_trigger_auction) from dashboard API response into conditional
-  // rendering — disable shortlist/auction CTAs when flags are false.
+
+  // Block shopping CTAs if eligibility flags are explicitly false
+  if (eligibility && !eligibility.allowed_to_shop) {
+    const actionMap: Record<string, { title: string; description: string; href: string }> = {
+      complete_required_step: {
+        title: "Complete a Required Step",
+        description: "An additional step is needed before you can shop. Check your prequalification status for details.",
+        href: "/buyer/prequal",
+      },
+      await_manual_review: {
+        title: "Application Under Review",
+        description: "Your prequalification is under manual review. We'll notify you once it's resolved.",
+        href: "/buyer/prequal",
+      },
+      renew_prequalification: {
+        title: "Renew Your Prequalification",
+        description: "Your shopping pass has expired. Complete a new assessment to continue shopping.",
+        href: "/buyer/prequal",
+      },
+    }
+    const mapped = eligibility.next_required_action
+      ? actionMap[eligibility.next_required_action]
+      : undefined
+    return {
+      title: mapped?.title ?? "Prequalification Required",
+      description: mapped?.description ?? "Complete your prequalification to unlock shopping.",
+      href: mapped?.href ?? "/buyer/prequal",
+      icon: AlertCircle,
+    }
+  }
+
   if ((stats.shortlistCount ?? 0) === 0) {
     return {
       title: "Search for a Vehicle",
@@ -223,7 +254,22 @@ function getNextAction(data: DashboardData | undefined): NextActionResult {
       icon: Car,
     }
   }
+
   if ((stats.activeAuctions ?? 0) === 0 && (stats.totalOffers ?? 0) === 0) {
+    // Block auction CTA if the buyer is not eligible to trigger one
+    if (eligibility && !eligibility.allowed_to_trigger_auction) {
+      return {
+        title: "Auction Unavailable",
+        description:
+          eligibility.next_required_action === "await_manual_review"
+            ? "Your account is under review. Auctions will be unlocked once review is complete."
+            : eligibility.next_required_action === "complete_required_step"
+              ? "Complete the required step in your prequalification before starting an auction."
+              : "You are not currently eligible to start an auction. Check your prequalification status.",
+        href: "/buyer/prequal",
+        icon: AlertCircle,
+      }
+    }
     return {
       title: "Start an Auction or Submit a Request",
       description: "Let dealers compete for your business, or submit a vehicle request if coverage is limited in your area.",
@@ -231,6 +277,7 @@ function getNextAction(data: DashboardData | undefined): NextActionResult {
       icon: Gavel,
     }
   }
+
   if ((stats.pendingDeals ?? 0) > 0) {
     return {
       title: "Review Your Deal",
