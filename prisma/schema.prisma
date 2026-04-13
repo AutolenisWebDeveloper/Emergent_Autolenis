@@ -3675,6 +3675,7 @@ model InventoryMarketVehicle {
   firstSeenAt DateTime            @default(now())
   lastSeenAt  DateTime            @default(now())
   staleAfter  DateTime?
+  rejectionReason String?
 
   promotedToVerifiedId String?
 

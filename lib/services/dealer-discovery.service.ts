@@ -20,8 +20,8 @@ export async function discoverDealers(params: {
     throw new Error("Radius must be between 1 and 500 miles")
   }
 
-  // Placeholder: in production this would call an external geocoding/dealer API.
-  // For now we return existing prospects near the ZIP as a passthrough.
+  // Current discovery mode: query known prospects by ZIP and lifecycle status.
+  // Additional external-source ingestion can be layered onto this contract.
   const prospects = await prisma.dealerProspect.findMany({
     where: {
       zip: params.zip,
