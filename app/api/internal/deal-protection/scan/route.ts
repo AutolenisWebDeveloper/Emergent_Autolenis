@@ -35,13 +35,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, data: result })
     }
 
-    // Otherwise return status - full batch scanning not implemented as
-    // in-app buyer↔dealer real-time messaging does not currently exist.
-    // The platform uses support-ticket based messaging.
+    // No message payload provided; return current scanner capability status.
+    // The scanner currently operates on submitted messages.
     return NextResponse.json({
       success: true,
       data: {
-        note: "Batch scanning available when in-app messaging is implemented. Use per-message scanning via body.messageId.",
+        note: "Submit messageId + content to scan a message payload.",
       },
     })
   } catch (error) {

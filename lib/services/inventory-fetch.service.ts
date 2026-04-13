@@ -111,8 +111,8 @@ export async function fetchAndSyncSource(sourceId: string): Promise<FetchResult>
 
     result.vehiclesParsed = parsedVehicles.length
 
-    // Track VINs seen in this sync for stale detection
-    const seenVins: string[] = []
+    // Track source-scoped references seen in this sync for stale detection
+    const seenSourceReferences = new Set<string>()
 
     // Step 3: Normalize and upsert each vehicle into InventoryItem
     const now = new Date().toISOString()
@@ -135,11 +135,10 @@ export async function fetchAndSyncSource(sourceId: string): Promise<FetchResult>
         // Use the parsed priceCents directly (already converted by parseFeedInventory)
         // normalizeSighting may double-convert, so override with source value
         const priceCents = pv.priceCents ?? normalized.priceCents
+        const sourceReferenceId = `${sourceId}:${normalized.vin || normalized.stockNumber || `${normalized.make}-${normalized.model}-${normalized.year}`}`
 
         // Check for existing InventoryItem by VIN + dealerId (upsert logic)
         if (normalized.vin) {
-          seenVins.push(normalized.vin)
-
           const { data: existing } = await supabase
             .from("InventoryItem")
             .select("id")
@@ -164,6 +163,7 @@ export async function fetchAndSyncSource(sourceId: string): Promise<FetchResult>
                 stockNumber: normalized.stockNumber,
                 status: "AVAILABLE",
                 source: "API_FEED",
+                sourceReferenceId,
                 lastSyncedAt: now,
                 updatedAt: now,
               })
@@ -174,6 +174,7 @@ export async function fetchAndSyncSource(sourceId: string): Promise<FetchResult>
               result.errors.push(`Update failed for VIN ${normalized.vin}: ${updateError.message}`)
             } else {
               result.vehiclesUpdated++
+              seenSourceReferences.add(sourceReferenceId)
             }
             continue
           }
@@ -204,6 +205,7 @@ export async function fetchAndSyncSource(sourceId: string): Promise<FetchResult>
                 bodyStyle: normalized.bodyStyle,
                 status: "AVAILABLE",
                 source: "API_FEED",
+                sourceReferenceId,
                 lastSyncedAt: now,
                 updatedAt: now,
               })
@@ -214,6 +216,7 @@ export async function fetchAndSyncSource(sourceId: string): Promise<FetchResult>
               result.errors.push(`Update by stock# failed: ${updateError.message}`)
             } else {
               result.vehiclesUpdated++
+              seenSourceReferences.add(sourceReferenceId)
             }
             continue
           }
@@ -267,6 +270,7 @@ export async function fetchAndSyncSource(sourceId: string): Promise<FetchResult>
             isNew: false,
             status: "AVAILABLE",
             source: "API_FEED",
+            sourceReferenceId,
             photosJson: [],
             lastSyncedAt: now,
             createdAt: now,
@@ -278,6 +282,7 @@ export async function fetchAndSyncSource(sourceId: string): Promise<FetchResult>
           result.errors.push(`Insert failed for ${normalized.make} ${normalized.model}: ${insertError.message}`)
         } else {
           result.vehiclesInserted++
+          seenSourceReferences.add(sourceReferenceId)
         }
       } catch (err) {
         result.vehiclesFailed++
@@ -285,10 +290,43 @@ export async function fetchAndSyncSource(sourceId: string): Promise<FetchResult>
       }
     }
 
-    // Step 4: Stale inventory detection
-    // NOTE: Currently disabled for cross-source correctness.
-    // TODO: Add sourceReferenceId to InventoryItem to scope stale detection per-source.
-    // When enabled: items from THIS source that are no longer in the feed get marked REMOVED.
+    // Step 4: Stale inventory detection (source-scoped via sourceReferenceId)
+    if (seenSourceReferences.size > 0) {
+      const { data: activeItems, error: activeItemsError } = await supabase
+        .from("InventoryItem")
+        .select("id, sourceReferenceId")
+        .eq("dealerId", dealerId)
+        .eq("source", "API_FEED")
+        .eq("status", "AVAILABLE")
+        .like("sourceReferenceId", `${sourceId}:%`)
+
+      if (activeItemsError) {
+        result.errors.push(`Stale detection read failed: ${activeItemsError.message}`)
+      } else {
+        const staleIds = (activeItems || [])
+          .filter((item: { id: string; sourceReferenceId: string | null }) => {
+            if (!item.sourceReferenceId) return false
+            return !seenSourceReferences.has(item.sourceReferenceId)
+          })
+          .map((item: { id: string }) => item.id)
+
+        if (staleIds.length > 0) {
+          const { error: deactivateError, count } = await supabase
+            .from("InventoryItem")
+            .update({
+              status: "REMOVED",
+              updatedAt: now,
+            })
+            .in("id", staleIds)
+
+          if (deactivateError) {
+            result.errors.push(`Stale deactivation failed: ${deactivateError.message}`)
+          } else {
+            result.vehiclesDeactivated = count ?? staleIds.length
+          }
+        }
+      }
+    }
 
     // Update run and source
     await supabase
