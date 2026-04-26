@@ -53,9 +53,10 @@ const IDS = {
   adminNotification: "seed-admin-notification-001",
 }
 
-// A valid bcrypt hash format (60 chars) for the password "SeedTestOnly!".
-// These test users are intentionally seeded with a known-format hash.
-// Do NOT use these credentials in production.
+// DUMMY bcrypt-format hash — NOT a real password hash. Cannot authenticate.
+// Used only as a non-null placeholder so the DB schema constraint is met.
+// Test users created by this seed CANNOT log in with this hash.
+// Do NOT use these seed records for production access.
 const PLACEHOLDER_HASH = "$2b$10$K7L1OJ45/4Y2nIvhRVpCe.FHAh/BFg5X6yQz9OqHpYGJf6rZK1q5i"
 
 async function main() {

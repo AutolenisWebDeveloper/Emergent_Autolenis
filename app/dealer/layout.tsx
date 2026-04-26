@@ -1,10 +1,14 @@
 import type React from "react"
+import { headers } from "next/headers"
 import { redirect } from "next/navigation"
 import { getSessionUser } from "@/lib/auth-server"
 import { requireEmailVerification } from "@/lib/auth-utils"
+import { supabase } from "@/lib/db"
 import { DealerLayoutClient, type NavSection } from "./layout-client"
 import type { PortalLink } from "@/components/portal-switcher"
 import ChatWidget from "@/components/ai/chat-widget"
+
+const SET_PASSWORD_PATH = "/dealer/team/set-password"
 
 export default async function DealerLayout({
   children,
@@ -25,6 +29,27 @@ export default async function DealerLayout({
 
   // Check email verification
   await requireEmailVerification(user.userId, "DealerLayout")
+
+  // Check forced password reset — skip the check when already on set-password
+  const headerStore = await headers()
+  const pathname = headerStore.get("x-pathname") ?? ""
+  const isSettingPassword = pathname.startsWith(SET_PASSWORD_PATH)
+
+  if (!isSettingPassword) {
+    try {
+      const { data: userRow } = await supabase
+        .from("User")
+        .select("force_password_reset")
+        .eq("id", user.userId)
+        .maybeSingle()
+
+      if (userRow?.force_password_reset === true) {
+        redirect(SET_PASSWORD_PATH)
+      }
+    } catch {
+      // If the DB is unavailable (e.g. local dev without env), continue without redirect
+    }
+  }
 
   const nav: NavSection[] = [
     {
