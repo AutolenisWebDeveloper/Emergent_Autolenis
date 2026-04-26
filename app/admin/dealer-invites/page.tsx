@@ -1,6 +1,8 @@
 "use client"
 
 import { useState, useEffect, useCallback, Suspense } from "react"
+import { AdminListPageShell } from "@/components/admin/admin-list-page-shell"
+import type { AdminListColumn } from "@/components/admin/admin-list-page-shell"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"

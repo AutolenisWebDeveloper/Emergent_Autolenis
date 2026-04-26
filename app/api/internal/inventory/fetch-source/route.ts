@@ -35,7 +35,6 @@ export async function POST(req: NextRequest) {
     console.error("[job:fetch-source] Error:", error)
     return NextResponse.json({
       error: "Job failed",
-      message: error instanceof Error ? error.message : String(error),
     }, { status: 500 })
   }
 }

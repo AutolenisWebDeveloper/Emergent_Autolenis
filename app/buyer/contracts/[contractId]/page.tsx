@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, FileText, Calendar, DollarSign, Car, Building2, Download, Clock } from "lucide-react"
+import { ProtectedRoute } from "@/components/layout/protected-route"
 
 interface ContractDetail {
   id: string
@@ -68,6 +69,7 @@ export default function BuyerContractDetailPage() {
   const vehicle = [contract.vehicleYear, contract.vehicleMake, contract.vehicleModel, contract.vehicleTrim].filter(Boolean).join(" ")
 
   return (
+    <ProtectedRoute allowedRoles={["BUYER"]}>
     <div className="space-y-6" data-testid="contract-detail-page">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" onClick={() => router.back()}><ArrowLeft className="h-4 w-4" /></Button>
@@ -124,5 +126,6 @@ export default function BuyerContractDetailPage() {
         </Card>
       )}
     </div>
+    </ProtectedRoute>
   )
 }

@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { PlusCircle, Car, Clock, CheckCircle2, XCircle, Search, ChevronRight } from "lucide-react"
+import { ProtectedRoute } from "@/components/layout/protected-route"
+import { csrfHeaders } from "@/lib/csrf-client"
 
 interface VehicleRequest {
   id: string
@@ -57,7 +59,7 @@ export default function VehicleRequestsPage() {
     try {
       await fetch("/api/buyer/vehicle-requests", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { ...csrfHeaders(), "Content-Type": "application/json" },
         body: JSON.stringify({
           year: form.year ? Number(form.year) : null,
           make: form.make || null,
@@ -91,6 +93,7 @@ export default function VehicleRequestsPage() {
   }
 
   return (
+    <ProtectedRoute allowedRoles={["BUYER"]}>
     <div className="space-y-6" data-testid="vehicle-requests-page">
       <div className="flex items-center justify-between">
         <div>
@@ -188,5 +191,6 @@ export default function VehicleRequestsPage() {
         </div>
       )}
     </div>
+    </ProtectedRoute>
   )
 }

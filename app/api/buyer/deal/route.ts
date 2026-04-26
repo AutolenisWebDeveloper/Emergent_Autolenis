@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { getSessionUser } from "@/lib/auth-server"
-import { createAdminClient } from "@/lib/supabase/admin"
+import { getSupabase } from "@/lib/db"
 import { dealContextService } from "@/lib/services/deal-context.service"
 
 export const dynamic = "force-dynamic"
@@ -13,7 +13,7 @@ export async function GET() {
       return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
     }
 
-    const supabase = createAdminClient()
+    const supabase = getSupabase()
 
     // Look up BuyerProfile first since SelectedDeal.buyerId references BuyerProfile.id
     const { data: buyerProfile } = await supabase

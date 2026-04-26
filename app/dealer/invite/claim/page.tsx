@@ -15,6 +15,7 @@ import {
   ArrowRight,
   XCircle,
 } from "lucide-react"
+import { csrfHeaders } from "@/lib/csrf-client"
 
 type InviteState =
   | { status: "loading" }
@@ -65,7 +66,7 @@ function ClaimContent() {
     try {
       const res = await fetch("/api/dealer/invite/claim", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { ...csrfHeaders(), "Content-Type": "application/json" },
         body: JSON.stringify({ token }),
       })
       const data = await res.json()

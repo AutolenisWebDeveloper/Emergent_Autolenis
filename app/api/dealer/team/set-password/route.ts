@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { getSession, setSessionCookie } from "@/lib/auth-server"
 import { createSession } from "@/lib/auth"
-import { supabase } from "@/lib/db"
+import { createClient } from "@/lib/supabase/server"
 import { requireDatabase } from "@/lib/require-database"
 import { isDealerRole } from "@/lib/authz/roles"
 import bcrypt from "bcryptjs"
@@ -48,6 +48,7 @@ export async function POST(request: Request) {
     const dbUnavailable = requireDatabase()
     if (dbUnavailable) return dbUnavailable
 
+    const supabase = await createClient()
     // Fetch user record
     const { data: user, error: fetchError } = await supabase
       .from("User")

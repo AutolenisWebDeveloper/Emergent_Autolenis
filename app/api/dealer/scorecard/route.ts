@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { requireAuth } from "@/lib/auth-server"
-import { supabase } from "@/lib/db"
+import { createClient } from "@/lib/supabase/server"
 import { requireDatabase } from "@/lib/require-database"
 
 export const dynamic = "force-dynamic"
@@ -21,6 +21,7 @@ export async function GET(_req: NextRequest) {
     const dbUnavailable = requireDatabase()
     if (dbUnavailable) return dbUnavailable
 
+    const supabase = await createClient()
     // Resolve dealer id
     let dealerId: string | null = null
 

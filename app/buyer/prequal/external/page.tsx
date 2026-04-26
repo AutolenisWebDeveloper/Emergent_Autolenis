@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { ExternalLink, Shield, Clock, CheckCircle2, AlertTriangle } from "lucide-react"
+import { ProtectedRoute } from "@/components/layout/protected-route"
 
 export default function ExternalPrequalPage() {
   const [status, setStatus] = useState<string | null>(null)
@@ -25,6 +26,7 @@ export default function ExternalPrequalPage() {
   }
 
   return (
+    <ProtectedRoute allowedRoles={["BUYER"]}>
     <div className="space-y-6" data-testid="external-prequal-page">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">External Prequalification</h1>
@@ -69,5 +71,6 @@ export default function ExternalPrequalPage() {
         </Card>
       )}
     </div>
+    </ProtectedRoute>
   )
 }

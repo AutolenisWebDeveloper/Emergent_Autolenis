@@ -37,6 +37,7 @@ export async function POST(req: NextRequest) {
 
     // No message payload provided; return current scanner capability status.
     // The scanner currently operates on submitted messages.
+    // To report platform messaging abuse, open a support-ticket via /api/admin/support.
     return NextResponse.json({
       success: true,
       data: {

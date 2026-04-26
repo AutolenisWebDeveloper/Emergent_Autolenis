@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Gift, Users, Copy, CheckCircle2, DollarSign, Share2 } from "lucide-react"
+import { ProtectedRoute } from "@/components/layout/protected-route"
 
 interface Referral {
   id: string
@@ -53,6 +54,7 @@ export default function ReferralPage() {
   }
 
   return (
+    <ProtectedRoute allowedRoles={["BUYER"]}>
     <div className="space-y-6" data-testid="referral-page">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Referral Program</h1>
@@ -157,5 +159,6 @@ export default function ReferralPage() {
         </Card>
       )}
     </div>
+    </ProtectedRoute>
   )
 }

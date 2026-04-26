@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { CreditCard, Clock, CheckCircle2, AlertCircle, DollarSign, FileText, ArrowRight } from "lucide-react"
+import { ProtectedRoute } from "@/components/layout/protected-route"
 
 interface Payment {
   id: string
@@ -53,6 +54,7 @@ export default function DealPaymentPage() {
   }
 
   return (
+    <ProtectedRoute allowedRoles={["BUYER"]}>
     <div className="space-y-6" data-testid="deal-payment-page">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Payment</h1>
@@ -116,5 +118,6 @@ export default function DealPaymentPage() {
         </div>
       )}
     </div>
+    </ProtectedRoute>
   )
 }
