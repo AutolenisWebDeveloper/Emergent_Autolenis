@@ -66,7 +66,7 @@ function CompleteContent() {
             </Button>
             <Button
               variant="outline"
-              onClick={() => router.push("/auth/login")}
+              onClick={() => router.push("/auth/signin")}
               className="w-full"
               data-testid="signin-btn"
             >
