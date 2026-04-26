@@ -50,10 +50,20 @@ export async function GET(_req: NextRequest) {
     const iso90 = ninetyDaysAgo.toISOString()
 
     // --- Win rate: accepted selected deals vs total auction offers submitted
-    const { count: totalOffers } = await supabase
-      .from("AuctionOffer")
-      .select("id", { count: "exact", head: true })
-      .eq("participantId", dealerId) // participantId ties back to AuctionParticipant.id
+    // First resolve all AuctionParticipant IDs for this dealer, then count offers
+    const { data: participantRows } = await supabase
+      .from("AuctionParticipant")
+      .select("id")
+      .eq("dealerId", dealerId)
+
+    const participantIds = (participantRows ?? []).map((r: { id: string }) => r.id)
+
+    const { count: totalOffers } = participantIds.length > 0
+      ? await supabase
+          .from("AuctionOffer")
+          .select("id", { count: "exact", head: true })
+          .in("participantId", participantIds)
+      : { count: 0 }
 
     const { count: wonDeals } = await supabase
       .from("SelectedDeal")
@@ -62,10 +72,7 @@ export async function GET(_req: NextRequest) {
       .neq("status", "CANCELLED")
 
     // --- Auction response rate: invitations vs offers actually submitted
-    const { count: totalInvitations } = await supabase
-      .from("AuctionParticipant")
-      .select("id", { count: "exact", head: true })
-      .eq("dealerId", dealerId)
+    const totalInvitations = participantRows?.length ?? 0
 
     // --- Junk fee ratio from ContractShieldScan
     const { count: totalScans } = await supabase
@@ -87,11 +94,13 @@ export async function GET(_req: NextRequest) {
       .eq("status", "COMPLETED")
 
     // --- 90-day trend (same metrics limited to last 90 days)
-    const { count: offers90d } = await supabase
-      .from("AuctionOffer")
-      .select("id", { count: "exact", head: true })
-      .eq("participantId", dealerId)
-      .gte("createdAt", iso90)
+    const { count: offers90d } = participantIds.length > 0
+      ? await supabase
+          .from("AuctionOffer")
+          .select("id", { count: "exact", head: true })
+          .in("participantId", participantIds)
+          .gte("createdAt", iso90)
+      : { count: 0 }
 
     const { count: won90d } = await supabase
       .from("SelectedDeal")
@@ -105,10 +114,9 @@ export async function GET(_req: NextRequest) {
 
     const t = totalOffers ?? 0
     const w = wonDeals ?? 0
-    const inv = totalInvitations ?? 0
+    const inv = totalInvitations
     const scans = totalScans ?? 0
     const junk = junkFlaggedScans ?? 0
-    const total = (wonDeals ?? 0) + (t ?? 0)
     const completed = completedDeals ?? 0
     const t90 = offers90d ?? 0
     const w90 = won90d ?? 0

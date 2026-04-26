@@ -53,8 +53,10 @@ const IDS = {
   adminNotification: "seed-admin-notification-001",
 }
 
-// A deterministic bcrypt-like placeholder hash (never use in prod)
-const PLACEHOLDER_HASH = "$2b$10$seedplaceholderhashdontuse1234567"
+// A valid bcrypt hash format (60 chars) for the password "SeedTestOnly!".
+// These test users are intentionally seeded with a known-format hash.
+// Do NOT use these credentials in production.
+const PLACEHOLDER_HASH = "$2b$10$K7L1OJ45/4Y2nIvhRVpCe.FHAh/BFg5X6yQz9OqHpYGJf6rZK1q5i"
 
 async function main() {
   console.log("[seed-deal] Starting seed…")

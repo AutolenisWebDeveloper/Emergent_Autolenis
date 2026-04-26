@@ -32,7 +32,7 @@ export async function GET(_req: NextRequest) {
 
     const { data: notifications, error } = await supabase
       .from("AdminNotification")
-      .select("*")
+      .select("id, title, message, type, priority, isRead, createdAt, ctaPath, entityType, entityId")
       .eq("workspaceId", dealerRow.workspaceId)
       .order("createdAt", { ascending: false })
       .limit(50)

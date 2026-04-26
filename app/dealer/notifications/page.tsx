@@ -46,7 +46,7 @@ export default function DealerNotificationsPage() {
         method: "POST",
         headers: csrfHeaders(),
       })
-      if (!res.ok) throw new Error("Failed")
+      if (!res.ok) throw new Error(`Failed to mark notifications as read: ${res.status} ${res.statusText}`)
       await mutate(NOTIF_KEY)
       toast({ title: "All notifications marked as read" })
     } catch {
