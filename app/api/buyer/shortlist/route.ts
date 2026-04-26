@@ -3,7 +3,9 @@ import { getSessionUser } from "@/lib/auth-server"
 import { supabase } from "@/lib/db"
 import { requireDatabase } from "@/lib/require-database"
 import { InventoryStatus } from "@/lib/constants/statuses"
-import { MAX_SHORTLIST_ITEMS } from "@/lib/constants"
+
+// Keep in sync with lib/constants.ts MAX_SHORTLIST_ITEMS
+const MAX_SHORTLIST_ITEMS = 5
 
 export const dynamic = "force-dynamic"
 

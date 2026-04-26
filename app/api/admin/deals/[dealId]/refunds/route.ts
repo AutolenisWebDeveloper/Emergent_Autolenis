@@ -99,7 +99,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ dea
       })
     } catch (stripeErr) {
       console.error("[Admin Refund] Stripe refund failed:", (stripeErr as Error).message)
-      return handleRouteError(stripeErr, "Stripe refund failed. Please verify the payment and try again.")
+      return NextResponse.json(
+        { error: "Stripe refund failed. Please verify the payment and try again." },
+        { status: 502 },
+      )
     }
 
     // 3. Only persist DB record after Stripe confirms

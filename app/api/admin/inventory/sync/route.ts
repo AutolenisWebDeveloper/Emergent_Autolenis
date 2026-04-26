@@ -36,7 +36,6 @@ export async function POST(req: NextRequest) {
     console.error("[AdminInventorySync] Error:", error)
     return NextResponse.json({
       error: "Sync failed",
-      message: error instanceof Error ? error.message : String(error),
     }, { status: 500 })
   }
 }

@@ -24,6 +24,10 @@ import {
   LogOut,
   Menu,
   X,
+  BarChart2,
+  BarChart3,
+  CreditCard,
+  Bell,
 } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -47,6 +51,10 @@ const iconMap: Record<string, LucideIcon> = {
   MessageSquare,
   Truck,
   Settings,
+  BarChart2,
+  BarChart3,
+  CreditCard,
+  Bell,
 }
 
 export interface NavItem {

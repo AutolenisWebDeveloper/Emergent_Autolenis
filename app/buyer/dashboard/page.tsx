@@ -90,11 +90,7 @@ interface DashboardProfile {
 interface DashboardData {
   profile?: DashboardProfile | null
   preQual?: PreQualData | null
-  buyerEligibility?: {
-    allowed_to_shop?: boolean
-    allowed_to_shortlist?: boolean
-    allowed_to_trigger_auction?: boolean
-  } | null
+  buyerEligibility?: BuyerEligibility | null
   stats?: DashboardStats
   recentActivity?: ActivityItem[]
   insuranceStatus?: string | null

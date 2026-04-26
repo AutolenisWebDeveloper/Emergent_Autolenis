@@ -550,29 +550,15 @@ export class DealerOnboardingService {
         data: activationData,
       })
     } else if (application.applicantUserId) {
-      // Check if a Dealer already exists for this user (created during signup)
-      const existingDealer = await prisma.dealer.findUnique({
-        where: { userId: application.applicantUserId },
+      // No Dealer linked to this application — create one
+      const dealer = await prisma.dealer.create({
+        data: {
+          userId: application.applicantUserId,
+          workspaceId: application.workspaceId,
+          ...activationData,
+        },
       })
-
-      if (existingDealer) {
-        // Update the existing placeholder Dealer with real onboarding data
-        await prisma.dealer.update({
-          where: { id: existingDealer.id },
-          data: activationData,
-        })
-        dealerId = existingDealer.id
-      } else {
-        // No Dealer exists yet — create one
-        const dealer = await prisma.dealer.create({
-          data: {
-            userId: application.applicantUserId,
-            workspaceId: application.workspaceId,
-            ...activationData,
-          },
-        })
-        dealerId = dealer.id
-      }
+      dealerId = dealer.id
     }
 
     // Ensure DealerUser mapping exists

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Gavel, Clock, CheckCircle2, ArrowRight, Inbox } from "lucide-react"
+import { ProtectedRoute } from "@/components/layout/protected-route"
 
 interface Auction {
   id: string
@@ -59,6 +60,7 @@ export default function BuyerAuctionsPage() {
   }
 
   return (
+    <ProtectedRoute allowedRoles={["BUYER"]}>
     <div className="space-y-6" data-testid="auctions-page">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Auctions & Offers</h1>
@@ -117,5 +119,6 @@ export default function BuyerAuctionsPage() {
         </div>
       )}
     </div>
+    </ProtectedRoute>
   )
 }
