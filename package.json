@@ -42,7 +42,8 @@
     "test:links": "playwright test e2e/link-checker.spec.ts --project=chromium",
     "check:architecture": "npx tsx scripts/governance/check-architecture.ts",
     "check:links": "node scripts/crawl-and-report.mjs",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "sandbox:seed-deal": "npx tsx scripts/seed-deal.ts"
   },
   "overrides": {
     "@prisma/client": "6.16.0"

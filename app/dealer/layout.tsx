@@ -60,6 +60,15 @@ export default async function DealerLayout({
       ],
     },
     {
+      label: "Insights",
+      items: [
+        { href: "/dealer/scorecard", label: "Scorecard", icon: "BarChart2" },
+        { href: "/dealer/analytics", label: "Analytics", icon: "BarChart3" },
+        { href: "/dealer/financing", label: "Financing", icon: "CreditCard" },
+        { href: "/dealer/notifications", label: "Notifications", icon: "Bell" },
+      ],
+    },
+    {
       label: "Account",
       items: [
         { href: "/dealer/settings", label: "Dealer Settings", icon: "Settings" },
