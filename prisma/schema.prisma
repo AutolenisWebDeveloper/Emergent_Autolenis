@@ -3670,12 +3670,12 @@ model InventoryMarketVehicle {
   dealerState   String?
   listingUrl    String?
 
-  status          MarketVehicleStatus @default(ACTIVE)
+  status      MarketVehicleStatus @default(ACTIVE)
+  confidence  Float               @default(0.5)
+  firstSeenAt DateTime            @default(now())
+  lastSeenAt  DateTime            @default(now())
+  staleAfter  DateTime?
   rejectionReason String?
-  confidence      Float               @default(0.5)
-  firstSeenAt     DateTime            @default(now())
-  lastSeenAt      DateTime            @default(now())
-  staleAfter      DateTime?
 
   promotedToVerifiedId String?
 

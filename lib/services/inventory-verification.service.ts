@@ -115,11 +115,13 @@ export async function rejectSuggestedVehicle(
   })
   if (!marketVehicle) throw new Error(`Market vehicle not found: ${vehicleId}`)
 
+  const normalizedReason = reason?.trim() || null
+
   return prisma.inventoryMarketVehicle.update({
     where: { id: vehicleId },
     data: {
       status: "SUPPRESSED" as never,
-      ...(reason ? { rejectionReason: reason } : {}),
+      rejectionReason: normalizedReason,
     },
   })
 }

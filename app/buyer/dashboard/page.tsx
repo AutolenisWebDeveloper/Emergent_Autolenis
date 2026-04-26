@@ -90,7 +90,11 @@ interface DashboardProfile {
 interface DashboardData {
   profile?: DashboardProfile | null
   preQual?: PreQualData | null
-  buyerEligibility?: BuyerEligibility | null
+  buyerEligibility?: {
+    allowed_to_shop?: boolean
+    allowed_to_shortlist?: boolean
+    allowed_to_trigger_auction?: boolean
+  } | null
   stats?: DashboardStats
   recentActivity?: ActivityItem[]
   insuranceStatus?: string | null
@@ -206,6 +210,9 @@ function getNextAction(data: DashboardData | undefined): NextActionResult {
   const stats: DashboardStats = data?.stats ?? {}
   const eligibility = data?.buyerEligibility
   const qualified = !!preQual && !preQual.isExpired
+  const canShop = eligibility?.allowed_to_shop ?? qualified
+  const canShortlist = eligibility?.allowed_to_shortlist ?? qualified
+  const canTriggerAuction = eligibility?.allowed_to_trigger_auction ?? qualified
 
   if (!qualified) {
     return {
@@ -215,41 +222,20 @@ function getNextAction(data: DashboardData | undefined): NextActionResult {
       icon: CheckCircle2,
     }
   }
-
-  // Block shopping CTAs if eligibility flags are explicitly false
-  if (eligibility && !eligibility.allowed_to_shop) {
-    const actionMap: Record<string, { title: string; description: string; href: string }> = {
-      complete_required_step: {
-        title: "Complete a Required Step",
-        description: "An additional step is needed before you can shop. Check your prequalification status for details.",
-        href: "/buyer/prequal",
-      },
-      await_manual_review: {
-        title: "Application Under Review",
-        description: "Your prequalification is under manual review. We'll notify you once it's resolved.",
-        href: "/buyer/prequal",
-      },
-      renew_prequalification: {
-        title: "Renew Your Prequalification",
-        description: "Your shopping pass has expired. Complete a new assessment to continue shopping.",
-        href: "/buyer/prequal",
-      },
-    }
-    const mapped = eligibility.next_required_action
-      ? actionMap[eligibility.next_required_action]
-      : undefined
+  if (!canShop) {
     return {
-      title: mapped?.title ?? "Prequalification Required",
-      description: mapped?.description ?? "Complete your prequalification to unlock shopping.",
-      href: mapped?.href ?? "/buyer/prequal",
-      icon: AlertCircle,
+      title: "Complete Eligibility Review",
+      description: "Your account needs an eligibility review before shopping can begin.",
+      href: "/buyer/prequal",
+      icon: ShieldCheck,
     }
   }
-
   if ((stats.shortlistCount ?? 0) === 0) {
     return {
-      title: "Search for a Vehicle",
-      description: "Browse verified dealer inventory and shortlist vehicles you love.",
+      title: canShortlist ? "Search for a Vehicle" : "Browse Vehicle Inventory",
+      description: canShortlist
+        ? "Browse verified dealer inventory and shortlist vehicles you love."
+        : "Browse verified dealer inventory while shortlist access is being finalized.",
       href: "/buyer/search",
       icon: Car,
     }
@@ -271,9 +257,11 @@ function getNextAction(data: DashboardData | undefined): NextActionResult {
       }
     }
     return {
-      title: "Start an Auction or Submit a Request",
-      description: "Let dealers compete for your business, or submit a vehicle request if coverage is limited in your area.",
-      href: "/buyer/auction",
+      title: canTriggerAuction ? "Start an Auction or Submit a Request" : "Submit a Vehicle Request",
+      description: canTriggerAuction
+        ? "Let dealers compete for your business, or submit a vehicle request if coverage is limited in your area."
+        : "Auction access is pending. Submit a vehicle request to keep moving your purchase forward.",
+      href: canTriggerAuction ? "/buyer/auction" : "/buyer/request",
       icon: Gavel,
     }
   }

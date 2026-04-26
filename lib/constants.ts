@@ -5,7 +5,7 @@
 // ─── Legacy V1 fee structure (DEPRECATED — no longer used in active code) ──
 // Retained for historical reference only. All active pricing uses V2 flat-fee
 // model via PREMIUM_FEE / PREMIUM_FEE_CENTS and src/config/pricingConfig.ts.
-/** @deprecated V1 tiered pricing — not used in production. Use PREMIUM_FEE instead. */
+/** @deprecated V1 tiered pricing. Use PREMIUM_FEE instead. */
 export const FEE_STRUCTURE = {
   LOW_TIER: {
     threshold: 35000,
@@ -17,7 +17,7 @@ export const FEE_STRUCTURE = {
   },
 } as const
 
-/** @deprecated V1 tiered pricing — not used in production. Use PREMIUM_FEE_CENTS instead. */
+/** @deprecated V1 tiered pricing. Use PREMIUM_FEE_CENTS instead. */
 export const FEE_STRUCTURE_CENTS = {
   LOW_TIER: {
     threshold: 3500000,

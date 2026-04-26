@@ -3,10 +3,9 @@ import { getSessionUser } from "@/lib/auth-server"
 import { supabase } from "@/lib/db"
 import { requireDatabase } from "@/lib/require-database"
 import { InventoryStatus } from "@/lib/constants/statuses"
+import { MAX_SHORTLIST_ITEMS } from "@/lib/constants"
 
 export const dynamic = "force-dynamic"
-
-const MAX_SHORTLIST_ITEMS = 10
 
 // ─── Guard Policy ────────────────────────────────────────────────────────
 // Shortlist access is gated by BUYER role only.
