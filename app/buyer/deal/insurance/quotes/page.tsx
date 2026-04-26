@@ -42,11 +42,11 @@ export default function InsuranceQuotesListPage() {
         setDeal(dealData.data.deal)
 
         const insRes = await fetch(`/api/buyer/deals/${dealData.data.deal.id}/insurance`)
-      const insData = await insRes.json()
-      if (insData.success) {
-        setQuotes(insData.data?.quotes ?? [])
-      }
-    } catch {
+        const insData = await insRes.json()
+        if (insData.success) {
+          setQuotes(insData.data?.quotes ?? [])
+        }
+      } catch {
       toast({ variant: "destructive", title: "Error", description: "Failed to load quotes." })
     } finally {
       setLoading(false)

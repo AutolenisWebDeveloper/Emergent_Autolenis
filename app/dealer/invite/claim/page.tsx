@@ -166,7 +166,7 @@ function ClaimContent() {
               </Button>
               <Button
                 variant="outline"
-                onClick={() => router.push("/auth/login")}
+                onClick={() => router.push("/auth/signin")}
                 className="w-full"
                 data-testid="login-btn"
               >

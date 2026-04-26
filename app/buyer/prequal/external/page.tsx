@@ -3,17 +3,23 @@
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { ExternalLink, Shield, Clock, CheckCircle2, AlertTriangle } from "lucide-react"
-import { ProtectedRoute } from "@/components/layout/protected-route"
+import { ExternalLink, Shield, CheckCircle2, AlertTriangle } from "lucide-react"
 
 export default function ExternalPrequalPage() {
   const [status, setStatus] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [fetchError, setFetchError] = useState(false)
 
   useEffect(() => {
-    fetch("/api/buyer/prequal/status").then(r => r.json()).then(d => {
-      setStatus(d?.data?.status || d?.status || null)
-    }).catch(() => {}).finally(() => setLoading(false))
+    fetch("/api/buyer/prequal/status")
+      .then(r => r.json())
+      .then(d => {
+        setStatus(d?.data?.status || d?.status || null)
+      })
+      .catch(() => {
+        setFetchError(true)
+      })
+      .finally(() => setLoading(false))
   }, [])
 
   if (loading) {
@@ -57,7 +63,21 @@ export default function ExternalPrequalPage() {
         </CardContent>
       </Card>
 
-      {status && (
+      {fetchError && (
+        <Card className="border-destructive/40 bg-destructive/5">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              <div>
+                <p className="text-sm font-medium text-destructive">Unable to load status</p>
+                <p className="text-xs text-muted-foreground">Could not retrieve your prequalification status. Please refresh the page or try again later.</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {!fetchError && status && (
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
