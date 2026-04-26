@@ -283,7 +283,6 @@ test.describe("Step 4 — Pre-qualification sandbox bypass and APPROVED result",
       expect(visible, "Prequal page must show relevant content").toBeTruthy()
     }
     // If redirected to auth, that's also an acceptable state (not authenticated)
-    expect(true).toBeTruthy()
   })
 })
 
@@ -707,7 +706,7 @@ test.describe("Step 14 — Insurance mock (non-production only)", () => {
     // 401/403 = gated (correct) · 404 = endpoint not exposed (correct) · 200 only if dev
     // If 200, the response must not contain mock insurance data in production
     if (res.status() === 200) {
-      const nodeEnv = process.env["NODE_ENV"]
+      const nodeEnv = process.env.NODE_ENV
       expect(nodeEnv, "Mock insurance must only be served outside of production").not.toBe("production")
     } else {
       expect([401, 403, 404]).toContain(res.status())
