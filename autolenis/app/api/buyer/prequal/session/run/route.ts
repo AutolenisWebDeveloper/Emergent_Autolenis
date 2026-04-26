@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server"
 import { requireAuth } from "@/lib/auth-server"
 import { prequalSessionService } from "@/lib/services/prequal-session.service"
-import { encryptSsn } from "@/lib/prequal/encryption"
 
 // POST /api/buyer/prequal/session/run - Run provider-backed prequalification
 export async function POST(request: Request) {
@@ -27,19 +26,6 @@ export async function POST(request: Request) {
       )
     }
 
-    // Handle SSN: accept raw SSN and encrypt server-side, or accept pre-encrypted
-    let ssnEncrypted: string | undefined = body.ssnEncrypted
-    if (!ssnEncrypted && body.ssn) {
-      try {
-        ssnEncrypted = encryptSsn(body.ssn)
-      } catch {
-        return NextResponse.json(
-          { success: false, error: { code: "VALIDATION_ERROR", message: "Invalid SSN format. Must be 9 digits." } },
-          { status: 400 },
-        )
-      }
-    }
-
     const result = await prequalSessionService.runPrequal(
       body.sessionId,
       session.userId,
@@ -51,8 +37,8 @@ export async function POST(request: Request) {
         city: body.city,
         state: body.state,
         postalCode: body.postalCode,
-        ssnLast4: body.ssnLast4 || (body.ssn ? body.ssn.slice(-4) : undefined),
-        ssnEncrypted,
+        ssnLast4: body.ssnLast4,
+        ssnEncrypted: body.ssnEncrypted,
         phone: body.phone,
         employerName: body.employerName,
         monthlyIncomeCents: body.monthlyIncomeCents,
@@ -93,14 +79,6 @@ export async function POST(request: Request) {
       )
     }
 
-    if (message.includes("Debt-to-income") || message.includes("threshold")) {
-      return NextResponse.json(
-        { success: false, error: { code: "SCORING_FAILURE", message } },
-        { status: 422 },
-      )
-    }
-
-    console.error("[PrequalSession/Run] Unhandled error:", message, error)
     const status = message === "Unauthorized" ? 401 : 500
     return NextResponse.json(
       { success: false, error: { code: status === 401 ? "UNAUTHENTICATED" : "INTERNAL_ERROR", message: status === 401 ? "Unauthorized" : message } },
