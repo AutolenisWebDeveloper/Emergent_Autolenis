@@ -137,6 +137,8 @@ skills-lock.json
 .env
 .env.*
 *.env
+# Always track the example file (must come after all .env* patterns)
+!.env.example
 credentials.json
 *.pem
 *.key
