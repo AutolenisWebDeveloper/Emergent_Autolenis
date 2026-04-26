@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { ExternalLink, Shield, CheckCircle2, AlertTriangle } from "lucide-react"
+import { ProtectedRoute } from "@/components/layout/protected-route"
 
 export default function ExternalPrequalPage() {
   const [status, setStatus] = useState<string | null>(null)
