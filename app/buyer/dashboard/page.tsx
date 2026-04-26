@@ -32,6 +32,7 @@ import {
 import useSWR from "swr"
 import { useUser } from "@/hooks/use-user"
 import { INSURANCE_DASHBOARD_CONFIG } from "@/lib/constants/insurance"
+import type { BuyerEligibility } from "@/lib/constants/buyer-eligibility"
 
 // ── Insurance variant style mapping (module-level for performance) ───────────
 
@@ -239,7 +240,22 @@ function getNextAction(data: DashboardData | undefined): NextActionResult {
       icon: Car,
     }
   }
+
   if ((stats.activeAuctions ?? 0) === 0 && (stats.totalOffers ?? 0) === 0) {
+    // Block auction CTA if the buyer is not eligible to trigger one
+    if (eligibility && !eligibility.allowed_to_trigger_auction) {
+      return {
+        title: "Auction Unavailable",
+        description:
+          eligibility.next_required_action === "await_manual_review"
+            ? "Your account is under review. Auctions will be unlocked once review is complete."
+            : eligibility.next_required_action === "complete_required_step"
+              ? "Complete the required step in your prequalification before starting an auction."
+              : "You are not currently eligible to start an auction. Check your prequalification status.",
+        href: "/buyer/prequal",
+        icon: AlertCircle,
+      }
+    }
     return {
       title: canTriggerAuction ? "Start an Auction or Submit a Request" : "Submit a Vehicle Request",
       description: canTriggerAuction
@@ -249,6 +265,7 @@ function getNextAction(data: DashboardData | undefined): NextActionResult {
       icon: Gavel,
     }
   }
+
   if ((stats.pendingDeals ?? 0) > 0) {
     return {
       title: "Review Your Deal",
