@@ -65,8 +65,9 @@ export const buyerService = {
         await Promise.all([
           supabase
             .from("PreQualification")
-            .select("id, buyerId, maxMonthlyPaymentCents, maxOtdAmountCents, maxOtd, expiresAt, status, createdAt, updatedAt")
+            .select("id, buyerId, maxMonthlyPaymentCents, maxOtdAmountCents, maxOtd, expiresAt, status, creditTier, createdAt, updatedAt")
             .eq("buyerId", buyerId)
+            .eq("status", "ACTIVE")
             .order("createdAt", { ascending: false })
             .limit(1)
             .maybeSingle(),
@@ -175,10 +176,12 @@ export const buyerService = {
       // Calculate stats
       const totalShortlistItems = shortlists.reduce((acc: number, s: any) => acc + (s.items?.length || 0), 0)
       const activeAuctions = auctions.filter((a: any) => a.status === AuctionStatus.ACTIVE || a.status === AuctionStatus.PENDING_DEPOSIT).length
+      const completedAuctions = auctions.filter((a: any) => a.status === AuctionStatus.COMPLETED || a.status === "CLOSED").length
       const totalOffers = auctions.reduce((acc: number, a: any) => acc + (a.offers?.length || 0), 0)
       const pendingDeals = deals.filter((d: any) => d.status !== DealStatus.COMPLETED && d.status !== DealStatus.CANCELLED).length
       const completedDeals = deals.filter((d: any) => d.status === DealStatus.COMPLETED).length
       const upcomingPickups = pickups.filter((p: any) => p.status === PickupStatus.SCHEDULED).length
+      const pickupScheduled = upcomingPickups > 0
 
       // Get recent activity
       const recentActivity = await getRecentActivity(userId, buyerId)
@@ -235,10 +238,12 @@ export const buyerService = {
         stats: {
           shortlistCount: totalShortlistItems,
           activeAuctions,
+          completedAuctions,
           totalOffers,
           pendingDeals,
           completedDeals,
           upcomingPickups,
+          pickupScheduled,
           // totalSavings intentionally omitted — no auditable source-of-truth
           // data exists for buyer savings. Re-add only when backed by actual
           // deal-level price-vs-market deltas (P4 KPI integrity).

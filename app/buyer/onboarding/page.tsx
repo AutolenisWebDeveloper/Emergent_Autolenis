@@ -27,12 +27,8 @@ export default function BuyerOnboardingPage() {
         const data = await response.json()
 
         if (data.success && data.data?.preQualification && data.data?.active) {
-          // User already has active prequal, redirect to prequal page
-          toast({
-            title: "Already pre-qualified",
-            description: "Redirecting to your pre-qualification status...",
-          })
-          router.push("/buyer/prequal")
+          // Buyer already has an active prequalification — route directly to search
+          router.push("/buyer/search")
           return
         }
       } catch (error) {
@@ -43,7 +39,7 @@ export default function BuyerOnboardingPage() {
     }
 
     checkExistingPreQual()
-  }, [router, toast])
+  }, [router])
 
   const handleProfileComplete = (data: any) => {
     setProfileData(data)

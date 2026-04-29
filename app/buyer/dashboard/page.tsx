@@ -148,7 +148,7 @@ type JourneyStep = {
 function buildJourneySteps(data: DashboardData | undefined): JourneyStep[] {
   const preQual = data?.preQual
   const stats: DashboardStats = data?.stats ?? {}
-  const qualified = !!preQual && !preQual.isExpired
+  const qualified = !!preQual && !preQual.isExpired && preQual.status === "ACTIVE"
 
   return [
     {
@@ -205,7 +205,7 @@ function getNextAction(data: DashboardData | undefined): NextActionResult {
   const preQual = data?.preQual
   const stats: DashboardStats = data?.stats ?? {}
   const eligibility = data?.buyerEligibility
-  const qualified = !!preQual && !preQual.isExpired
+  const qualified = !!preQual && !preQual.isExpired && preQual.status === "ACTIVE"
   const canShop = eligibility?.allowed_to_shop ?? qualified
   const canShortlist = eligibility?.allowed_to_shortlist ?? qualified
   const canTriggerAuction = eligibility?.allowed_to_trigger_auction ?? qualified
@@ -318,7 +318,7 @@ export default function BuyerDashboardPage() {
   const profile = data?.profile
   const preQual = data?.preQual
   const stats: DashboardStats = data?.stats ?? {}
-  const qualified = !!preQual && !preQual.isExpired
+  const qualified = !!preQual && !preQual.isExpired && preQual.status === "ACTIVE"
 
   const journeySteps = buildJourneySteps(data)
   const completedSteps = journeySteps.filter((s) => s.completed).length
